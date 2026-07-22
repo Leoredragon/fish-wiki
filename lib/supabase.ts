@@ -21,5 +21,10 @@ export interface Fish {
   ban_periods?: string | null;
   short_info_tr?: string | null;
   short_info_en?: string | null;
+  favorite_baits?: string | null;
+  primary_regions?: string | null;
+  taste_rating?: string | null;
+  cooking_tips_tr?: string | null;
+  cooking_tips_en?: string | null;
   created_at?: string;
 }

@@ -21,7 +21,10 @@ import {
   ShieldAlert,
   Scale,
   Anchor,
-  FileText
+  FileText,
+  Utensils,
+  MapPin,
+  Star
 } from 'lucide-react';
 
 interface FishDetailPageClientProps {
@@ -46,7 +49,6 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
   const fetchFish = async () => {
     setLoading(true);
     try {
-      // 1. Try matching from mock data first (for instant mock previews)
       const mockMatch = RICH_MOCK_FISHES.find((f) => f.id === id);
       if (mockMatch) {
         setFish(mockMatch);
@@ -54,7 +56,6 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
         return;
       }
 
-      // 2. Query Supabase by UUID / ID
       const { data, error } = await supabase
         .from('fishes')
         .select('*')
@@ -64,7 +65,6 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
       if (!error && data) {
         setFish(data);
       } else {
-        // Fallback to first mock item if ID not found
         setFish(RICH_MOCK_FISHES[0]);
       }
     } catch {
@@ -115,11 +115,23 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
     ? (fish.description_tr || fish.description_en)
     : (fish.description_en || fish.description_tr);
 
+  const cookingTips = isTr
+    ? (fish.cooking_tips_tr || fish.cooking_tips_en)
+    : (fish.cooking_tips_en || fish.cooking_tips_tr);
+
   const defaultImage = "https://images.unsplash.com/photo-1524704654690-b56c05c78a00?auto=format&fit=crop&w=800&q=80";
   const displayImage = (!fish.image_url || imageError) ? defaultImage : fish.image_url;
 
   const gearTags = fish.recommended_gear
     ? fish.recommended_gear.split(',').map((tag) => tag.trim())
+    : [];
+
+  const baitTags = fish.favorite_baits
+    ? fish.favorite_baits.split(',').map((tag) => tag.trim())
+    : [];
+
+  const regionTags = fish.primary_regions
+    ? fish.primary_regions.split(',').map((tag) => tag.trim())
     : [];
 
   const isFreshwater = fish.water_type?.toLowerCase().includes('tatlı');
@@ -230,7 +242,7 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
         }}
         className="space-y-6"
       >
-        {/* CARD 1: Sustainable Angling Rules & Limits (Attention-Grabbing Warning Card) */}
+        {/* CARD 1: Sustainable Angling Rules & Limits */}
         <motion.div
           variants={{
             hidden: { opacity: 0, y: 20 },
@@ -255,7 +267,6 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-            {/* Limit Size */}
             <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-amber-200/80 space-y-1">
               <div className="flex items-center space-x-2 text-amber-700 font-semibold text-xs">
                 <Scale className="w-4 h-4 text-amber-600" />
@@ -266,7 +277,6 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
               </p>
             </div>
 
-            {/* Ban Periods */}
             <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-rose-200/80 space-y-1">
               <div className="flex items-center space-x-2 text-rose-700 font-semibold text-xs">
                 <Calendar className="w-4 h-4 text-rose-600" />
@@ -279,13 +289,13 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
           </div>
         </motion.div>
 
-        {/* CARD 2: Tactics & Recommended Gear Section */}
+        {/* CARD 2: Tactics, Recommended Gear & Favorite Baits */}
         <motion.div
           variants={{
             hidden: { opacity: 0, y: 20 },
             show: { opacity: 1, y: 0 }
           }}
-          className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4"
+          className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-6"
         >
           <div className="flex items-center space-x-3 border-b border-slate-100 pb-3">
             <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
@@ -296,37 +306,130 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
                 {tDetails('tacticsAndGear')}
               </h2>
               <p className="text-xs text-slate-500">
-                {isTr ? 'Önerilen olta takımı montajları ve avcılık yöntemleri' : 'Recommended tackle rigs and angling techniques'}
+                {isTr ? 'Önerilen olta takımı montajları ve en çok tercih edilen yemler' : 'Recommended tackle rigs and preferred baits'}
               </p>
             </div>
           </div>
 
-          <div className="space-y-3 pt-1">
-            <div className="flex flex-wrap gap-2">
-              {gearTags.length > 0 ? (
-                gearTags.map((tag, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Rigs & Equipment */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1.5">
+                <Layers className="w-3.5 h-3.5 text-emerald-600" />
+                <span>{tDetails('gearDetails')}</span>
+              </h4>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {gearTags.length > 0 ? (
+                  gearTags.map((tag, i) => (
+                    <span
+                      key={i}
+                      className="bg-emerald-50 text-emerald-950 border border-emerald-200 font-bold px-3 py-1.5 rounded-2xl text-xs flex items-center space-x-1 shadow-xs"
+                    >
+                      <Sparkles className="w-3 h-3 text-emerald-600" />
+                      <span>{tag}</span>
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-slate-500">LRF, Fly-fishing, Sazan montajı</span>
+                )}
+              </div>
+            </div>
+
+            {/* Favorite Baits */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+                <span>{tDetails('favoriteBaits')}</span>
+              </h4>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {baitTags.length > 0 ? (
+                  baitTags.map((bait, i) => (
+                    <span
+                      key={i}
+                      className="bg-teal-50 text-teal-950 border border-teal-200 font-bold px-3 py-1.5 rounded-2xl text-xs flex items-center space-x-1 shadow-xs"
+                    >
+                      <span>{bait}</span>
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-slate-500">Boru kurdu, Sülünes, Yengeç, Silikon yemler</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Primary Regions */}
+          {regionTags.length > 0 && (
+            <div className="pt-4 border-t border-slate-100 space-y-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1.5">
+                <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                <span>{tDetails('primaryRegions')}</span>
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {regionTags.map((region, i) => (
                   <span
                     key={i}
-                    className="bg-emerald-50 text-emerald-950 border border-emerald-200 font-bold px-3.5 py-1.5 rounded-2xl text-xs sm:text-sm flex items-center space-x-1.5 shadow-xs"
+                    className="bg-slate-100 text-slate-800 border border-slate-200 font-semibold px-3 py-1 rounded-xl text-xs flex items-center space-x-1"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>{tag}</span>
+                    <MapPin className="w-3 h-3 text-slate-500" />
+                    <span>{region}</span>
                   </span>
-                ))
-              ) : (
-                <span className="text-xs text-slate-500">LRF, Fly-fishing, Sazan montajı</span>
-              )}
+                ))}
+              </div>
             </div>
-
-            {fish.recommended_gear && (
-              <p className="text-xs sm:text-sm text-slate-700 bg-slate-50 p-4 rounded-2xl border border-slate-100 font-medium leading-relaxed">
-                {fish.recommended_gear}
-              </p>
-            )}
-          </div>
+          )}
         </motion.div>
 
-        {/* CARD 3: Detailed Description */}
+        {/* CARD 3: Taste Rating & Gastronomy */}
+        {(fish.taste_rating || cookingTips) && (
+          <motion.div
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              show: { opacity: 1, y: 0 }
+            }}
+            className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4"
+          >
+            <div className="flex items-center space-x-3 border-b border-slate-100 pb-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                <Utensils className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-extrabold text-[#0F172A]">
+                  {tDetails('tasteAndGastronomy')}
+                </h2>
+                <p className="text-xs text-slate-500">
+                  {isTr ? 'Balık eti kalitesi ve mutfakta pişirme teknikleri' : 'Meat flavor rating and culinary cooking advice'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+              {fish.taste_rating && (
+                <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100 space-y-1">
+                  <div className="flex items-center space-x-1.5 text-amber-800 font-semibold text-xs">
+                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                    <span>{tDetails('tasteRatingLabel')}</span>
+                  </div>
+                  <p className="text-sm font-bold text-slate-900 pl-5">{fish.taste_rating}</p>
+                </div>
+              )}
+
+              {cookingTips && (
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-1">
+                  <div className="flex items-center space-x-1.5 text-slate-700 font-semibold text-xs">
+                    <Utensils className="w-4 h-4 text-emerald-600" />
+                    <span>{tDetails('cookingTipsLabel')}</span>
+                  </div>
+                  <p className="text-xs sm:text-sm font-medium text-slate-800 pl-5 leading-relaxed">
+                    {cookingTips}
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* CARD 4: Detailed Description */}
         <motion.div
           variants={{
             hidden: { opacity: 0, y: 20 },

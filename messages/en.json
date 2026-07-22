@@ -4,7 +4,11 @@
     "subtitle": "Fish Species & Angling Guide",
     "searchPlaceholder": "Search by common or scientific name...",
     "adminPanel": "Admin Panel",
-    "language": "Language"
+    "language": "Language",
+    "navHome": "Species Guide",
+    "navCalendar": "Angling Calendar",
+    "navWeather": "Weather & Solunar",
+    "navMap": "Fishing Spots"
   },
   "Filters": {
     "all": "All",
@@ -35,7 +39,12 @@
     "rulesAndLimits": "Sustainable Angling Rules & Size Limits",
     "limitSizeLabel": "Legal Size Limit",
     "banPeriodsLabel": "Closed Season Period",
-    "tacticsAndGear": "Angling Tactics & Recommended Rigs"
+    "tacticsAndGear": "Angling Tactics & Recommended Rigs",
+    "favoriteBaits": "Preferred Baits & Lures",
+    "primaryRegions": "Key Angling Locations & Regions",
+    "tasteAndGastronomy": "Culinary Rating & Cooking Tips",
+    "tasteRatingLabel": "Meat Quality & Flavor Rating",
+    "cookingTipsLabel": "Culinary & Cooking Recommendation"
   },
   "Admin": {
     "title": "Fish Wiki Management Panel",
@@ -44,6 +53,7 @@
     "fishList": "Registered Species",
     "sectionBasic": "Basic Information",
     "sectionRules": "Angling Rules & Tactics",
+    "sectionGastronomy": "Baits, Locations & Flavor",
     "sectionDetails": "Detailed Description & Media",
     "nameTr": "Turkish Name",
     "nameEn": "English Name",
@@ -55,6 +65,11 @@
     "banPeriods": "Closed Season Period",
     "activeSeasons": "Active Seasons",
     "recommendedGear": "Recommended Gear",
+    "favoriteBaits": "Preferred Baits (Natural / Lures)",
+    "primaryRegions": "Key Fishing Locations",
+    "tasteRating": "Taste Rating (e.g. 5/5 Stars)",
+    "cookingTipsTr": "Cooking Tips (Turkish)",
+    "cookingTipsEn": "Cooking Tips (English)",
     "descriptionTr": "Turkish Description",
     "descriptionEn": "English Description",
     "imageUrl": "Image URL",
@@ -70,6 +85,11 @@
     "seasonPlaceholder": "e.g. Spring, Autumn",
     "limitPlaceholder": "e.g. Min 40 cm (20 cm for trout)",
     "banPlaceholder": "e.g. Inland waters 15 March - 15 June",
+    "baitsPlaceholder": "e.g. Marine worms, Crabs, Topwater poppers, Soft lures",
+    "regionsPlaceholder": "e.g. Bosphorus, Aegean Coast, Lake Abant",
+    "tastePlaceholder": "e.g. 5/5 Stars - Highly Flavorful & Rich Meat",
+    "cookingTrPlaceholder": "e.g. Recommended grilled with garlic butter.",
+    "cookingEnPlaceholder": "e.g. Recommended grilled with garlic butter.",
     "shortInfoTrPlaceholder": "e.g. Endemic mountain stream trout.",
     "shortInfoEnPlaceholder": "e.g. Endemic mountain stream trout.",
     "imageUrlPlaceholder": "https://images.unsplash.com/...",

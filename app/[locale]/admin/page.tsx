@@ -20,8 +20,9 @@ import {
   ShieldAlert,
   Info,
   FileText,
-  Scale,
-  Calendar
+  Utensils,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -39,6 +40,11 @@ export default function AdminPage() {
     ban_periods: '',
     active_seasons: '',
     recommended_gear: '',
+    favorite_baits: '',
+    primary_regions: '',
+    taste_rating: '',
+    cooking_tips_tr: '',
+    cooking_tips_en: '',
     description_tr: '',
     description_en: '',
     image_url: '',
@@ -46,6 +52,7 @@ export default function AdminPage() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [fishes, setFishes] = useState<Fish[]>([]);
@@ -82,6 +89,45 @@ export default function AdminPage() {
     }
   };
 
+  // Image File Upload to Supabase Storage or Base64/Public URL
+  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+      const filePath = `fish-images/${fileName}`;
+
+      // Try uploading to Supabase Storage bucket 'fish-images'
+      const { error: uploadError } = await supabase.storage
+        .from('fish-images')
+        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+      if (uploadError) {
+        // Fallback: Read file as Data URL if bucket does not exist yet
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFormData(prev => ({ ...prev, image_url: reader.result as string }));
+          setUploadingImage(false);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        const { data: publicUrlData } = supabase.storage
+          .from('fish-images')
+          .getPublicUrl(filePath);
+
+        if (publicUrlData?.publicUrl) {
+          setFormData(prev => ({ ...prev, image_url: publicUrlData.publicUrl }));
+        }
+        setUploadingImage(false);
+      }
+    } catch {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name_tr || !formData.name_en) {
@@ -107,6 +153,11 @@ export default function AdminPage() {
             ban_periods: formData.ban_periods || null,
             active_seasons: formData.active_seasons || null,
             recommended_gear: formData.recommended_gear || null,
+            favorite_baits: formData.favorite_baits || null,
+            primary_regions: formData.primary_regions || null,
+            taste_rating: formData.taste_rating || null,
+            cooking_tips_tr: formData.cooking_tips_tr || null,
+            cooking_tips_en: formData.cooking_tips_en || null,
             description_tr: formData.description_tr || null,
             description_en: formData.description_en || null,
             image_url: formData.image_url || null,
@@ -132,6 +183,11 @@ export default function AdminPage() {
         ban_periods: '',
         active_seasons: '',
         recommended_gear: '',
+        favorite_baits: '',
+        primary_regions: '',
+        taste_rating: '',
+        cooking_tips_tr: '',
+        cooking_tips_en: '',
         description_tr: '',
         description_en: '',
         image_url: '',
@@ -222,7 +278,7 @@ export default function AdminPage() {
 
       {/* Form & List Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Side: 3 Logical Form Cards */}
+        {/* Left Side: 4 UI Cards Form */}
         <form onSubmit={handleSubmit} className="lg:col-span-8 space-y-6">
 
           {/* CARD 1: Temel Bilgiler */}
@@ -389,7 +445,87 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* CARD 3: Detaylı Açıklama ve Medya */}
+          {/* CARD 3: Yemler, Meralar ve Lezzet */}
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-5">
+            <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+              <Utensils className="w-5 h-5 text-emerald-600" />
+              <h2 className="text-base font-bold text-[#0F172A]">{t('sectionGastronomy')}</h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  {t('favoriteBaits')}
+                </label>
+                <input
+                  type="text"
+                  name="favorite_baits"
+                  placeholder={t('baitsPlaceholder')}
+                  value={formData.favorite_baits || ''}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:ring-2 focus:ring-[#10B981] focus:border-transparent outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  {t('primaryRegions')}
+                </label>
+                <input
+                  type="text"
+                  name="primary_regions"
+                  placeholder={t('regionsPlaceholder')}
+                  value={formData.primary_regions || ''}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:ring-2 focus:ring-[#10B981] focus:border-transparent outline-none transition-all"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block font-semibold text-slate-700 mb-1">
+                  {t('tasteRating')}
+                </label>
+                <input
+                  type="text"
+                  name="taste_rating"
+                  placeholder={t('tastePlaceholder')}
+                  value={formData.taste_rating || ''}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:ring-2 focus:ring-[#10B981] focus:border-transparent outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  {t('cookingTipsTr')}
+                </label>
+                <textarea
+                  name="cooking_tips_tr"
+                  rows={2}
+                  placeholder={t('cookingTrPlaceholder')}
+                  value={formData.cooking_tips_tr || ''}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:ring-2 focus:ring-[#10B981] focus:border-transparent outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  {t('cookingTipsEn')}
+                </label>
+                <textarea
+                  name="cooking_tips_en"
+                  rows={2}
+                  placeholder={t('cookingEnPlaceholder')}
+                  value={formData.cooking_tips_en || ''}
+                  onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:ring-2 focus:ring-[#10B981] focus:border-transparent outline-none transition-all"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* CARD 4: Detaylı Açıklama ve Görsel Yükleyici */}
           <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-5">
             <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
               <FileText className="w-5 h-5 text-slate-700" />
@@ -397,18 +533,37 @@ export default function AdminPage() {
             </div>
 
             <div className="space-y-4 text-xs sm:text-sm">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  {t('imageUrl')}
+              {/* Image Upload Option + URL Input */}
+              <div className="space-y-2">
+                <label className="block font-semibold text-slate-700">
+                  {t('imageUrl')} / Görsel Yükleme
                 </label>
-                <input
-                  type="url"
-                  name="image_url"
-                  placeholder={t('imageUrlPlaceholder')}
-                  value={formData.image_url || ''}
-                  onChange={handleChange}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:ring-2 focus:ring-[#10B981] focus:border-transparent outline-none transition-all"
-                />
+
+                <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                  <input
+                    type="url"
+                    name="image_url"
+                    placeholder={t('imageUrlPlaceholder')}
+                    value={formData.image_url || ''}
+                    onChange={handleChange}
+                    className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:ring-2 focus:ring-[#10B981] focus:border-transparent outline-none transition-all"
+                  />
+
+                  <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-2xl font-semibold border border-slate-200 flex items-center justify-center space-x-1.5 transition-all shrink-0">
+                    {uploadingImage ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                    ) : (
+                      <Upload className="w-4 h-4 text-emerald-600" />
+                    )}
+                    <span>{uploadingImage ? 'Yükleniyor...' : 'Dosya Seç'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
               </div>
 
               <div>
@@ -498,7 +653,7 @@ export default function AdminPage() {
               <p className="text-xs font-medium">{t('noFishes')}</p>
             </div>
           ) : (
-            <div className="space-y-3 overflow-y-auto max-h-[750px] pr-1 scrollbar-thin">
+            <div className="space-y-3 overflow-y-auto max-h-[850px] pr-1 scrollbar-thin">
               {fishes.map(fish => (
                 <div
                   key={fish.id}

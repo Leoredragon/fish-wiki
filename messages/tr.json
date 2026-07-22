@@ -4,7 +4,11 @@
     "subtitle": "Balık Türleri & Avcılık Rehberi",
     "searchPlaceholder": "Balık adı veya bilimsel adı ara...",
     "adminPanel": "Yönetim Paneli",
-    "language": "Dil"
+    "language": "Dil",
+    "navHome": "Türler Rehberi",
+    "navCalendar": "Av Takvimi",
+    "navWeather": "Hava & Solunar",
+    "navMap": "Av Meraları"
   },
   "Filters": {
     "all": "Tümü",
@@ -35,7 +39,12 @@
     "rulesAndLimits": "Sürdürülebilir Avcılık Kuralları & Limitler",
     "limitSizeLabel": "Yasal Av Limiti (Boy)",
     "banPeriodsLabel": "Av Yasağı Dönemi",
-    "tacticsAndGear": "Av Taktikleri & Önerilen Takım"
+    "tacticsAndGear": "Av Taktikleri & Önerilen Takım",
+    "favoriteBaits": "En Çok Tercih Edilen Yemler",
+    "primaryRegions": "Başlıca Av Meraları ve Bölgeler",
+    "tasteAndGastronomy": "Lezzet Skoru & Pişirme Önerileri",
+    "tasteRatingLabel": "Et Kalitesi & Lezzet Skoru",
+    "cookingTipsLabel": "Gastronomi & Mutfak Tavsiyesi"
   },
   "Admin": {
     "title": "Fish Wiki Yönetim Paneli",
@@ -44,6 +53,7 @@
     "fishList": "Mevcut Balık Türleri",
     "sectionBasic": "Temel Bilgiler",
     "sectionRules": "Avcılık Kuralları ve Taktikler",
+    "sectionGastronomy": "Yemler, Meralar ve Lezzet",
     "sectionDetails": "Detaylı Açıklama ve Medya",
     "nameTr": "Türkçe Adı",
     "nameEn": "İngilizce Adı",
@@ -55,6 +65,11 @@
     "banPeriods": "Av Yasağı Dönemleri",
     "activeSeasons": "Aktif Mevsimler",
     "recommendedGear": "Önerilen Ekipman",
+    "favoriteBaits": "Favori Yemler (Doğal / Sahte)",
+    "primaryRegions": "Başlıca Av Meraları",
+    "tasteRating": "Lezzet Skoru (Örn: 5/5 Yıldız)",
+    "cookingTipsTr": "Pişirme Önerisi (Türkçe)",
+    "cookingTipsEn": "Pişirme Önerisi (İngilizce)",
     "descriptionTr": "Türkçe Detaylı Açıklama",
     "descriptionEn": "İngilizce Detaylı Açıklama",
     "imageUrl": "Görsel URL",
@@ -70,6 +85,11 @@
     "seasonPlaceholder": "Örn: İlkbahar, Sonbahar",
     "limitPlaceholder": "Örn: Asgari 40 cm (Tatlı su alabalığı için 20 cm)",
     "banPlaceholder": "Örn: İç sularda 15 Mart - 15 Haziran",
+    "baitsPlaceholder": "Örn: Boru kurdu, Sülünes, Yengeç, Su üstü popper",
+    "regionsPlaceholder": "Örn: Marmara Boğazı, Ege Kıyıları, Abant Gölü",
+    "tastePlaceholder": "Örn: 5/5 Yıldız - Çok Lezzetli & Yağlı Et",
+    "cookingTrPlaceholder": "Örn: Izgara veya ızgara kiremitte tereyağlı pişirilmesi tavsiye edilir.",
+    "cookingEnPlaceholder": "Örn: Recommended grilled or baked with garlic butter.",
     "shortInfoTrPlaceholder": "Örn: Derelerde yaşayan endemik alabalık türü.",
     "shortInfoEnPlaceholder": "Örn: Endemic freshwater trout species.",
     "imageUrlPlaceholder": "https://images.unsplash.com/...",
