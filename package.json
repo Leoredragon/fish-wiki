@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "node scripts/import_fishes.mjs"
+    "seed": "node scripts/import_fishes.mjs",
+    "update-images": "node scripts/update_fish_images.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",
