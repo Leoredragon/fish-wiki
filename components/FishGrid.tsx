@@ -162,11 +162,12 @@ export default function FishGrid({ selectedCategory, onSelectCategory }: FishGri
     let isSubscribed = true;
     async function loadData() {
       try {
+        const orderColumn = locale === 'en' ? 'name_en' : 'name_tr';
         const { data, error } = await supabase
           .from('fishes')
           .select('*')
           .eq('is_active', true)
-          .order('created_at', { ascending: false });
+          .order(orderColumn, { ascending: true });
 
         if (isSubscribed) {
           if (error || !data || data.length === 0) {
@@ -189,25 +190,31 @@ export default function FishGrid({ selectedCategory, onSelectCategory }: FishGri
     return () => {
       isSubscribed = false;
     };
-  }, []);
+  }, [locale]);
 
-  const filteredFishes = fishes.filter((fish) => {
-    const name = locale === 'tr' ? fish.name_tr : fish.name_en;
-    const matchesSearch =
-      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (fish.scientific_name && fish.scientific_name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredFishes = fishes
+    .filter((fish) => {
+      const name = locale === 'tr' ? fish.name_tr : fish.name_en;
+      const matchesSearch =
+        name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (fish.scientific_name && fish.scientific_name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const targetId = fish.id || 'm1';
+      const targetId = fish.id || 'm1';
 
-    const matchesCategory =
-      selectedCategory === 'all' ||
-      (selectedCategory === 'tatli' && fish.water_type?.toLowerCase().includes('tatlı')) ||
-      (selectedCategory === 'tuzlu' && fish.water_type?.toLowerCase().includes('tuzlu')) ||
-      (selectedCategory === 'aci' && fish.water_type?.toLowerCase().includes('acı')) ||
-      (selectedCategory === 'favorites' && favorites.includes(targetId));
+      const matchesCategory =
+        selectedCategory === 'all' ||
+        (selectedCategory === 'tatli' && fish.water_type?.toLowerCase().includes('tatlı')) ||
+        (selectedCategory === 'tuzlu' && fish.water_type?.toLowerCase().includes('tuzlu')) ||
+        (selectedCategory === 'aci' && fish.water_type?.toLowerCase().includes('acı')) ||
+        (selectedCategory === 'favorites' && favorites.includes(targetId));
 
-    return matchesSearch && matchesCategory;
-  });
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+      const nameA = locale === 'tr' ? a.name_tr : a.name_en;
+      const nameB = locale === 'tr' ? b.name_tr : b.name_en;
+      return nameA.localeCompare(nameB, locale === 'tr' ? 'tr' : 'en');
+    });
 
   return (
     <div className="space-y-8">
