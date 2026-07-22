@@ -30,7 +30,7 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
         </div>
 
         <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-          {isTr ? 'Türkiye’nin Kapsamlı Balık Rehberi' : 'Comprehensive Fish Wiki Guide'}
+          {isTr ? 'Türkiye’nin Kapsamlı Balık Rehberi' : 'Comprehensive Oltapp Guide'}
         </h1>
 
         <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal max-w-2xl">

@@ -8,7 +8,7 @@ import Footer from '@/components/Footer';
 import { Metadata, Viewport } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Fish Wiki - Balık Türleri & Avcılık Rehberi',
+  title: 'Oltapp - Balık Türleri & Avcılık Rehberi',
   description: 'Türkiye ve dünya sularındaki balık türleri, yasal boy limitleri, av yasakları, taktikler ve solunar tahmin rehberi.',
   manifest: '/manifest.json',
   appleWebApp: {

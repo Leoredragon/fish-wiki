@@ -1,6 +1,6 @@
 {
   "Header": {
-    "title": "Fish Wiki",
+    "title": "Oltapp",
     "subtitle": "Fish Species & Angling Guide",
     "searchPlaceholder": "Search by common or scientific name...",
     "adminPanel": "Admin Panel",
@@ -49,7 +49,7 @@
     "cookingTipsLabel": "Culinary & Cooking Recommendation"
   },
   "Admin": {
-    "title": "Fish Wiki Management Panel",
+    "title": "Oltapp Management Panel",
     "subtitle": "Species Entry & Publishing Portal",
     "addFish": "Add New Species",
     "fishList": "Registered Species",
@@ -105,6 +105,6 @@
     "loading": "Loading...",
     "error": "An error occurred.",
     "notFound": "No species found.",
-    "footer": "Fish Wiki - Premium Marine & Freshwater Angling Guide"
+    "footer": "Oltapp - Premium Marine & Freshwater Angling Guide"
   }
 }

@@ -1,36 +1,48 @@
-# Map ve Weather API Entegrasyon Planı
+# Sosyal Balıkçılık & Forum (Auth) Uygulama Planı
 
-Kullanıcının "gerçek harita ve gerçek hava durumu verileri" talebi doğrultusunda yapılan inceleme ve yeni mimari planı aşağıdadır.
+Kullanıcının "Kayıt Ol / Giriş Yap mantığı ile uygulamayı bir forum ve sosyal dijital livar (catch log) yapısına dönüştürme" talebi üzerine hazırlanan geniş çaplı mimari plandır.
 
-## 1. Hava Durumu (Weather & Solunar) Durumu
-**Mevcut Durum**: Projede hali hazırda `/weather` sayfasında **Open-Meteo API** kullanılmaktadır.
-- **Gerçeklik**: Open-Meteo, tamamen **gerçek zamanlı, anlık ve profesyonel meteorolojik veriler** (sıcaklık, rüzgar hızı, hPa yüzey basıncı) sunar.
-- **Ücret ve API Key**: Ticari olmayan kullanımlar için **tamamen ÜCRETSİZ ve API KEY GEREKTİRMEYEN** nadir ve en kaliteli servislerden biridir.
-- **Sonuç**: Hava durumu modülümüz şu an **harika ve %100 gerçek verilerle** çalışıyor. Sizin ekstra bir hava durumu API'si (Örn: OpenWeatherMap) satın almanıza veya Key almanıza **gerek yoktur**. Mevcut sistem en masrafsız ve güvenilir yoldur.
+## Hedef
+Projemizi sadece statik bir "Wiki (Bilgi Kaynağı)" olmaktan çıkarıp; kullanıcıların kayıt olabildiği, kendi tuttukları balıkları fotoğraf ve taktikleriyle (kullanılan sahte, mera) paylaşabildiği **sosyal bir platforma (Forum / Dijital Livar)** dönüştürmek.
 
-## 2. Av Meraları Haritası (Map) Revizyonu
+## Mimari Değişiklikler ve Veritabanı (Supabase)
 
-> [!WARNING]
-> Kullanıcı haklı. Vektörel SVG harita şık dursa da, gerçek bir "yakınlaşılabilir, sokak/kıyı detaylı" harita (Google Maps tarzı) hissini vermez. Bu yüzden gerçek bir harita kütüphanesine geçiş yapıyoruz.
+Bu devasa geçiş için Supabase'in gücünü sonuna kadar kullanacağız:
 
-Gerçek bir harita entegrasyonu için önümüzde 2 harika seçenek var:
+### 1. Supabase Authentication (Kimlik Doğrulama)
+- Kullanıcılar e-posta ve şifre ile sisteme kayıt olabilecek (İleride Google ile Giriş de eklenebilir).
+- Next.js `middleware.ts` güncellenerek bazı sayfalar (örn: `/profile`, `/catch-logs/new`) sadece giriş yapmış kullanıcılara özel (Protected Route) hale getirilecek.
+- Supabase SSR (Server-Side Rendering) auth paketleri (`@supabase/ssr`) projeye entegre edilecek.
 
-### Seçenek A: Leaflet + OpenStreetMap (ÖNERİLEN & ÜCRETSİZ)
-- **Avantajı**: Tamamen **ÜCRETSİZ**, hiçbir API Key, kredi kartı veya kayıt gerektirmez.
-- **Özellikleri**: Gerçek Google Maps benzeri, zoom yapılabilen, sürüklenebilen detaylı sokak/kıyı haritasıdır. Meralarımızı (Örn: İstanbul Boğazı, Çeşme, Abant) harita üzerinde **gerçek Google Maps pinleri (işaretçileri)** ile göstereceğiz.
-- **Kurulum**: `react-leaflet` kütüphanesi yüklenip anında kodlanabilir.
+### 2. Yeni Veritabanı Tabloları (Public Schema)
+Mevcut `fishes` tablomuza ek olarak şu tabloları oluşturacağız:
+1. **`profiles` (Kullanıcı Profilleri):**
+   - Supabase Auth tetikleyicisi (Trigger) ile birisi kayıt olduğunda otomatik oluşur.
+   - Alanlar: `id` (auth.users referansı), `username`, `avatar_url`, `created_at`.
+2. **`catch_logs` (Av Günceleri / Forum Postları):**
+   - Kullanıcıların paylaştığı balık avları.
+   - Alanlar: `id`, `user_id`, `fish_id` (opsiyonel, veritabanımızdaki bir balıkla eşleşmesi için), `image_url` (tuttuğu balığın fotoğrafı), `weight` (kg), `length` (cm), `lure_used` (kullanılan yem/sahte), `location_note`, `notes` (Kullanıcı yorumu), `created_at`.
+3. **`comments` (Forum Yorumları) - Opsiyonel/İleri Aşama:**
+   - İnsanların birbirlerinin avlarına yaptığı yorumlar.
 
-### Seçenek B: Google Maps veya Mapbox
-- **Avantajı**: Daha tanınmış arayüzler ve 3D bina destekleri.
-- **Dezavantajı**: Google Maps veya Mapbox sitesine gidip hesap açmanız, proje oluşturup bir **API KEY** almanız ve bunu `.env.local` dosyasına koymanız gerekir (Google Maps ayrıca kredi kartı tanımlaması zorunlu kılar).
+### 3. Supabase Storage (Dosya Depolama)
+- Kullanıcıların yüklediği "tuttuğu balık fotoğrafları" ve "profil resimleri" için Supabase üzerinde `user_uploads` adında yeni bir **Storage Bucket** açılacak.
 
-> [!IMPORTANT]
-> **Açık Soru ve Karar Beklentisi:**
-> Hava durumu zaten gerçek verilerle ücretsiz çalışıyor, ona dokunmuyoruz.
-> Harita için **Seçenek A (Ücretsiz Leaflet/OpenStreetMap - Anında yaparız)** ile ilerlememi onaylar mısınız? Yoksa Google Maps/Mapbox API Key'i almak ister misiniz? 
+### 4. Arayüz (UI) ve Sayfalar
+- **`/login` & `/register`**: Modern, temiz giriş ve kayıt ekranları.
+- **Navbar Güncellemesi**: Sağ üst köşeye "Giriş Yap" veya kullanıcı giriş yaptıysa "Profilim / Çıkış Yap" menüsü eklenecek.
+- **`/community` (Topluluk/Forum Akışı)**: Instagram veya klasik forum gibi, diğer üyelerin son av raporlarını, fotoğraflarını ve kullandıkları taktikleri gördüğümüz ana sosyal akış ekranı.
+- **`/profile` (Dijital Livarım)**: Sadece kişinin kendi yüklediği avlarını görebildiği kişisel istatistik sayfası.
 
-## Önerilen Uygulama Planı (Seçenek A Onaylanırsa)
-1. `npm install leaflet react-leaflet` ve `@types/leaflet` kütüphanelerinin projeye kurulması.
-2. `components/RegionMapClient.tsx` dosyasındaki eski SVG haritanın silinip, yerine gerçek, sürüklenebilir `MapContainer` ve `Marker` bileşenlerinin entegre edilmesi.
-3. Koordinatların (Latitude, Longitude) gerçek harita koordinatlarına uyarlanması (İstanbul, İzmir, Trabzon, Bolu, Antalya).
-4. Pine tıklandığında alt kısımdaki "Mera Detay" kartının dinamik güncellenmesi.
+---
+
+> [!WARNING]  
+> **ÖNEMLİ BİLGİLENDİRME VE ONAY BEKLENTİSİ**
+> Bu geliştirme projenin boyutunu ve işlevini **tamamen** değiştirip büyüten, harika ama büyük bir adımdır. 
+> 
+> Eğer bu planı **onaylıyorsanız**, aşağıdaki adımları sırasıyla gerçekleştireceğiz:
+> 1. Ben projeye `@supabase/ssr` kurup Next.js Auth altyapısını kodlayacağım.
+> 2. Size Supabase SQL editöründe çalıştırmanız için tablo (profiles, catch_logs) ve Storage oluşturma SQL kodlarını vereceğim.
+> 3. Giriş/Kayıt arayüzlerini ve "Topluluk (Forum)" sayfasını tasarlayacağım.
+>
+> Bu büyük dönüşüme (Login ve Forum mantığına) başlamamı onaylıyor musunuz?

@@ -1,6 +1,6 @@
 {
   "Header": {
-    "title": "Fish Wiki",
+    "title": "Oltapp",
     "subtitle": "Balık Türleri & Avcılık Rehberi",
     "searchPlaceholder": "Balık adı veya bilimsel adı ara...",
     "adminPanel": "Yönetim Paneli",
@@ -49,7 +49,7 @@
     "cookingTipsLabel": "Gastronomi & Mutfak Tavsiyesi"
   },
   "Admin": {
-    "title": "Fish Wiki Yönetim Paneli",
+    "title": "Oltapp Yönetim Paneli",
     "subtitle": "Balık Türü Ekleme ve Düzenleme Portalı",
     "addFish": "Yeni Balık Ekle",
     "fishList": "Mevcut Balık Türleri",
@@ -105,6 +105,6 @@
     "loading": "Yükleniyor...",
     "error": "Bir hata oluştu.",
     "notFound": "Balık türü bulunamadı.",
-    "footer": "Fish Wiki - Premium Deniz ve Tatlı Su Avcılık Rehberi"
+    "footer": "Oltapp - Premium Deniz ve Tatlı Su Avcılık Rehberi"
   }
 }

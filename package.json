@@ -12,6 +12,7 @@
     "reset-images": "node scripts/reset_fish_images.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.8",
     "framer-motion": "^12.42.2",
     "leaflet": "^1.9.4",

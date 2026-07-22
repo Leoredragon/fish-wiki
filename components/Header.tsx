@@ -1,20 +1,51 @@
 'use client';
 
-import { Link, usePathname } from '@/i18n/routing';
-import { useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
+import { Link, usePathname, useRouter } from '@/i18n/routing';
+import { useTranslations, useLocale } from 'next-intl';
 import LanguageSwitcher from './LanguageSwitcher';
-import { Shield, Fish, Calendar, CloudSun, MapPin, Compass, Camera, ChevronRight } from 'lucide-react';
+import { Shield, Fish, Calendar, CloudSun, MapPin, Compass, Users, ChevronRight, LogIn, User, LogOut } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+
+import { User as SupabaseUser } from '@supabase/supabase-js';
 
 export default function Header() {
   const t = useTranslations('Header');
+  const locale = useLocale();
+  const isTr = locale === 'tr';
   const pathname = usePathname();
+  const router = useRouter();
+  
+  const [sessionUser, setSessionUser] = useState<SupabaseUser | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    
+    // Get initial session
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setSessionUser(user);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSessionUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push(`/${locale}`);
+  };
 
   const navItems = [
     { href: '/', label: t('navHome'), icon: Compass },
+    { href: '/community', label: isTr ? 'Topluluk' : 'Community', icon: Users },
     { href: '/calendar', label: t('navCalendar'), icon: Calendar },
     { href: '/weather', label: t('navWeather'), icon: CloudSun },
-    { href: '/map', label: t('navMap'), icon: MapPin },
-    { href: '/reports', label: t('navReports'), icon: Camera }
+    { href: '/map', label: t('navMap'), icon: MapPin }
   ];
 
   return (
@@ -62,17 +93,44 @@ export default function Header() {
           <div className="flex items-center space-x-2 sm:space-x-3">
             <LanguageSwitcher />
 
+            {sessionUser ? (
+              <div className="flex items-center space-x-2">
+                <Link
+                  href="/profile"
+                  className="inline-flex items-center space-x-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-xl text-xs font-bold border border-emerald-500/30 transition-all shadow-sm"
+                >
+                  <User className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{sessionUser.user_metadata?.username || (isTr ? 'Profilim' : 'My Profile')}</span>
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  title={isTr ? 'Çıkış Yap' : 'Sign Out'}
+                  className="p-1.5 text-slate-400 hover:text-red-400 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition-all"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="inline-flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 hover:text-emerald-300 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-700 transition-all shadow-sm"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{isTr ? 'Giriş Yap' : 'Sign In'}</span>
+              </Link>
+            )}
+
             <Link
               href="/admin"
-              className="inline-flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-3 py-1.5 rounded-xl text-xs font-medium border border-slate-700 transition-all shadow-sm"
+              className="inline-flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-2 py-1.5 rounded-xl text-xs font-medium border border-slate-700 transition-all shadow-sm"
+              title={t('adminPanel')}
             >
-              <Shield className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">{t('adminPanel')}</span>
+              <Shield className="w-3.5 h-3.5 text-slate-400" />
             </Link>
           </div>
         </div>
 
-        {/* Mobile Navigation Sub-bar with Scroll Hint & Gradient Mask */}
+        {/* Mobile Navigation Sub-bar */}
         <div className="relative lg:hidden border-t border-slate-800/60 overflow-hidden">
           <nav className="flex overflow-x-auto py-2.5 px-1 scrollbar-none space-x-1 text-xs pr-10">
             {navItems.map((item) => {
@@ -94,8 +152,6 @@ export default function Header() {
               );
             })}
           </nav>
-
-          {/* Animated Scroll Swipe Indicator Mask on Right Edge */}
           <div className="absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-[#0F172A] via-[#0F172A]/80 to-transparent pointer-events-none flex items-center justify-end pr-1.5">
             <ChevronRight className="w-4 h-4 text-emerald-400 animate-pulse" />
           </div>

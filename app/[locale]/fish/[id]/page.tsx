@@ -11,12 +11,12 @@ export async function generateMetadata({
   const isTr = locale === 'tr';
 
   return {
-    title: isTr ? `Fish Wiki - Balık Türü Detay Rehberi` : `Fish Wiki - Species Detail Guide`,
-    description: isTr
-      ? 'Balık türü özellikleri, yasal av boy sınırları, av yasakları, favori yemler ve pişirme tavsiyeleri.'
-      : 'Detailed species characteristics, legal size limits, closed seasons, and angling tactics.',
+    title: isTr ? `Oltapp - Balık Türü Detay Rehberi` : `Oltapp - Species Detail Guide`,
+    description: isTr 
+      ? `${fish.name_tr} (${fish.scientific_name}) - Türkiye balıkçılık rehberi.` 
+      : `${fish.name_en} (${fish.scientific_name}) - Turkey angling guide.`,
     openGraph: {
-      title: 'Fish Wiki - Premium Angling Guide',
+      title: 'Oltapp - Premium Angling Guide',
       description: 'Marine & Freshwater species encyclopedia'
     }
   };
