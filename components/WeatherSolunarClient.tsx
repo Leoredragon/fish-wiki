@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLocale } from 'next-intl';
 import {
   CloudSun,
@@ -9,54 +9,15 @@ import {
   Gauge,
   RefreshCw,
   Zap,
-  Navigation
+  Navigation,
+  Sun,
+  Cloud,
+  CloudRain,
+  CloudLightning,
+  Snowflake,
+  ThermometerSun
 } from 'lucide-react';
-
-interface CitySpot {
-  id: string;
-  nameTr: string;
-  nameEn: string;
-  lat: number;
-  lon: number;
-  regionTr: string;
-  regionEn: string;
-}
-
-const SPOTS: CitySpot[] = [
-  // Marmara
-  { id: 'ist', nameTr: 'İstanbul', nameEn: 'Istanbul', lat: 41.0082, lon: 28.9784, regionTr: 'Marmara', regionEn: 'Marmara' },
-  { id: 'can', nameTr: 'Çanakkale', nameEn: 'Canakkale', lat: 40.1553, lon: 26.4142, regionTr: 'Marmara', regionEn: 'Marmara' },
-  { id: 'bal', nameTr: 'Balıkesir', nameEn: 'Balikesir', lat: 39.6484, lon: 27.8826, regionTr: 'Marmara', regionEn: 'Marmara' },
-  { id: 'koc', nameTr: 'Kocaeli (İzmit)', nameEn: 'Kocaeli', lat: 40.7654, lon: 29.9408, regionTr: 'Marmara', regionEn: 'Marmara' },
-  { id: 'tek', nameTr: 'Tekirdağ', nameEn: 'Tekirdag', lat: 40.9833, lon: 27.5167, regionTr: 'Marmara', regionEn: 'Marmara' },
-  
-  // Ege
-  { id: 'izm', nameTr: 'İzmir', nameEn: 'Izmir', lat: 38.4237, lon: 27.1428, regionTr: 'Ege', regionEn: 'Aegean' },
-  { id: 'mug', nameTr: 'Muğla', nameEn: 'Mugla', lat: 37.2153, lon: 28.3636, regionTr: 'Ege', regionEn: 'Aegean' },
-  { id: 'ayd', nameTr: 'Aydın', nameEn: 'Aydin', lat: 37.8380, lon: 27.8456, regionTr: 'Ege', regionEn: 'Aegean' },
-
-  // Akdeniz
-  { id: 'ant', nameTr: 'Antalya', nameEn: 'Antalya', lat: 36.8969, lon: 30.7133, regionTr: 'Akdeniz', regionEn: 'Mediterranean' },
-  { id: 'mer', nameTr: 'Mersin', nameEn: 'Mersin', lat: 36.8121, lon: 34.6415, regionTr: 'Akdeniz', regionEn: 'Mediterranean' },
-  { id: 'ada', nameTr: 'Adana', nameEn: 'Adana', lat: 37.0000, lon: 35.3213, regionTr: 'Akdeniz', regionEn: 'Mediterranean' },
-  { id: 'hat', nameTr: 'Hatay (İskenderun)', nameEn: 'Hatay', lat: 36.5872, lon: 36.1735, regionTr: 'Akdeniz', regionEn: 'Mediterranean' },
-
-  // Karadeniz
-  { id: 'tra', nameTr: 'Trabzon', nameEn: 'Trabzon', lat: 41.0027, lon: 39.7168, regionTr: 'Karadeniz', regionEn: 'Black Sea' },
-  { id: 'sam', nameTr: 'Samsun', nameEn: 'Samsun', lat: 41.2867, lon: 36.33, regionTr: 'Karadeniz', regionEn: 'Black Sea' },
-  { id: 'sin', nameTr: 'Sinop', nameEn: 'Sinop', lat: 42.0268, lon: 35.1611, regionTr: 'Karadeniz', regionEn: 'Black Sea' },
-  { id: 'riz', nameTr: 'Rize', nameEn: 'Rize', lat: 41.0201, lon: 40.5234, regionTr: 'Karadeniz', regionEn: 'Black Sea' },
-  { id: 'zon', nameTr: 'Zonguldak', nameEn: 'Zonguldak', lat: 41.4564, lon: 31.7987, regionTr: 'Karadeniz', regionEn: 'Black Sea' },
-  { id: 'kas', nameTr: 'Kastamonu', nameEn: 'Kastamonu', lat: 41.3766, lon: 33.7765, regionTr: 'Karadeniz', regionEn: 'Black Sea' },
-
-  // İç Sular & Göller
-  { id: 'bol', nameTr: 'Bolu (Abant & Yedigöller)', nameEn: 'Bolu', lat: 40.7392, lon: 31.6116, regionTr: 'İç Anadolu & Göller', regionEn: 'Inland Lakes' },
-  { id: 'ank', nameTr: 'Ankara (Mogan & Eymir)', nameEn: 'Ankara', lat: 39.9334, lon: 32.8597, regionTr: 'İç Anadolu & Göller', regionEn: 'Inland Lakes' },
-  { id: 'kon', nameTr: 'Konya (Beyşehir)', nameEn: 'Konya', lat: 37.8746, lon: 32.4833, regionTr: 'İç Anadolu & Göller', regionEn: 'Inland Lakes' },
-  { id: 'bur', nameTr: 'Bursa (İznik)', nameEn: 'Bursa', lat: 40.1828, lon: 29.0667, regionTr: 'İç Anadolu & Göller', regionEn: 'Inland Lakes' },
-  { id: 'ela', nameTr: 'Elazığ (Keban)', nameEn: 'Elazig', lat: 38.6810, lon: 39.2264, regionTr: 'Doğu Anadolu', regionEn: 'Eastern Anatolia' },
-  { id: 'van', nameTr: 'Van (Van Gölü)', nameEn: 'Van', lat: 38.5012, lon: 43.3730, regionTr: 'Doğu Anadolu', regionEn: 'Eastern Anatolia' }
-];
+import { TURKEY_PROVINCES, parseWeatherCode, Province } from '@/lib/turkeyProvinces';
 
 interface CurrentWeatherData {
   temperature_2m: number;
@@ -71,11 +32,11 @@ export default function WeatherSolunarClient() {
   const locale = useLocale();
   const isTr = locale === 'tr';
 
-  const [selectedSpotId, setSelectedSpotId] = useState<string>(SPOTS[0].id);
+  const [selectedSpotId, setSelectedSpotId] = useState<string>('34'); // Default Istanbul
   const [weatherData, setWeatherData] = useState<CurrentWeatherData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const selectedSpot = SPOTS.find(s => s.id === selectedSpotId) || SPOTS[0];
+  const selectedSpot = TURKEY_PROVINCES.find((s) => s.id === selectedSpotId) || TURKEY_PROVINCES[0];
 
   useEffect(() => {
     let isSubscribed = true;
@@ -122,17 +83,31 @@ export default function WeatherSolunarClient() {
   };
 
   const solunarScore = weatherData ? calculateSolunarScore(weatherData.surface_pressure, weatherData.wind_speed_10m) : 85;
+  const weatherDetails = weatherData ? parseWeatherCode(weatherData.weather_code, isTr) : { text: '', iconType: 'sun-cloud' };
 
   // Group spots by region
-  const groupedSpots = SPOTS.reduce((acc, spot) => {
+  const groupedSpots = TURKEY_PROVINCES.reduce((acc, spot) => {
     const regionName = isTr ? spot.regionTr : spot.regionEn;
     if (!acc[regionName]) acc[regionName] = [];
     acc[regionName].push(spot);
     return acc;
-  }, {} as Record<string, CitySpot[]>);
+  }, {} as Record<string, Province[]>);
+
+  // Render appropriate weather icon
+  const renderWeatherIcon = (iconType: string, className: string = "w-12 h-12") => {
+    switch (iconType) {
+      case 'sun': return <Sun className={`${className} text-amber-500`} />;
+      case 'sun-cloud': return <CloudSun className={`${className} text-amber-500`} />;
+      case 'cloud': return <Cloud className={`${className} text-slate-400`} />;
+      case 'rain': return <CloudRain className={`${className} text-blue-500`} />;
+      case 'storm': return <CloudLightning className={`${className} text-indigo-500`} />;
+      case 'snow': return <Snowflake className={`${className} text-cyan-400`} />;
+      default: return <CloudSun className={`${className} text-amber-500`} />;
+    }
+  };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10 pb-16">
+    <div className="max-w-6xl mx-auto space-y-8 pb-16">
       {/* Hero Banner */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
@@ -145,27 +120,27 @@ export default function WeatherSolunarClient() {
         <div className="relative z-10 max-w-3xl space-y-4">
           <div className="inline-flex items-center space-x-2 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 px-3.5 py-1 rounded-full text-xs font-semibold">
             <CloudSun className="w-3.5 h-3.5" />
-            <span>{isTr ? 'Canlı Balıkçılık Hava & Solunar Tahmini' : 'Live Marine Weather & Solunar Forecast'}</span>
+            <span>{isTr ? 'Canlı Meteoroloji & Balık Aktivitesi' : 'Live Meteorology & Solunar Forecast'}</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            {isTr ? 'Deniz Basıncı & Av Aktivite Tahmini' : 'Barometric Pressure & Feeding Activity'}
+            {isTr ? 'Tüm Şehirler İçin Anlık Hava Durumu' : 'Real-time Weather for All Cities'}
           </h1>
 
           <p className="text-sm text-slate-300 leading-relaxed font-normal">
             {isTr
-              ? 'Balıkların yemlenme iştahını belirleyen atmosferik basınç, rüzgar hızı ve ay fazlarına dayalı Solunar Balık Aktivite Skoru.'
-              : 'Real-time barometric pressure, wind velocity, and solunar indices determining optimal fish feeding windows.'}
+              ? 'Tüm Türkiye genelindeki hava koşullarını takip edin. Barometrik basınç, sıcaklık ve rüzgar şiddeti ile meranızdaki balık aktivitesini ölçün.'
+              : 'Track weather conditions across Turkey. Measure barometric pressure, temperature, and wind to predict fish feeding activity.'}
           </p>
         </div>
       </motion.section>
 
       {/* Spot Dropdown Selector */}
-      <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-4 max-w-2xl">
+      <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-4 max-w-2xl mx-auto -mt-12 relative z-20">
         <div className="flex items-center space-x-2">
           <Navigation className="w-5 h-5 text-emerald-600" />
           <h2 className="text-sm font-extrabold text-[#0F172A] uppercase tracking-wider">
-            {isTr ? 'Konum / İl Seçimi' : 'Select Province / Location'}
+            {isTr ? 'Hava Durumu İçin Şehir Seçin' : 'Select City for Weather'}
           </h2>
         </div>
 
@@ -173,7 +148,7 @@ export default function WeatherSolunarClient() {
           <select
             value={selectedSpotId}
             onChange={(e) => setSelectedSpotId(e.target.value)}
-            className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-900 font-semibold px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm"
+            className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-900 font-semibold px-4 py-3.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm text-sm"
           >
             {Object.keys(groupedSpots).map(regionGroup => (
               <optgroup key={regionGroup} label={regionGroup} className="font-bold text-slate-700 bg-white">
@@ -195,101 +170,124 @@ export default function WeatherSolunarClient() {
 
       {/* Live Metrics Grid */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <RefreshCw className="w-6 h-6 text-[#10B981] animate-spin mr-2" />
-          <span className="text-sm font-medium text-slate-600">{isTr ? 'Hava verileri çekiliyor...' : 'Fetching forecast...'}</span>
+        <div className="flex items-center justify-center py-24">
+          <RefreshCw className="w-8 h-8 text-[#10B981] animate-spin mr-3" />
+          <span className="text-base font-semibold text-slate-600">{isTr ? 'Meteoroloji verileri alınıyor...' : 'Fetching meteorological data...'}</span>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Solunar Activity Score Card */}
+        <AnimatePresence mode="wait">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-950 p-6 rounded-3xl border border-emerald-500/40 text-white shadow-xl space-y-4 flex flex-col justify-between"
+            key={selectedSpotId}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.4 }}
+            className="grid grid-cols-1 md:grid-cols-12 gap-6"
           >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center space-x-1.5">
-                <Zap className="w-4 h-4 text-emerald-400" />
-                <span>{isTr ? 'Solunar Av Skoru' : 'Solunar Feeding Index'}</span>
-              </span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">
-                {isTr ? 'Yüksek İştah' : 'High Feeding'}
-              </span>
-            </div>
-
-            <div className="text-center py-2">
-              <div className="text-5xl font-black text-emerald-400 tracking-tight">
-                %{solunarScore}
-              </div>
-              <p className="text-xs text-slate-300 mt-1">
-                {isTr ? 'Bugün Balık Yemlenme Aktivitesi Mükemmel' : 'Optimal Feeding Window Active Today'}
-              </p>
-            </div>
-
-            <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700">
-              <div
-                className="bg-gradient-to-r from-emerald-400 to-teal-300 h-full rounded-full transition-all duration-1000"
-                style={{ width: `${solunarScore}%` }}
-              />
-            </div>
-          </motion.div>
-
-          {/* Barometric Pressure Card */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm space-y-4 flex flex-col justify-between"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold">
-                <Gauge className="w-5 h-5" />
-              </div>
+            {/* Main Weather Card (Takes up more space) */}
+            <div className="md:col-span-8 bg-gradient-to-br from-blue-900 via-[#0F172A] to-slate-900 p-8 rounded-3xl border border-blue-500/30 text-white shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[300px]">
+              {/* Animated decorative shapes */}
+              <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
+              
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  {isTr ? 'Yüzey Basıncı' : 'Surface Pressure'}
-                </h3>
-                <p className="text-2xl font-black text-slate-900 mt-0.5">
-                  {weatherData?.surface_pressure ? `${weatherData.surface_pressure} hPa` : '1014.2 hPa'}
-                </p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-3xl font-extrabold tracking-tight drop-shadow-md">
+                      {isTr ? selectedSpot.nameTr : selectedSpot.nameEn}
+                    </h2>
+                    <p className="text-blue-300 font-medium text-sm mt-1">
+                      {isTr ? selectedSpot.regionTr : selectedSpot.regionEn}
+                    </p>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/20 shadow-inner">
+                    {renderWeatherIcon(weatherDetails.iconType, "w-10 h-10")}
+                  </div>
+                </div>
+                
+                <div className="mt-8 flex items-baseline space-x-4">
+                  <span className="text-7xl sm:text-8xl font-black tracking-tighter drop-shadow-xl">
+                    {Math.round(weatherData?.temperature_2m || 0)}°
+                  </span>
+                  <span className="text-xl sm:text-2xl font-bold text-blue-200">
+                    {weatherDetails.text}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-8 flex items-center justify-between border-t border-white/10 pt-4 text-sm font-medium text-blue-100">
+                <div className="flex items-center space-x-2">
+                  <ThermometerSun className="w-4 h-4 text-blue-300" />
+                  <span>Nem: %{weatherData?.relative_humidity_2m}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>{isTr ? 'Canlı Veri (Open-Meteo)' : 'Live Data (Open-Meteo)'}</span>
+                </div>
               </div>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-2xl border border-slate-100">
-              {isTr
-                ? '1012-1016 hPa arasındaki kararlı basınç, predatör balıkların (Levrek, Lüfer) yemlenme iştahını maksimuma çıkarır.'
-                : 'Stable pressure between 1012-1016 hPa triggers predatory feeding frenzies.'}
-            </p>
-          </motion.div>
+            {/* Side Column: Solunar, Pressure, Wind */}
+            <div className="md:col-span-4 flex flex-col gap-6">
+              
+              {/* Solunar Activity Score Card */}
+              <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm flex-1 flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 flex items-center space-x-1.5">
+                    <Zap className="w-4 h-4" />
+                    <span>{isTr ? 'Av İştah Skoru' : 'Feeding Index'}</span>
+                  </span>
+                </div>
 
-          {/* Wind Speed & Direction Card */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm space-y-4 flex flex-col justify-between"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
-                <Wind className="w-5 h-5" />
+                <div className="text-center py-2">
+                  <div className="text-4xl font-black text-[#0F172A] tracking-tight">
+                    %{solunarScore}
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200 mt-3">
+                    <div
+                      className="bg-gradient-to-r from-emerald-400 to-teal-500 h-full rounded-full transition-all duration-1000"
+                      style={{ width: `${solunarScore}%` }}
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  {isTr ? 'Rüzgar Hızı & Sıcaklık' : 'Wind & Temperature'}
-                </h3>
-                <p className="text-2xl font-black text-slate-900 mt-0.5">
-                  {weatherData?.wind_speed_10m} km/h • {weatherData?.temperature_2m}°C
-                </p>
+
+              {/* Barometric Pressure Card */}
+              <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm flex-1 flex flex-col justify-center">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                    <Gauge className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                      {isTr ? 'Yüzey Basıncı' : 'Pressure'}
+                    </h3>
+                    <p className="text-xl font-black text-slate-900 mt-0.5">
+                      {weatherData?.surface_pressure ? `${weatherData.surface_pressure} hPa` : '-'}
+                    </p>
+                  </div>
+                </div>
               </div>
+
+              {/* Wind Speed & Direction Card */}
+              <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm flex-1 flex flex-col justify-center">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold">
+                    <Wind className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                      {isTr ? 'Rüzgar Hızı' : 'Wind Speed'}
+                    </h3>
+                    <p className="text-xl font-black text-slate-900 mt-0.5">
+                      {weatherData?.wind_speed_10m} km/h
+                    </p>
+                  </div>
+                </div>
+              </div>
+
             </div>
-
-            <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-2xl border border-slate-100">
-              {isTr
-                ? 'Hafif rüzgarın oluşturduğu su yüzeyi köpüklenmesi sahte yemlerin görünürlüğünü arttırır.'
-                : 'Subtle surface ripples enhance lure camouflage for spin anglers.'}
-            </p>
           </motion.div>
-        </div>
+        </AnimatePresence>
       )}
     </div>
   );
