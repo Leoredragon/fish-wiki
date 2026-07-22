@@ -20,14 +20,16 @@ import {
   Info,
   FileText,
   Utensils,
-  Upload
+  Upload,
+  Pencil,
+  PlusCircle
 } from 'lucide-react';
 
 export default function AdminPage() {
   const t = useTranslations('Admin');
 
   // Form State
-  const [formData, setFormData] = useState<Partial<Fish>>({
+  const initialFormState: Partial<Fish> = {
     name_tr: '',
     name_en: '',
     scientific_name: '',
@@ -47,8 +49,10 @@ export default function AdminPage() {
     description_en: '',
     image_url: '',
     is_active: true
-  });
+  };
 
+  const [formData, setFormData] = useState<Partial<Fish>>(initialFormState);
+  const [editingFishId, setEditingFishId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -60,7 +64,7 @@ export default function AdminPage() {
       const { data, error } = await supabase
         .from('fishes')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('name_tr', { ascending: true });
 
       if (!error && data) {
         setFishes(data);
@@ -79,7 +83,7 @@ export default function AdminPage() {
         const { data, error } = await supabase
           .from('fishes')
           .select('*')
-          .order('created_at', { ascending: false });
+          .order('name_tr', { ascending: true });
 
         if (isSubscribed) {
           if (!error && data) {
@@ -98,6 +102,37 @@ export default function AdminPage() {
       isSubscribed = false;
     };
   }, []);
+
+  const startEditFish = (fish: Fish) => {
+    setEditingFishId(fish.id || null);
+    setFormData({
+      name_tr: fish.name_tr || '',
+      name_en: fish.name_en || '',
+      scientific_name: fish.scientific_name || '',
+      water_type: fish.water_type || 'Tatlı Su',
+      short_info_tr: fish.short_info_tr || '',
+      short_info_en: fish.short_info_en || '',
+      limit_size: fish.limit_size || '',
+      ban_periods: fish.ban_periods || '',
+      active_seasons: fish.active_seasons || '',
+      recommended_gear: fish.recommended_gear || '',
+      favorite_baits: fish.favorite_baits || '',
+      primary_regions: fish.primary_regions || '',
+      taste_rating: fish.taste_rating || '',
+      cooking_tips_tr: fish.cooking_tips_tr || '',
+      cooking_tips_en: fish.cooking_tips_en || '',
+      description_tr: fish.description_tr || '',
+      description_en: fish.description_en || '',
+      image_url: fish.image_url || '',
+      is_active: fish.is_active ?? true
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingFishId(null);
+    setFormData(initialFormState);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -155,60 +190,49 @@ export default function AdminPage() {
     setLoading(true);
     setNotification(null);
 
-    try {
-      const { error } = await supabase
-        .from('fishes')
-        .insert([
-          {
-            name_tr: formData.name_tr,
-            name_en: formData.name_en,
-            scientific_name: formData.scientific_name || null,
-            water_type: formData.water_type || 'Tatlı Su',
-            short_info_tr: formData.short_info_tr || null,
-            short_info_en: formData.short_info_en || null,
-            limit_size: formData.limit_size || null,
-            ban_periods: formData.ban_periods || null,
-            active_seasons: formData.active_seasons || null,
-            recommended_gear: formData.recommended_gear || null,
-            favorite_baits: formData.favorite_baits || null,
-            primary_regions: formData.primary_regions || null,
-            taste_rating: formData.taste_rating || null,
-            cooking_tips_tr: formData.cooking_tips_tr || null,
-            cooking_tips_en: formData.cooking_tips_en || null,
-            description_tr: formData.description_tr || null,
-            description_en: formData.description_en || null,
-            image_url: formData.image_url || null,
-            is_active: formData.is_active ?? true
-          }
-        ]);
+    const payload = {
+      name_tr: formData.name_tr,
+      name_en: formData.name_en,
+      scientific_name: formData.scientific_name || null,
+      water_type: formData.water_type || 'Tatlı Su',
+      short_info_tr: formData.short_info_tr || null,
+      short_info_en: formData.short_info_en || null,
+      limit_size: formData.limit_size || null,
+      ban_periods: formData.ban_periods || null,
+      active_seasons: formData.active_seasons || null,
+      recommended_gear: formData.recommended_gear || null,
+      favorite_baits: formData.favorite_baits || null,
+      primary_regions: formData.primary_regions || null,
+      taste_rating: formData.taste_rating || null,
+      cooking_tips_tr: formData.cooking_tips_tr || null,
+      cooking_tips_en: formData.cooking_tips_en || null,
+      description_tr: formData.description_tr || null,
+      description_en: formData.description_en || null,
+      image_url: formData.image_url || null,
+      is_active: formData.is_active ?? true
+    };
 
-      if (error) {
-        throw error;
+    try {
+      if (editingFishId) {
+        // UPDATE existing fish
+        const { error } = await supabase
+          .from('fishes')
+          .update(payload)
+          .eq('id', editingFishId);
+
+        if (error) throw error;
+        setNotification({ type: 'success', message: 'Balık türü bilgileri güncellendi.' });
+      } else {
+        // INSERT new fish
+        const { error } = await supabase
+          .from('fishes')
+          .insert([payload]);
+
+        if (error) throw error;
+        setNotification({ type: 'success', message: t('success') });
       }
 
-      setNotification({ type: 'success', message: t('success') });
-
-      setFormData({
-        name_tr: '',
-        name_en: '',
-        scientific_name: '',
-        water_type: 'Tatlı Su',
-        short_info_tr: '',
-        short_info_en: '',
-        limit_size: '',
-        ban_periods: '',
-        active_seasons: '',
-        recommended_gear: '',
-        favorite_baits: '',
-        primary_regions: '',
-        taste_rating: '',
-        cooking_tips_tr: '',
-        cooking_tips_en: '',
-        description_tr: '',
-        description_en: '',
-        image_url: '',
-        is_active: true
-      });
+      cancelEdit();
       loadFishes();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t('error');
@@ -245,6 +269,7 @@ export default function AdminPage() {
 
       if (!error) {
         setFishes(prev => prev.filter(f => f.id !== id));
+        if (editingFishId === id) cancelEdit();
       }
     } catch {
       // ignore
@@ -260,13 +285,29 @@ export default function AdminPage() {
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Ana Sayfaya Dön</span>
           </Link>
-          <h1 className="text-2xl font-extrabold text-[#0F172A] tracking-tight">{t('title')}</h1>
-          <p className="text-xs text-slate-500">{t('subtitle')}</p>
+          <h1 className="text-2xl font-extrabold text-[#0F172A] tracking-tight">
+            {editingFishId ? 'Balık Türünü Düzenle' : t('title')}
+          </h1>
+          <p className="text-xs text-slate-500">
+            {editingFishId ? 'Mevcut balık bilgilerini ve görsellerini güncelleyin' : t('subtitle')}
+          </p>
         </div>
 
-        <div className="flex items-center space-x-2 bg-slate-100 px-3.5 py-2 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-700">
-          <FishIcon className="w-4 h-4 text-[#10B981]" />
-          <span>Kayıtlı Türler: {fishes.length}</span>
+        <div className="flex items-center space-x-2">
+          {editingFishId && (
+            <button
+              onClick={cancelEdit}
+              className="inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-2xl text-xs font-bold border border-slate-300 transition-all"
+            >
+              <PlusCircle className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Yeni Ekle Moduna Dön</span>
+            </button>
+          )}
+
+          <div className="flex items-center space-x-2 bg-slate-100 px-3.5 py-2 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-700">
+            <FishIcon className="w-4 h-4 text-[#10B981]" />
+            <span>Kayıtlı Türler: {fishes.length}</span>
+          </div>
         </div>
       </div>
 
@@ -302,7 +343,9 @@ export default function AdminPage() {
           <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-5">
             <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
               <Info className="w-5 h-5 text-emerald-600" />
-              <h2 className="text-base font-bold text-[#0F172A]">{t('sectionBasic')}</h2>
+              <h2 className="text-base font-bold text-[#0F172A]">
+                {editingFishId ? 'Düzenlenen Tür: Temel Bilgiler' : t('sectionBasic')}
+              </h2>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
@@ -626,23 +669,35 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 px-4 bg-[#0F172A] hover:bg-slate-800 text-white font-bold rounded-2xl transition-all shadow-md flex items-center justify-center space-x-2 disabled:opacity-50 active:scale-98"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin text-[#10B981]" />
-                <span>{t('submitting')}</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 text-[#10B981]" />
-                <span>{t('submit')}</span>
-              </>
+          <div className="flex items-center space-x-3">
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 py-3.5 px-4 bg-[#0F172A] hover:bg-slate-800 text-white font-bold rounded-2xl transition-all shadow-md flex items-center justify-center space-x-2 disabled:opacity-50 active:scale-98"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-[#10B981]" />
+                  <span>{t('submitting')}</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 text-[#10B981]" />
+                  <span>{editingFishId ? 'Güncellemeleri Kaydet' : t('submit')}</span>
+                </>
+              )}
+            </button>
+
+            {editingFishId && (
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="py-3.5 px-5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl border border-slate-300 transition-all"
+              >
+                Vazgeç
+              </button>
             )}
-          </button>
+          </div>
         </form>
 
         <div className="lg:col-span-4 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-6 flex flex-col h-fit">
@@ -667,45 +722,64 @@ export default function AdminPage() {
             </div>
           ) : (
             <div className="space-y-3 overflow-y-auto max-h-[850px] pr-1 scrollbar-thin">
-              {fishes.map(fish => (
-                <div
-                  key={fish.id}
-                  className="p-3.5 rounded-2xl border border-slate-100 bg-slate-50 hover:bg-slate-100/80 transition-colors flex items-center justify-between space-x-3"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center space-x-1.5">
-                      <h4 className="font-bold text-slate-900 text-xs sm:text-sm truncate">{fish.name_tr}</h4>
-                      <span className="text-[11px] text-slate-400 italic shrink-0">({fish.name_en})</span>
+              {fishes.map(fish => {
+                const isBeingEdited = editingFishId === fish.id;
+                return (
+                  <div
+                    key={fish.id}
+                    className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between space-x-3 ${
+                      isBeingEdited
+                        ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
+                        : 'border-slate-100 bg-slate-50 hover:bg-slate-100/80'
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center space-x-1.5">
+                        <h4 className="font-bold text-slate-900 text-xs sm:text-sm truncate">{fish.name_tr}</h4>
+                        <span className="text-[11px] text-slate-400 italic shrink-0">({fish.name_en})</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                        {fish.water_type || 'Tatlı Su'} • {fish.limit_size || 'Limit Belirtilmedi'}
+                      </p>
                     </div>
-                    <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                      {fish.water_type || 'Tatlı Su'} • {fish.limit_size || 'Limit Belirtilmedi'}
-                    </p>
-                  </div>
 
-                  <div className="flex items-center space-x-1 shrink-0">
-                    <button
-                      onClick={() => fish.id && toggleFishStatus(fish.id, !!fish.is_active)}
-                      title="Durumu Değiştir"
-                      className={`p-1.5 rounded-xl border text-xs font-semibold transition-all ${
-                        fish.is_active
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                          : 'bg-slate-200 text-slate-600 border-slate-300'
-                      }`}
-                    >
-                      {fish.is_active ? <Check className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    </button>
-                    {fish.id && (
+                    <div className="flex items-center space-x-1 shrink-0">
+                      {/* EDIT BUTTON */}
                       <button
-                        onClick={() => deleteFish(fish.id!)}
-                        title="Sil"
-                        className="p-1.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 transition-all"
+                        onClick={() => startEditFish(fish)}
+                        title="Düzenle"
+                        className="p-1.5 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-all"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Pencil className="w-3.5 h-3.5" />
                       </button>
-                    )}
+
+                      {/* STATUS TOGGLE */}
+                      <button
+                        onClick={() => fish.id && toggleFishStatus(fish.id, !!fish.is_active)}
+                        title="Durumu Değiştir"
+                        className={`p-1.5 rounded-xl border text-xs font-semibold transition-all ${
+                          fish.is_active
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                            : 'bg-slate-200 text-slate-600 border-slate-300'
+                        }`}
+                      >
+                        {fish.is_active ? <Check className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+
+                      {/* DELETE BUTTON */}
+                      {fish.id && (
+                        <button
+                          onClick={() => deleteFish(fish.id!)}
+                          title="Sil"
+                          className="p-1.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
