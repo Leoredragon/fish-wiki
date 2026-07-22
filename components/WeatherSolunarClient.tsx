@@ -7,18 +7,56 @@ import {
   CloudSun,
   Wind,
   Gauge,
-  MapPin,
   RefreshCw,
-  Zap
+  Zap,
+  Navigation
 } from 'lucide-react';
 
 interface CitySpot {
+  id: string;
   nameTr: string;
   nameEn: string;
   lat: number;
   lon: number;
-  type: string;
+  regionTr: string;
+  regionEn: string;
 }
+
+const SPOTS: CitySpot[] = [
+  // Marmara
+  { id: 'ist', nameTr: 'İstanbul', nameEn: 'Istanbul', lat: 41.0082, lon: 28.9784, regionTr: 'Marmara', regionEn: 'Marmara' },
+  { id: 'can', nameTr: 'Çanakkale', nameEn: 'Canakkale', lat: 40.1553, lon: 26.4142, regionTr: 'Marmara', regionEn: 'Marmara' },
+  { id: 'bal', nameTr: 'Balıkesir', nameEn: 'Balikesir', lat: 39.6484, lon: 27.8826, regionTr: 'Marmara', regionEn: 'Marmara' },
+  { id: 'koc', nameTr: 'Kocaeli (İzmit)', nameEn: 'Kocaeli', lat: 40.7654, lon: 29.9408, regionTr: 'Marmara', regionEn: 'Marmara' },
+  { id: 'tek', nameTr: 'Tekirdağ', nameEn: 'Tekirdag', lat: 40.9833, lon: 27.5167, regionTr: 'Marmara', regionEn: 'Marmara' },
+  
+  // Ege
+  { id: 'izm', nameTr: 'İzmir', nameEn: 'Izmir', lat: 38.4237, lon: 27.1428, regionTr: 'Ege', regionEn: 'Aegean' },
+  { id: 'mug', nameTr: 'Muğla', nameEn: 'Mugla', lat: 37.2153, lon: 28.3636, regionTr: 'Ege', regionEn: 'Aegean' },
+  { id: 'ayd', nameTr: 'Aydın', nameEn: 'Aydin', lat: 37.8380, lon: 27.8456, regionTr: 'Ege', regionEn: 'Aegean' },
+
+  // Akdeniz
+  { id: 'ant', nameTr: 'Antalya', nameEn: 'Antalya', lat: 36.8969, lon: 30.7133, regionTr: 'Akdeniz', regionEn: 'Mediterranean' },
+  { id: 'mer', nameTr: 'Mersin', nameEn: 'Mersin', lat: 36.8121, lon: 34.6415, regionTr: 'Akdeniz', regionEn: 'Mediterranean' },
+  { id: 'ada', nameTr: 'Adana', nameEn: 'Adana', lat: 37.0000, lon: 35.3213, regionTr: 'Akdeniz', regionEn: 'Mediterranean' },
+  { id: 'hat', nameTr: 'Hatay (İskenderun)', nameEn: 'Hatay', lat: 36.5872, lon: 36.1735, regionTr: 'Akdeniz', regionEn: 'Mediterranean' },
+
+  // Karadeniz
+  { id: 'tra', nameTr: 'Trabzon', nameEn: 'Trabzon', lat: 41.0027, lon: 39.7168, regionTr: 'Karadeniz', regionEn: 'Black Sea' },
+  { id: 'sam', nameTr: 'Samsun', nameEn: 'Samsun', lat: 41.2867, lon: 36.33, regionTr: 'Karadeniz', regionEn: 'Black Sea' },
+  { id: 'sin', nameTr: 'Sinop', nameEn: 'Sinop', lat: 42.0268, lon: 35.1611, regionTr: 'Karadeniz', regionEn: 'Black Sea' },
+  { id: 'riz', nameTr: 'Rize', nameEn: 'Rize', lat: 41.0201, lon: 40.5234, regionTr: 'Karadeniz', regionEn: 'Black Sea' },
+  { id: 'zon', nameTr: 'Zonguldak', nameEn: 'Zonguldak', lat: 41.4564, lon: 31.7987, regionTr: 'Karadeniz', regionEn: 'Black Sea' },
+  { id: 'kas', nameTr: 'Kastamonu', nameEn: 'Kastamonu', lat: 41.3766, lon: 33.7765, regionTr: 'Karadeniz', regionEn: 'Black Sea' },
+
+  // İç Sular & Göller
+  { id: 'bol', nameTr: 'Bolu (Abant & Yedigöller)', nameEn: 'Bolu', lat: 40.7392, lon: 31.6116, regionTr: 'İç Anadolu & Göller', regionEn: 'Inland Lakes' },
+  { id: 'ank', nameTr: 'Ankara (Mogan & Eymir)', nameEn: 'Ankara', lat: 39.9334, lon: 32.8597, regionTr: 'İç Anadolu & Göller', regionEn: 'Inland Lakes' },
+  { id: 'kon', nameTr: 'Konya (Beyşehir)', nameEn: 'Konya', lat: 37.8746, lon: 32.4833, regionTr: 'İç Anadolu & Göller', regionEn: 'Inland Lakes' },
+  { id: 'bur', nameTr: 'Bursa (İznik)', nameEn: 'Bursa', lat: 40.1828, lon: 29.0667, regionTr: 'İç Anadolu & Göller', regionEn: 'Inland Lakes' },
+  { id: 'ela', nameTr: 'Elazığ (Keban)', nameEn: 'Elazig', lat: 38.6810, lon: 39.2264, regionTr: 'Doğu Anadolu', regionEn: 'Eastern Anatolia' },
+  { id: 'van', nameTr: 'Van (Van Gölü)', nameEn: 'Van', lat: 38.5012, lon: 43.3730, regionTr: 'Doğu Anadolu', regionEn: 'Eastern Anatolia' }
+];
 
 interface CurrentWeatherData {
   temperature_2m: number;
@@ -29,26 +67,20 @@ interface CurrentWeatherData {
   weather_code: number;
 }
 
-const SPOTS: CitySpot[] = [
-  { nameTr: 'İstanbul (Boğaz & Marmara)', nameEn: 'Istanbul (Bosphorus)', lat: 41.0082, lon: 28.9784, type: 'Deniz / Boğaz' },
-  { nameTr: 'İzmir (Ege Kıyıları)', nameEn: 'Izmir (Aegean Coast)', lat: 38.4237, lon: 27.1428, type: 'Tuzlu Su' },
-  { nameTr: 'Çanakkale (Saros & Boğaz)', nameEn: 'Canakkale (Strait)', lat: 40.1553, lon: 26.4142, type: 'Tuzlu Su' },
-  { nameTr: 'Antalya (Akdeniz Kıyısı)', nameEn: 'Antalya (Mediterranean)', lat: 36.8969, lon: 30.7133, type: 'Tuzlu Su' },
-  { nameTr: 'Trabzon (Karadeniz)', nameEn: 'Trabzon (Black Sea)', lat: 41.0027, lon: 39.7168, type: 'Tuzlu Su' },
-  { nameTr: 'Bolu (Abant & Göller)', nameEn: 'Bolu (Abant Lakes)', lat: 40.6083, lon: 31.2833, type: 'Tatlı Su' }
-];
-
 export default function WeatherSolunarClient() {
   const locale = useLocale();
   const isTr = locale === 'tr';
 
-  const [selectedSpot, setSelectedSpot] = useState<CitySpot>(SPOTS[0]);
+  const [selectedSpotId, setSelectedSpotId] = useState<string>(SPOTS[0].id);
   const [weatherData, setWeatherData] = useState<CurrentWeatherData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const selectedSpot = SPOTS.find(s => s.id === selectedSpotId) || SPOTS[0];
 
   useEffect(() => {
     let isSubscribed = true;
     async function loadWeatherData() {
+      setLoading(true);
       try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${selectedSpot.lat}&longitude=${selectedSpot.lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,weather_code`;
         const res = await fetch(url);
@@ -59,6 +91,7 @@ export default function WeatherSolunarClient() {
         }
       } catch {
         if (isSubscribed) {
+          // Fallback mockup just in case
           setWeatherData({
             temperature_2m: 22.5,
             relative_humidity_2m: 65,
@@ -90,6 +123,14 @@ export default function WeatherSolunarClient() {
 
   const solunarScore = weatherData ? calculateSolunarScore(weatherData.surface_pressure, weatherData.wind_speed_10m) : 85;
 
+  // Group spots by region
+  const groupedSpots = SPOTS.reduce((acc, spot) => {
+    const regionName = isTr ? spot.regionTr : spot.regionEn;
+    if (!acc[regionName]) acc[regionName] = [];
+    acc[regionName].push(spot);
+    return acc;
+  }, {} as Record<string, CitySpot[]>);
+
   return (
     <div className="max-w-6xl mx-auto space-y-10 pb-16">
       {/* Hero Banner */}
@@ -119,35 +160,36 @@ export default function WeatherSolunarClient() {
         </div>
       </motion.section>
 
-      {/* Spot Selector Bar */}
-      <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+      {/* Spot Dropdown Selector */}
+      <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-4 max-w-2xl">
         <div className="flex items-center space-x-2">
-          <MapPin className="w-4 h-4 text-emerald-600" />
-          <h2 className="text-sm font-bold text-[#0F172A] uppercase tracking-wider">
-            {isTr ? 'Av Bölgesi / Mera Seçin' : 'Select Fishing Spot'}
+          <Navigation className="w-5 h-5 text-emerald-600" />
+          <h2 className="text-sm font-extrabold text-[#0F172A] uppercase tracking-wider">
+            {isTr ? 'Konum / İl Seçimi' : 'Select Province / Location'}
           </h2>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {SPOTS.map((spot) => {
-            const isSelected = selectedSpot.nameTr === spot.nameTr;
-            return (
-              <button
-                key={spot.nameTr}
-                onClick={() => setSelectedSpot(spot)}
-                className={`p-3 rounded-2xl border text-xs font-bold transition-all text-left flex flex-col justify-between ${
-                  isSelected
-                    ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-md ring-2 ring-emerald-500/40'
-                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200/80'
-                }`}
-              >
-                <span>{isTr ? spot.nameTr : spot.nameEn}</span>
-                <span className={`text-[10px] mt-1 font-semibold ${isSelected ? 'text-emerald-400' : 'text-slate-400'}`}>
-                  {spot.type}
-                </span>
-              </button>
-            );
-          })}
+        <div className="relative">
+          <select
+            value={selectedSpotId}
+            onChange={(e) => setSelectedSpotId(e.target.value)}
+            className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-900 font-semibold px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm"
+          >
+            {Object.keys(groupedSpots).map(regionGroup => (
+              <optgroup key={regionGroup} label={regionGroup} className="font-bold text-slate-700 bg-white">
+                {groupedSpots[regionGroup].map(spot => (
+                  <option key={spot.id} value={spot.id} className="font-medium text-slate-900">
+                    {isTr ? spot.nameTr : spot.nameEn}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none">
+            <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </div>
       </div>
 

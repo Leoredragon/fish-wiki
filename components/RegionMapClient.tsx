@@ -3,7 +3,19 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocale } from 'next-intl';
-import { MapPin, Compass, Anchor, Sparkles } from 'lucide-react';
+import { MapPin, Compass, Anchor, Sparkles, Loader2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+// Dynamically import Leaflet MapComponent with SSR disabled
+const MapComponent = dynamic(() => import('./MapComponent'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[400px] rounded-2xl bg-slate-100 border border-slate-200 flex flex-col items-center justify-center space-y-3">
+      <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+      <span className="text-sm font-semibold text-slate-500">Harita yükleniyor...</span>
+    </div>
+  )
+});
 
 interface Region {
   id: string;
@@ -16,7 +28,7 @@ interface Region {
   popularSpeciesEn: string[];
   recommendedGearTr: string;
   recommendedGearEn: string;
-  pinCoordinates: { cx: number; cy: number };
+  pinCoordinates: { lat: number; lng: number };
 }
 
 const REGIONS: Region[] = [
@@ -31,7 +43,7 @@ const REGIONS: Region[] = [
     popularSpeciesEn: ['Bluefish', 'European Seabass', 'Horse Mackerel', 'Atlantic Bonito'],
     recommendedGearTr: 'Spinning, Kurşun Arkası Rapala, Hansen Kaşık, Uzun Olta',
     recommendedGearEn: 'Heavy Spinning, Metal Spoons, Wire Rigs',
-    pinCoordinates: { cx: 215, cy: 95 }
+    pinCoordinates: { lat: 41.0082, lng: 28.9784 }
   },
   {
     id: 'aegean',
@@ -44,7 +56,7 @@ const REGIONS: Region[] = [
     popularSpeciesEn: ['Gilt-head Bream', 'European Seabass', 'Squid', 'Amberjack'],
     recommendedGearTr: 'Yemli Gezer Kurşunlu Dip Takımı, LRF, EGI Kalamar Zokası',
     recommendedGearEn: 'Bottom Rigs with Marine Worms, EGI Squid Jigs, LRF',
-    pinCoordinates: { cx: 135, cy: 210 }
+    pinCoordinates: { lat: 38.4237, lng: 27.1428 }
   },
   {
     id: 'mediterranean',
@@ -57,7 +69,7 @@ const REGIONS: Region[] = [
     popularSpeciesEn: ['Amberjack', 'White Grouper', 'Greater Amberjack', 'Bream'],
     recommendedGearTr: 'Slow Jigging, Sırtı (Trolling), Ağır Dip Oltası',
     recommendedGearEn: 'Slow Jigging, Offshore Trolling, Heavy Bottom Tackle',
-    pinCoordinates: { cx: 310, cy: 285 }
+    pinCoordinates: { lat: 36.8969, lng: 30.7133 }
   },
   {
     id: 'blacksea',
@@ -70,7 +82,7 @@ const REGIONS: Region[] = [
     popularSpeciesEn: ['Turbot', 'Whiting', 'Horse Mackerel', 'Bluefish'],
     recommendedGearTr: 'Surfcasting Dip Takımı, Çapari, Kaşık',
     recommendedGearEn: 'Surfcasting Rigs, Sabiki Rigs, Metal Spoons',
-    pinCoordinates: { cx: 580, cy: 75 }
+    pinCoordinates: { lat: 41.0027, lng: 39.7168 }
   },
   {
     id: 'abant_lakes',
@@ -83,7 +95,7 @@ const REGIONS: Region[] = [
     popularSpeciesEn: ['Abant Trout', 'Mirror Carp', 'Chub'],
     recommendedGearTr: 'Fly-Fishing, Boilie Sazan Montajı, LRF Micro Kaşık',
     recommendedGearEn: 'Fly-Fishing, Hair Rigs with Boilies, Micro Lures',
-    pinCoordinates: { cx: 290, cy: 120 }
+    pinCoordinates: { lat: 40.6083, lng: 31.2833 }
   }
 ];
 
@@ -122,117 +134,31 @@ export default function RegionMapClient() {
         </div>
       </motion.section>
 
-      {/* Interactive Vector Turkey Map Card */}
-      <div className="bg-[#0F172A] rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-xl space-y-6 text-white relative overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+      {/* Interactive Leaflet Map Card */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center space-x-2">
-            <Compass className="w-5 h-5 text-emerald-400" />
-            <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-200">
+            <Compass className="w-5 h-5 text-emerald-600" />
+            <h2 className="text-sm font-extrabold uppercase tracking-wider text-[#0F172A]">
               {isTr ? 'Tıklamalı Türkiye Av Haritası' : 'Interactive Turkey Fishing Map'}
             </h2>
           </div>
 
-          <span className="text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full">
+          <span className="text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1 rounded-full">
             {isTr ? 'Haritadan Bölge Seçin' : 'Click Region on Map'}
           </span>
         </div>
 
-        {/* SVG Map Container */}
-        <div className="relative w-full aspect-[2.2/1] bg-slate-950/80 rounded-2xl p-4 border border-slate-800/80 flex items-center justify-center overflow-hidden">
-          <svg
-            viewBox="0 0 750 340"
-            className="w-full h-full drop-shadow-2xl"
-          >
-            <defs>
-              <linearGradient id="turkeyBg" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#1E293B" />
-                <stop offset="100%" stopColor="#0F172A" />
-              </linearGradient>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                <feMerge>
-                  <feMergeNode in="coloredBlur"/>
-                  <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-              </filter>
-            </defs>
-
-            {/* Stylized Turkey Land Polygon */}
-            <path
-              d="M 120 70 L 220 55 L 350 45 L 520 40 L 680 65 L 720 120 L 710 180 L 630 220 L 520 230 L 400 240 L 300 290 L 190 280 L 110 240 L 100 170 L 120 70 Z"
-              fill="url(#turkeyBg)"
-              stroke="#334155"
-              strokeWidth="2"
-            />
-
-            {/* Sea Boundaries Visual Indicator Lines */}
-            {/* Karadeniz Coast Arc */}
-            <path d="M 120 70 Q 400 30 680 65" fill="none" stroke="#38BDF8" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.4" />
-            {/* Ege Coast Arc */}
-            <path d="M 120 70 Q 90 170 110 240" fill="none" stroke="#34D399" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.4" />
-            {/* Akdeniz Coast Arc */}
-            <path d="M 110 240 Q 300 310 630 220" fill="none" stroke="#60A5FA" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.4" />
-
-            {/* Interactive Pins for Each Region */}
-            {REGIONS.map((reg) => {
-              const isSelected = selectedRegion.id === reg.id;
-              const { cx, cy } = reg.pinCoordinates;
-
-              return (
-                <g
-                  key={reg.id}
-                  onClick={() => setSelectedRegion(reg)}
-                  className="cursor-pointer group"
-                >
-                  {/* Outer Pulsing Ring */}
-                  {isSelected && (
-                    <circle
-                      cx={cx}
-                      cy={cy}
-                      r="18"
-                      className="fill-emerald-500/20 stroke-emerald-400 animate-ping opacity-75"
-                      strokeWidth="1"
-                    />
-                  )}
-
-                  {/* Pin Base Circle */}
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r={isSelected ? '12' : '9'}
-                    className={`transition-all duration-300 ${
-                      isSelected
-                        ? 'fill-emerald-500 stroke-white'
-                        : 'fill-slate-700 hover:fill-emerald-400 stroke-slate-500'
-                    }`}
-                    strokeWidth="2"
-                    filter={isSelected ? 'url(#glow)' : undefined}
-                  />
-
-                  {/* Pin Center Dot */}
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r="3.5"
-                    fill={isSelected ? '#0F172A' : '#FFFFFF'}
-                  />
-
-                  {/* Region Label Tag */}
-                  <text
-                    x={cx}
-                    y={cy - 16}
-                    textAnchor="middle"
-                    className={`text-[11px] font-extrabold tracking-wide transition-all ${
-                      isSelected ? 'fill-emerald-300 font-black scale-110' : 'fill-slate-300 group-hover:fill-white'
-                    }`}
-                  >
-                    {isTr ? reg.nameTr.split(' ')[0] : reg.nameEn.split(' ')[0]}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
-        </div>
+        {/* Dynamic Leaflet Map Component */}
+        <MapComponent 
+          regions={REGIONS}
+          selectedRegionId={selectedRegion.id}
+          onSelectRegion={(id) => {
+            const reg = REGIONS.find(r => r.id === id);
+            if (reg) setSelectedRegion(reg);
+          }}
+          isTr={isTr}
+        />
       </div>
 
       {/* Region Selector Pills */}
