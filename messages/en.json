@@ -1,0 +1,73 @@
+{
+  "Header": {
+    "title": "Fish Wiki",
+    "subtitle": "Fish Species & Angling Guide",
+    "searchPlaceholder": "Search by common or scientific name...",
+    "adminPanel": "Admin Panel",
+    "language": "Language"
+  },
+  "Filters": {
+    "all": "All",
+    "freshwater": "Freshwater",
+    "saltwater": "Saltwater",
+    "brackish": "Brackish",
+    "allSeasons": "All Seasons",
+    "spring": "Spring",
+    "summer": "Summer",
+    "autumn": "Autumn",
+    "winter": "Winter",
+    "search": "Search"
+  },
+  "FishCard": {
+    "scientificName": "Scientific Name",
+    "waterType": "Water Type",
+    "activeSeasons": "Active Seasons",
+    "recommendedGear": "Recommended Gear",
+    "viewDetails": "View Details",
+    "noDescription": "No description available."
+  },
+  "FishDetails": {
+    "back": "Go Back",
+    "gearDetails": "Angling Rigs & Equipment Recommendations",
+    "activeSeasonsLabel": "Fishing Season & Peak Activity",
+    "waterTypeLabel": "Habitat & Water Type",
+    "descriptionLabel": "Overview & Biological Characteristics"
+  },
+  "Admin": {
+    "title": "Fish Wiki Management Panel",
+    "subtitle": "Species Entry & Publishing Portal",
+    "addFish": "Add New Species",
+    "fishList": "Registered Species",
+    "nameTr": "Turkish Name",
+    "nameEn": "English Name",
+    "scientificName": "Scientific Name",
+    "waterType": "Water Type",
+    "activeSeasons": "Active Seasons",
+    "recommendedGear": "Recommended Gear",
+    "descriptionTr": "Turkish Description",
+    "descriptionEn": "English Description",
+    "imageUrl": "Image URL",
+    "isActive": "Active / Published",
+    "submit": "Save Species",
+    "submitting": "Saving...",
+    "success": "Species saved successfully.",
+    "error": "Failed to save species.",
+    "noFishes": "No registered species found.",
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
+    "gearPlaceholder": "e.g., Light Rock Fishing (LRF), Fly-fishing gear, Carp rigs",
+    "seasonPlaceholder": "e.g., Spring, Autumn",
+    "imageUrlPlaceholder": "https://images.unsplash.com/...",
+    "waterTypes": {
+      "freshwater": "Freshwater (River & Lake)",
+      "saltwater": "Saltwater (Sea)",
+      "brackish": "Brackish Water"
+    }
+  },
+  "Common": {
+    "loading": "Loading...",
+    "error": "An error occurred.",
+    "notFound": "No species found.",
+    "footer": "Fish Wiki - Premium Marine & Freshwater Angling Guide"
+  }
+}
