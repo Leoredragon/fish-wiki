@@ -3,7 +3,8 @@
 
 import { useLocale } from 'next-intl';
 import { motion } from 'framer-motion';
-import { Scale, Ruler, MapPin, Users, Heart } from 'lucide-react';
+import { Camera, MapPin, Scale, Ruler, Heart, Clock, Users } from 'lucide-react';
+import CatchCardExport from './CatchCardExport';
 
 export default function CommunityClient({ catches }: { catches: Record<string, any>[] }) {
   const locale = useLocale();

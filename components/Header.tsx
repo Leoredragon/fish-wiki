@@ -120,13 +120,6 @@ export default function Header() {
               </Link>
             )}
 
-            <Link
-              href="/admin"
-              className="inline-flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white px-2 py-1.5 rounded-xl text-xs font-medium border border-slate-700 transition-all shadow-sm"
-              title={t('adminPanel')}
-            >
-              <Shield className="w-3.5 h-3.5 text-slate-400" />
-            </Link>
           </div>
         </div>
 
