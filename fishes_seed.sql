@@ -1,0 +1,91 @@
+-- =========================================================================
+-- FISH WIKI - TOPLU BALIK EKLEME SQL SORGUSU (Supabase SQL Editor İçin)
+-- =========================================================================
+-- Bu SQL sorgusunu kopyalayıp Supabase -> SQL Editor ekranına yapıştırarak 
+-- tüm balıkları tek seferde veritabanınıza ekleyebilirsiniz.
+-- =========================================================================
+
+INSERT INTO fishes (
+  name_tr,
+  name_en,
+  scientific_name,
+  water_type,
+  short_info_tr,
+  short_info_en,
+  limit_size,
+  ban_periods,
+  active_seasons,
+  recommended_gear,
+  favorite_baits,
+  primary_regions,
+  taste_rating,
+  cooking_tips_tr,
+  cooking_tips_en,
+  description_tr,
+  description_en,
+  image_url,
+  is_active
+) VALUES 
+(
+  'Deniz Levreği',
+  'European Seabass',
+  'Dicentrarchus labrax',
+  'Tuzlu Su',
+  'Kıyı kayalıklarının ve nehir ağızlarının usta yırtıcısı.',
+  'Master predator of coastal breakers and river estuaries.',
+  'Asgari 25 cm (Kıyı ve Deniz)',
+  'Üreme dönemi 15 Mayıs - 15 Haziran',
+  'Sonbahar, Kış',
+  'Spinning, Su Üstü Maket, LRF',
+  'Su Üstü Popper (WTD), Canlı Teke, Raglou Silikon',
+  'Ege Kıyıları (Çeşme, Ayvalık), Marmara Ereğlisi, Saros Körfezi',
+  '5/5 Yıldız - Yüksek Yağ Oranı & Lezzetli Beyaz Et',
+  'Deniz tuzu kaplamasında fırında veya zeytinyağlı ızgarada mükemmeldir.',
+  'Salt-crusted baked or grilled whole with olive oil and oregano.',
+  'Kıyı sularının ve nehir ağızlarının ustaca gizlenen avcısı. Özellikle dalgalı havalarda su üstü sahte balıklar ile harika bir av deneyimi sunar.',
+  'Apex predator of coastal breakers and estuaries. Highly sought after by lure anglers using topwater plugs.',
+  NULL,
+  TRUE
+),
+(
+  'Çupra (Çipura)',
+  'Gilt-head Bream',
+  'Sparus aurata',
+  'Tuzlu Su',
+  'Sert çene yapısı ile kabuklu deniz canlılarını kıran tür.',
+  'Marine fish with powerful jaws adapted for crushing shellfish.',
+  'Asgari 20 cm',
+  'Yıl boyu serbest (Yasal boya uyulmalıdır)',
+  'İlkbahar, Sonbahar',
+  'Yemli Dip Takımı, Boru Kurdu, Surfcasting',
+  'Boru Kurdu, Sülünes, Yengeç, Mamun, Midye Eti',
+  'İzmir Körfezi, Bodrum, Antalya Kıyıları, Didim ve Fethiye',
+  '5/5 Yıldız - Ege Mutfaklarının Vazgeçilmezi',
+  'Odun ateşinde ızgara veya fırında domates ve biber sosu eşliğinde pişirilir.',
+  'Wood-grilled whole with rosemary and lemon slices.',
+  'Gözlerinin arasındaki altın sarısı bant ile tanınan güçlü çeneli deniz balığı.',
+  'Identified by the golden stripe between its eyes. Targeted with bottom rigs.',
+  NULL,
+  TRUE
+),
+(
+  'Lüfer',
+  'Bluefish',
+  'Pomatomus saltatrix',
+  'Tuzlu Su',
+  'Denizlerimizin ve Boğazın en yırtıcı avcı balığı.',
+  'Fierce pelagic predator of the Bosphorus and Mediterranean.',
+  'Asgari 18 cm (Yaprak ve Çinekop avı yasaktır)',
+  '1 Mayıs - 31 Ağustos (Boğaz geçiş dönemi)',
+  'Sonbahar',
+  'Spinning, Ağır Kaşık, Uzun Olta',
+  'Hansen Pilgrim Kaşık, Canlı Zargana, İstavrit Yaprak Yem',
+  'İstanbul Boğazı, Çanakkale Boğazı, Marmara Denizi',
+  '5/5 Yıldız - Boğazın En Lezzetli Balığı',
+  'Sonbahar yağında kömür ateşinde ızgarası rakipsiz bir lezzete sahiptir.',
+  'Charcoal-grilled during autumn when oil levels are peak.',
+  'Boğaz sularının hızlı ve saldırgan yırtıcısı. Keskin dişleri nedeniyle tel bedenli takımlar ile avlanır.',
+  'Fierce predator of coastal waters. Targeted with metal spoons and wire-leader spinning rigs.',
+  NULL,
+  TRUE
+);
