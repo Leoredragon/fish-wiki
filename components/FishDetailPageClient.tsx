@@ -17,7 +17,11 @@ import {
   RefreshCw,
   AlertCircle,
   Share2,
-  Check
+  Check,
+  ShieldAlert,
+  Scale,
+  Anchor,
+  FileText
 } from 'lucide-react';
 
 interface FishDetailPageClientProps {
@@ -103,6 +107,10 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
   }
 
   const name = isTr ? fish.name_tr : fish.name_en;
+  const shortInfo = isTr
+    ? (fish.short_info_tr || fish.short_info_en)
+    : (fish.short_info_en || fish.short_info_tr);
+
   const description = isTr
     ? (fish.description_tr || fish.description_en)
     : (fish.description_en || fish.description_tr);
@@ -135,7 +143,7 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
 
         <button
           onClick={handleShare}
-          className="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-100 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-200 shadow-sm transition-all"
+          className="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-100 text-slate-700 px-3.5 py-2 rounded-2xl text-xs font-medium border border-slate-200 shadow-sm transition-all"
         >
           {copied ? (
             <>
@@ -151,12 +159,12 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
         </button>
       </motion.div>
 
-      {/* Hero Header Image with Gradient Overlay & Framer Motion Fade-in */}
+      {/* Hero Header Image with Gradient Overlay & Short Info */}
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative h-72 sm:h-96 w-full rounded-3xl overflow-hidden shadow-2xl border border-slate-800/80 bg-slate-900"
+        className="relative h-80 sm:h-[420px] w-full rounded-3xl overflow-hidden shadow-2xl border border-slate-800/80 bg-slate-900"
       >
         <Image
           src={displayImage}
@@ -167,10 +175,10 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
           onError={() => setImageError(true)}
           unoptimized
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent" />
 
-        {/* Title Overlay */}
-        <div className="absolute bottom-6 left-6 right-6 sm:bottom-8 sm:left-10 sm:right-10 text-white space-y-2">
+        {/* Title & Short Info Overlay */}
+        <div className="absolute bottom-6 left-6 right-6 sm:bottom-10 sm:left-10 sm:right-10 text-white space-y-3">
           <div className="flex items-center space-x-2">
             <span
               className={`text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-md border ${
@@ -183,19 +191,30 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
             </span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight drop-shadow-md">
-            {name}
-          </h1>
+          <div>
+            <h1 className="text-3xl sm:text-5xl font-black tracking-tight drop-shadow-md">
+              {name}
+            </h1>
 
-          {fish.scientific_name && (
-            <p className="text-sm sm:text-base italic text-emerald-300 font-medium tracking-wide">
-              {fish.scientific_name}
-            </p>
+            {fish.scientific_name && (
+              <p className="text-sm sm:text-base italic text-emerald-300 font-medium tracking-wide mt-1">
+                {fish.scientific_name}
+              </p>
+            )}
+          </div>
+
+          {/* Short Info Banner under Title */}
+          {shortInfo && (
+            <div className="pt-1">
+              <p className="text-xs sm:text-sm text-slate-200 font-medium max-w-3xl leading-relaxed bg-slate-900/60 backdrop-blur-md p-3.5 rounded-2xl border border-white/10">
+                {shortInfo}
+              </p>
+            </div>
           )}
         </div>
       </motion.div>
 
-      {/* Info Cards Grid - Staggered Fade-up */}
+      {/* Main Section Grid with Staggered Animations */}
       <motion.div
         initial="hidden"
         animate="show"
@@ -209,119 +228,127 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
             }
           }
         }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-6"
+        className="space-y-6"
       >
-        {/* Card 1: Water Type */}
+        {/* CARD 1: Sustainable Angling Rules & Limits (Attention-Grabbing Warning Card) */}
         <motion.div
           variants={{
             hidden: { opacity: 0, y: 20 },
             show: { opacity: 1, y: 0 }
           }}
-          className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-3 flex flex-col justify-between hover:shadow-md transition-shadow"
+          className="bg-gradient-to-br from-amber-500/5 via-amber-500/10 to-rose-500/5 rounded-3xl p-6 sm:p-8 border border-amber-500/30 shadow-sm space-y-4"
         >
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-              {isFreshwater ? <Mountain className="w-5 h-5" /> : <Waves className="w-5 h-5" />}
+          <div className="flex items-center space-x-3 border-b border-amber-200/60 pb-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
+              <ShieldAlert className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                {tDetails('waterTypeLabel')}
-              </h3>
-              <p className="text-base font-bold text-slate-900 mt-0.5">
-                {fish.water_type || (isTr ? 'Belirtilmedi' : 'Unspecified')}
+              <h2 className="text-base font-extrabold text-[#0F172A]">
+                {tDetails('rulesAndLimits')}
+              </h2>
+              <p className="text-xs text-slate-500">
+                {isTr
+                  ? 'Biyolojik çeşitliliği ve balık neslini korumak adına yasal av standartları'
+                  : 'Legal angling quotas and conservation regulations'}
               </p>
             </div>
           </div>
-        </motion.div>
 
-        {/* Card 2: Active Seasons */}
-        <motion.div
-          variants={{
-            hidden: { opacity: 0, y: 20 },
-            show: { opacity: 1, y: 0 }
-          }}
-          className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-3 flex flex-col justify-between hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-              <Calendar className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                {tDetails('activeSeasonsLabel')}
-              </h3>
-              <p className="text-base font-bold text-slate-900 mt-0.5">
-                {fish.active_seasons || (isTr ? 'Tüm Yıl' : 'All Year')}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Card 3: Recommended Gear & Techniques */}
-        <motion.div
-          variants={{
-            hidden: { opacity: 0, y: 20 },
-            show: { opacity: 1, y: 0 }
-          }}
-          className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-3 flex flex-col justify-between hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
-              <Layers className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                {isTr ? 'Av Teknikleri & Ekipman' : 'Techniques & Gear'}
-              </h3>
-              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                {gearTags.length > 0 ? (
-                  gearTags.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="bg-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-0.5 rounded-lg border border-slate-200/60"
-                    >
-                      {tag}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-xs text-slate-500">LRF, Fly-fishing, Surfcasting</span>
-                )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+            {/* Limit Size */}
+            <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-amber-200/80 space-y-1">
+              <div className="flex items-center space-x-2 text-amber-700 font-semibold text-xs">
+                <Scale className="w-4 h-4 text-amber-600" />
+                <span>{tDetails('limitSizeLabel')}</span>
               </div>
+              <p className="text-sm font-bold text-slate-900 pl-6">
+                {fish.limit_size || (isTr ? 'Yasal limit belirtilmedi (Varsayılan sirküler geçerli)' : 'Unspecified limit size')}
+              </p>
+            </div>
+
+            {/* Ban Periods */}
+            <div className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-rose-200/80 space-y-1">
+              <div className="flex items-center space-x-2 text-rose-700 font-semibold text-xs">
+                <Calendar className="w-4 h-4 text-rose-600" />
+                <span>{tDetails('banPeriodsLabel')}</span>
+              </div>
+              <p className="text-sm font-bold text-slate-900 pl-6">
+                {fish.ban_periods || (isTr ? 'Yıl boyu serbest (Asgari boya uyulmalıdır)' : 'No closed season')}
+              </p>
             </div>
           </div>
         </motion.div>
-      </motion.div>
 
-      {/* Detailed Description Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.5 }}
-        className="bg-white p-6 sm:p-10 rounded-3xl border border-slate-200/80 shadow-sm space-y-4"
-      >
-        <div className="flex items-center space-x-2 border-b border-slate-100 pb-4">
-          <Sparkles className="w-5 h-5 text-[#10B981]" />
-          <h2 className="text-lg sm:text-xl font-extrabold text-[#0F172A]">
-            {tDetails('descriptionLabel')}
-          </h2>
-        </div>
-
-        <p className="text-sm sm:text-base text-slate-700 leading-relaxed font-normal whitespace-pre-line tracking-normal">
-          {description || (isTr
-            ? 'Bu balık türü hakkında biyolojik özellikler, beslenme alışkanlıkları ve avlanma meralarına dair detaylı bilgiler güncellenmektedir.'
-            : 'Detailed biological traits, feeding habits, and habitat preferences for this species are being updated.')}
-        </p>
-
-        {fish.recommended_gear && (
-          <div className="pt-4 border-t border-slate-100 mt-6">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-              {tDetails('gearDetails')}
-            </h3>
-            <p className="text-xs sm:text-sm font-medium text-slate-800 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-              {fish.recommended_gear}
-            </p>
+        {/* CARD 2: Tactics & Recommended Gear Section */}
+        <motion.div
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            show: { opacity: 1, y: 0 }
+          }}
+          className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4"
+        >
+          <div className="flex items-center space-x-3 border-b border-slate-100 pb-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+              <Anchor className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-extrabold text-[#0F172A]">
+                {tDetails('tacticsAndGear')}
+              </h2>
+              <p className="text-xs text-slate-500">
+                {isTr ? 'Önerilen olta takımı montajları ve avcılık yöntemleri' : 'Recommended tackle rigs and angling techniques'}
+              </p>
+            </div>
           </div>
-        )}
+
+          <div className="space-y-3 pt-1">
+            <div className="flex flex-wrap gap-2">
+              {gearTags.length > 0 ? (
+                gearTags.map((tag, i) => (
+                  <span
+                    key={i}
+                    className="bg-emerald-50 text-emerald-950 border border-emerald-200 font-bold px-3.5 py-1.5 rounded-2xl text-xs sm:text-sm flex items-center space-x-1.5 shadow-xs"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>{tag}</span>
+                  </span>
+                ))
+              ) : (
+                <span className="text-xs text-slate-500">LRF, Fly-fishing, Sazan montajı</span>
+              )}
+            </div>
+
+            {fish.recommended_gear && (
+              <p className="text-xs sm:text-sm text-slate-700 bg-slate-50 p-4 rounded-2xl border border-slate-100 font-medium leading-relaxed">
+                {fish.recommended_gear}
+              </p>
+            )}
+          </div>
+        </motion.div>
+
+        {/* CARD 3: Detailed Description */}
+        <motion.div
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            show: { opacity: 1, y: 0 }
+          }}
+          className="bg-white p-6 sm:p-10 rounded-3xl border border-slate-200/80 shadow-sm space-y-4"
+        >
+          <div className="flex items-center space-x-3 border-b border-slate-100 pb-3">
+            <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
+              <FileText className="w-5 h-5" />
+            </div>
+            <h2 className="text-base sm:text-lg font-extrabold text-[#0F172A]">
+              {tDetails('descriptionLabel')}
+            </h2>
+          </div>
+
+          <p className="text-sm sm:text-base text-slate-700 leading-relaxed font-normal whitespace-pre-line tracking-normal">
+            {description || (isTr
+              ? 'Bu balık türü hakkında biyolojik özellikler, beslenme alışkanlıkları ve avlanma meralarına dair detaylı bilgiler güncellenmektedir.'
+              : 'Detailed biological traits, feeding habits, and habitat preferences for this species are being updated.')}
+          </p>
+        </motion.div>
       </motion.div>
     </div>
   );

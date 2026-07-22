@@ -17,5 +17,9 @@ export interface Fish {
   description_en?: string | null;
   image_url?: string | null;
   is_active?: boolean;
+  limit_size?: string | null;
+  ban_periods?: string | null;
+  short_info_tr?: string | null;
+  short_info_en?: string | null;
   created_at?: string;
 }
