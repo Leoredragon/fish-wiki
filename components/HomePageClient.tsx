@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import HeroSection from './HeroSection';
 import FishGrid from './FishGrid';
+import ActiveTargets from './home/ActiveTargets';
 
 export default function HomePageClient() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -15,6 +16,11 @@ export default function HomePageClient() {
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
       />
+
+      {/* Active Targets Module */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <ActiveTargets />
+      </div>
 
       {/* Featured Spotlight & Filter Chips & Main Feed */}
       <FishGrid

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { supabase, Fish } from '@/lib/supabase';
+import RigGuide from './fish/RigGuide';
 import { RICH_MOCK_FISHES } from './FishGrid';
 import { Link } from '@/i18n/routing';
 import { useLocale, useTranslations } from 'next-intl';
@@ -386,6 +387,16 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
               </div>
             </div>
           )}
+        </motion.div>
+
+        {/* Rig Guide Diagram */}
+        <motion.div
+          variants={{
+            hidden: { opacity: 0, y: 20 },
+            show: { opacity: 1, y: 0 }
+          }}
+        >
+          <RigGuide recommendedGear={fish.recommended_gear || ''} waterType={fish.water_type || ''} />
         </motion.div>
 
         {/* CARD 3: Taste Rating & Gastronomy */}
