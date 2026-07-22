@@ -3,7 +3,7 @@
 import { Link, usePathname } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from './LanguageSwitcher';
-import { Shield, Fish, Calendar, CloudSun, MapPin, Compass, Camera } from 'lucide-react';
+import { Shield, Fish, Calendar, CloudSun, MapPin, Compass, Camera, ChevronRight } from 'lucide-react';
 
 export default function Header() {
   const t = useTranslations('Header');
@@ -36,7 +36,7 @@ export default function Header() {
             </div>
           </Link>
 
-          {/* Navigation Links */}
+          {/* Desktop Navigation Links */}
           <nav className="hidden lg:flex items-center space-x-1 border-l border-r border-slate-800/80 px-4">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -72,27 +72,34 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile Navigation Sub-bar */}
-        <nav className="flex lg:hidden overflow-x-auto py-2 border-t border-slate-800/60 scrollbar-none space-x-1 text-xs">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                  isActive
-                    ? 'bg-slate-800 text-emerald-400 border border-slate-700'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        {/* Mobile Navigation Sub-bar with Scroll Hint & Gradient Mask */}
+        <div className="relative lg:hidden border-t border-slate-800/60 overflow-hidden">
+          <nav className="flex overflow-x-auto py-2.5 px-1 scrollbar-none space-x-1 text-xs pr-10">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                    isActive
+                      ? 'bg-slate-800 text-emerald-400 border border-slate-700 shadow-sm'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Animated Scroll Swipe Indicator Mask on Right Edge */}
+          <div className="absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-[#0F172A] via-[#0F172A]/80 to-transparent pointer-events-none flex items-center justify-end pr-1.5">
+            <ChevronRight className="w-4 h-4 text-emerald-400 animate-pulse" />
+          </div>
+        </div>
       </div>
     </header>
   );
