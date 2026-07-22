@@ -2,32 +2,26 @@
 
 import { useState } from 'react';
 import HeroSection from './HeroSection';
-import FishGrid, { RICH_MOCK_FISHES } from './FishGrid';
+import FishGrid from './FishGrid';
 
 export default function HomePageClient() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-
-  // Count freshwater & saltwater species from mock data for hero badges
-  const freshwaterCount = RICH_MOCK_FISHES.filter(f => f.water_type?.toLowerCase().includes('tatlı')).length;
-  const saltwaterCount = RICH_MOCK_FISHES.filter(f => f.water_type?.toLowerCase().includes('tuzlu')).length;
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   return (
-    <div className="space-y-10 sm:space-y-12 pb-12">
-      {/* Hero Section with Category Buttons */}
+    <div className="space-y-10 pb-16">
+      {/* Hero Section with integrated Live Search input */}
       <HeroSection
-        selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
-        freshwaterCount={freshwaterCount}
-        saltwaterCount={saltwaterCount}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
       />
 
-      {/* Main Filter & Fish Cards Grid */}
-      <section className="space-y-4">
-        <FishGrid
-          selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
-        />
-      </section>
+      {/* Featured Spotlight & Filter Chips & Main Feed */}
+      <FishGrid
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+        searchTerm={searchTerm}
+      />
     </div>
   );
 }

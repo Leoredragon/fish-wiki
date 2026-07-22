@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase, Fish } from '@/lib/supabase';
 import FishCard from './FishCard';
+import SpotlightCarousel from './SpotlightCarousel';
 import { useTranslations, useLocale } from 'next-intl';
 import { useFavorites } from '@/lib/useFavorites';
-import { Search, Filter, RefreshCw, AlertCircle, Heart } from 'lucide-react';
+import { Filter, RefreshCw, AlertCircle, Heart, Sparkles, Anchor, Mountain, Waves } from 'lucide-react';
 
 export const RICH_MOCK_FISHES: Fish[] = [
   {
@@ -146,17 +147,18 @@ export const RICH_MOCK_FISHES: Fish[] = [
 interface FishGridProps {
   selectedCategory: string;
   onSelectCategory: (cat: string) => void;
+  searchTerm: string;
 }
 
-export default function FishGrid({ selectedCategory, onSelectCategory }: FishGridProps) {
+export default function FishGrid({ selectedCategory, onSelectCategory, searchTerm }: FishGridProps) {
   const t = useTranslations('Filters');
   const tCommon = useTranslations('Common');
   const locale = useLocale();
+  const isTr = locale === 'tr';
   const { favorites } = useFavorites();
 
   const [fishes, setFishes] = useState<Fish[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     let isSubscribed = true;
@@ -201,12 +203,26 @@ export default function FishGrid({ selectedCategory, onSelectCategory }: FishGri
 
       const targetId = fish.id || 'm1';
 
-      const matchesCategory =
-        selectedCategory === 'all' ||
-        (selectedCategory === 'tatli' && fish.water_type?.toLowerCase().includes('tatlı')) ||
-        (selectedCategory === 'tuzlu' && fish.water_type?.toLowerCase().includes('tuzlu')) ||
-        (selectedCategory === 'aci' && fish.water_type?.toLowerCase().includes('acı')) ||
-        (selectedCategory === 'favorites' && favorites.includes(targetId));
+      const gearStr = (fish.recommended_gear || '').toLowerCase();
+      const descStr = (fish.description_tr || '' + fish.short_info_tr || '').toLowerCase();
+
+      let matchesCategory = true;
+
+      if (selectedCategory === 'tatli') {
+        matchesCategory = fish.water_type?.toLowerCase().includes('tatlı') || false;
+      } else if (selectedCategory === 'tuzlu') {
+        matchesCategory = fish.water_type?.toLowerCase().includes('tuzlu') || false;
+      } else if (selectedCategory === 'favorites') {
+        matchesCategory = favorites.includes(targetId);
+      } else if (selectedCategory === 'lrf_fly') {
+        matchesCategory = gearStr.includes('lrf') || gearStr.includes('fly');
+      } else if (selectedCategory === 'carp_camp') {
+        matchesCategory = gearStr.includes('sazan') || descStr.includes('sazan') || descStr.includes('göl');
+      } else if (selectedCategory === 'surf') {
+        matchesCategory = gearStr.includes('surf') || gearStr.includes('dip') || gearStr.includes('kıyı');
+      } else if (selectedCategory === 'protected') {
+        matchesCategory = descStr.includes('endemik') || descStr.includes('koruma') || (fish.limit_size || '').includes('limit');
+      }
 
       return matchesSearch && matchesCategory;
     })
@@ -218,26 +234,23 @@ export default function FishGrid({ selectedCategory, onSelectCategory }: FishGri
 
   return (
     <div className="space-y-8">
-      {/* Search & Filter Header Control Bar */}
-      <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Search input */}
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder={locale === 'tr' ? "Balık adı veya bilimsel adı ile ara..." : "Search by common or scientific name..."}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200/90 rounded-2xl text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent transition-all shadow-inner"
-          />
+      {/* Featured Spotlight Carousel */}
+      <SpotlightCarousel />
+
+      {/* Swipeable Quick Filter Chips Bar */}
+      <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-sm space-y-3">
+        <div className="flex items-center space-x-2">
+          <Filter className="w-4 h-4 text-emerald-600 shrink-0" />
+          <h2 className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
+            {isTr ? 'Hızlı Filtreler' : 'Quick Filters'}
+          </h2>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center space-x-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-          <Filter className="w-4 h-4 text-slate-400 shrink-0 mr-1" />
+        <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none snap-x">
+          {/* All */}
           <button
             onClick={() => onSelectCategory('all')}
-            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all ${
+            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start ${
               selectedCategory === 'all'
                 ? 'bg-[#0F172A] text-white shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -245,29 +258,37 @@ export default function FishGrid({ selectedCategory, onSelectCategory }: FishGri
           >
             {t('all')}
           </button>
+
+          {/* Freshwater */}
           <button
             onClick={() => onSelectCategory('tatli')}
-            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all ${
+            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start flex items-center space-x-1 ${
               selectedCategory === 'tatli'
                 ? 'bg-[#10B981] text-white shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            {t('freshwater')}
+            <Mountain className="w-3.5 h-3.5" />
+            <span>{t('freshwater')}</span>
           </button>
+
+          {/* Saltwater */}
           <button
             onClick={() => onSelectCategory('tuzlu')}
-            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all ${
+            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start flex items-center space-x-1 ${
               selectedCategory === 'tuzlu'
                 ? 'bg-[#0F172A] text-white shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            {t('saltwater')}
+            <Waves className="w-3.5 h-3.5" />
+            <span>{t('saltwater')}</span>
           </button>
+
+          {/* Favorites */}
           <button
             onClick={() => onSelectCategory('favorites')}
-            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all flex items-center space-x-1.5 ${
+            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start flex items-center space-x-1.5 ${
               selectedCategory === 'favorites'
                 ? 'bg-rose-500 text-white shadow-sm'
                 : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200/80'
@@ -276,10 +297,48 @@ export default function FishGrid({ selectedCategory, onSelectCategory }: FishGri
             <Heart className="w-3.5 h-3.5 fill-current" />
             <span>{t('favorites')} ({favorites.length})</span>
           </button>
+
+          {/* Discipline: LRF & Fly-Fishing */}
+          <button
+            onClick={() => onSelectCategory('lrf_fly')}
+            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start flex items-center space-x-1 ${
+              selectedCategory === 'lrf_fly'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200/80'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>LRF & Fly-Fishing</span>
+          </button>
+
+          {/* Discipline: Sazan & Kamp */}
+          <button
+            onClick={() => onSelectCategory('carp_camp')}
+            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start flex items-center space-x-1 ${
+              selectedCategory === 'carp_camp'
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200/80'
+            }`}
+          >
+            <Anchor className="w-3.5 h-3.5" />
+            <span>{isTr ? 'Sazan & Kamp Avı' : 'Carp & Camping'}</span>
+          </button>
+
+          {/* Warning: Protected species */}
+          <button
+            onClick={() => onSelectCategory('protected')}
+            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start flex items-center space-x-1 ${
+              selectedCategory === 'protected'
+                ? 'bg-emerald-700 text-white shadow-sm'
+                : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300'
+            }`}
+          >
+            <span>♻️ {isTr ? 'Koruma Altındaki Türler' : 'Protected Species'}</span>
+          </button>
         </div>
       </div>
 
-      {/* Grid Container with Framer Motion Stagger Animation */}
+      {/* Main Fish Feed Grid */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <RefreshCw className="w-6 h-6 text-[#10B981] animate-spin mr-2" />
