@@ -8,13 +8,15 @@
     "navHome": "Species Guide",
     "navCalendar": "Angling Calendar",
     "navWeather": "Weather & Solunar",
-    "navMap": "Fishing Spots"
+    "navMap": "Fishing Spots",
+    "navReports": "Catch Reports"
   },
   "Filters": {
     "all": "All",
     "freshwater": "Freshwater",
     "saltwater": "Saltwater",
     "brackish": "Brackish",
+    "favorites": "My Favorites",
     "allSeasons": "All Seasons",
     "spring": "Spring",
     "summer": "Summer",

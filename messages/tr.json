@@ -8,13 +8,15 @@
     "navHome": "Türler Rehberi",
     "navCalendar": "Av Takvimi",
     "navWeather": "Hava & Solunar",
-    "navMap": "Av Meraları"
+    "navMap": "Av Meraları",
+    "navReports": "Av Günlüğü"
   },
   "Filters": {
     "all": "Tümü",
     "freshwater": "Tatlı Su",
     "saltwater": "Tuzlu Su",
     "brackish": "Acı Su",
+    "favorites": "Favorilerim",
     "allSeasons": "Tüm Mevsimler",
     "spring": "İlkbahar",
     "summer": "Yaz",

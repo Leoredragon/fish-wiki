@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase, Fish } from '@/lib/supabase';
 import FishCard from './FishCard';
 import { useTranslations, useLocale } from 'next-intl';
-import { Search, Filter, RefreshCw, AlertCircle } from 'lucide-react';
+import { useFavorites } from '@/lib/useFavorites';
+import { Search, Filter, RefreshCw, AlertCircle, Heart } from 'lucide-react';
 
 export const RICH_MOCK_FISHES: Fish[] = [
   {
@@ -151,6 +152,7 @@ export default function FishGrid({ selectedCategory, onSelectCategory }: FishGri
   const t = useTranslations('Filters');
   const tCommon = useTranslations('Common');
   const locale = useLocale();
+  const { favorites } = useFavorites();
 
   const [fishes, setFishes] = useState<Fish[]>([]);
   const [loading, setLoading] = useState(true);
@@ -187,13 +189,16 @@ export default function FishGrid({ selectedCategory, onSelectCategory }: FishGri
       name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (fish.scientific_name && fish.scientific_name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesWater =
+    const targetId = fish.id || 'm1';
+
+    const matchesCategory =
       selectedCategory === 'all' ||
       (selectedCategory === 'tatli' && fish.water_type?.toLowerCase().includes('tatlı')) ||
       (selectedCategory === 'tuzlu' && fish.water_type?.toLowerCase().includes('tuzlu')) ||
-      (selectedCategory === 'aci' && fish.water_type?.toLowerCase().includes('acı'));
+      (selectedCategory === 'aci' && fish.water_type?.toLowerCase().includes('acı')) ||
+      (selectedCategory === 'favorites' && favorites.includes(targetId));
 
-    return matchesSearch && matchesWater;
+    return matchesSearch && matchesCategory;
   });
 
   return (
@@ -245,6 +250,17 @@ export default function FishGrid({ selectedCategory, onSelectCategory }: FishGri
           >
             {t('saltwater')}
           </button>
+          <button
+            onClick={() => onSelectCategory('favorites')}
+            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all flex items-center space-x-1.5 ${
+              selectedCategory === 'favorites'
+                ? 'bg-rose-500 text-white shadow-sm'
+                : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200/80'
+            }`}
+          >
+            <Heart className="w-3.5 h-3.5 fill-current" />
+            <span>{t('favorites')} ({favorites.length})</span>
+          </button>
         </div>
       </div>
 
@@ -257,7 +273,11 @@ export default function FishGrid({ selectedCategory, onSelectCategory }: FishGri
       ) : filteredFishes.length === 0 ? (
         <div className="bg-white rounded-3xl p-12 text-center border border-slate-200 shadow-sm space-y-3">
           <AlertCircle className="w-10 h-10 text-slate-300 mx-auto" />
-          <p className="text-slate-600 text-sm font-medium">{tCommon('notFound')}</p>
+          <p className="text-slate-600 text-sm font-medium">
+            {selectedCategory === 'favorites'
+              ? (locale === 'tr' ? 'Henüz favorilere balık eklenmedi.' : 'No favorite species saved yet.')
+              : tCommon('notFound')}
+          </p>
         </div>
       ) : (
         <motion.div

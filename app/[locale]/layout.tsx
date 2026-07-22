@@ -5,6 +5,25 @@ import { routing } from '@/i18n/routing';
 import '../globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { Metadata, Viewport } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Fish Wiki - Balık Türleri & Avcılık Rehberi',
+  description: 'Türkiye ve dünya sularındaki balık türleri, yasal boy limitleri, av yasakları, taktikler ve solunar tahmin rehberi.',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'FishWiki'
+  }
+};
+
+export const viewport: Viewport = {
+  themeColor: '#0F172A',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1
+};
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));

@@ -3,7 +3,7 @@
 import { Link, usePathname } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from './LanguageSwitcher';
-import { Shield, Fish, Calendar, CloudSun, MapPin, Compass } from 'lucide-react';
+import { Shield, Fish, Calendar, CloudSun, MapPin, Compass, Camera } from 'lucide-react';
 
 export default function Header({ locale }: { locale: string }) {
   const t = useTranslations('Header');
@@ -13,7 +13,8 @@ export default function Header({ locale }: { locale: string }) {
     { href: '/', label: t('navHome'), icon: Compass },
     { href: '/calendar', label: t('navCalendar'), icon: Calendar },
     { href: '/weather', label: t('navWeather'), icon: CloudSun },
-    { href: '/map', label: t('navMap'), icon: MapPin }
+    { href: '/map', label: t('navMap'), icon: MapPin },
+    { href: '/reports', label: t('navReports'), icon: Camera }
   ];
 
   return (

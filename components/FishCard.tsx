@@ -6,7 +6,8 @@ import { motion } from 'framer-motion';
 import { Fish as FishType } from '@/lib/supabase';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import { Waves, Calendar, Info, Mountain, ArrowRight } from 'lucide-react';
+import { useFavorites } from '@/lib/useFavorites';
+import { Waves, Calendar, Info, Mountain, ArrowRight, Heart } from 'lucide-react';
 
 interface FishCardProps {
   fish: FishType;
@@ -15,6 +16,7 @@ interface FishCardProps {
 export default function FishCard({ fish }: FishCardProps) {
   const locale = useLocale();
   const t = useTranslations('FishCard');
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [imageError, setImageError] = useState(false);
 
   const isTr = locale === 'tr';
@@ -23,17 +25,16 @@ export default function FishCard({ fish }: FishCardProps) {
     ? (fish.description_tr || fish.description_en)
     : (fish.description_en || fish.description_tr);
 
-  // Fallback image using Unsplash fish photo if missing or error
   const defaultImage = "https://images.unsplash.com/photo-1524704654690-b56c05c78a00?auto=format&fit=crop&w=800&q=80";
   const displayImage = (!fish.image_url || imageError) ? defaultImage : fish.image_url;
 
-  // Extract gear tags into pills
   const gearTags = fish.recommended_gear
     ? fish.recommended_gear.split(',').map((tag) => tag.trim())
     : [];
 
   const isFreshwater = fish.water_type?.toLowerCase().includes('tatlı');
   const targetId = fish.id || 'm1';
+  const favorite = isFavorite(targetId);
 
   return (
     <motion.div
@@ -44,8 +45,25 @@ export default function FishCard({ fish }: FishCardProps) {
       whileHover={{ y: -6, scale: 1.01 }}
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="bg-white rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group"
+      className="bg-white rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group relative"
     >
+      {/* Favorite Heart Button */}
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleFavorite(targetId);
+        }}
+        aria-label="Save Favorite"
+        className={`absolute top-3 left-3 z-20 p-2 rounded-full backdrop-blur-md border transition-all ${
+          favorite
+            ? 'bg-rose-500 text-white border-rose-400 shadow-md scale-105'
+            : 'bg-slate-900/60 text-white hover:bg-slate-900 border-white/20'
+        }`}
+      >
+        <Heart className={`w-3.5 h-3.5 ${favorite ? 'fill-white' : ''}`} />
+      </button>
+
       <Link href={`/fish/${targetId}`} className="flex-1 flex flex-col">
         {/* Image Header Container */}
         <div className="relative h-48 sm:h-52 w-full bg-slate-900 overflow-hidden">
