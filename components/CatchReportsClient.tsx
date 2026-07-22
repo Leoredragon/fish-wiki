@@ -8,14 +8,11 @@ import {
   Camera,
   MapPin,
   Calendar,
-  Sparkles,
   User,
   PlusCircle,
   XCircle,
   CheckCircle2,
-  Anchor,
-  Layers,
-  Fish
+  Anchor
 } from 'lucide-react';
 
 interface CatchReport {

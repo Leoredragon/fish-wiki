@@ -1,24 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const FAVORITES_KEY = 'fish_wiki_favorites';
 
 export function useFavorites() {
-  const [favorites, setFavorites] = useState<string[]>([]);
-
-  useEffect(() => {
+  const [favorites, setFavorites] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
       try {
         const stored = localStorage.getItem(FAVORITES_KEY);
-        if (stored) {
-          setFavorites(JSON.parse(stored));
-        }
+        return stored ? JSON.parse(stored) : [];
       } catch {
-        // ignore
+        return [];
       }
     }
-  }, []);
+    return [];
+  });
 
   const toggleFavorite = (fishId: string) => {
     setFavorites((prev) => {

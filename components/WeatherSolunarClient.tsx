@@ -7,11 +7,8 @@ import {
   CloudSun,
   Wind,
   Gauge,
-  Compass,
-  Sparkles,
   MapPin,
   RefreshCw,
-  Moon,
   Zap
 } from 'lucide-react';
 
@@ -21,6 +18,15 @@ interface CitySpot {
   lat: number;
   lon: number;
   type: string;
+}
+
+interface CurrentWeatherData {
+  temperature_2m: number;
+  relative_humidity_2m: number;
+  surface_pressure: number;
+  wind_speed_10m: number;
+  wind_direction_10m: number;
+  weather_code: number;
 }
 
 const SPOTS: CitySpot[] = [
@@ -37,43 +43,48 @@ export default function WeatherSolunarClient() {
   const isTr = locale === 'tr';
 
   const [selectedSpot, setSelectedSpot] = useState<CitySpot>(SPOTS[0]);
-  const [weatherData, setWeatherData] = useState<any>(null);
+  const [weatherData, setWeatherData] = useState<CurrentWeatherData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchWeather(selectedSpot);
+    let isSubscribed = true;
+    async function loadWeatherData() {
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${selectedSpot.lat}&longitude=${selectedSpot.lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,weather_code`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (isSubscribed) {
+          setWeatherData(data.current);
+          setLoading(false);
+        }
+      } catch {
+        if (isSubscribed) {
+          setWeatherData({
+            temperature_2m: 22.5,
+            relative_humidity_2m: 65,
+            surface_pressure: 1014.2,
+            wind_speed_10m: 12.4,
+            wind_direction_10m: 215,
+            weather_code: 1
+          });
+          setLoading(false);
+        }
+      }
+    }
+
+    loadWeatherData();
+
+    return () => {
+      isSubscribed = false;
+    };
   }, [selectedSpot]);
 
-  const fetchWeather = async (spot: CitySpot) => {
-    setLoading(true);
-    try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${spot.lat}&longitude=${spot.lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,weather_code`;
-      const res = await fetch(url);
-      const data = await res.json();
-      setWeatherData(data.current);
-    } catch {
-      // Fallback mock weather if offline
-      setWeatherData({
-        temperature_2m: 22.5,
-        relative_humidity_2m: 65,
-        surface_pressure: 1014.2,
-        wind_speed_10m: 12.4,
-        wind_direction_10m: 215,
-        weather_code: 1
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Calculate Solunar Fish Activity Score (0-100%)
   const calculateSolunarScore = (pressure: number = 1013, wind: number = 10) => {
-    // Optimal pressure for feeding is around 1012-1016 hPa
     let score = 75;
     if (pressure >= 1012 && pressure <= 1016) score += 15;
     else if (pressure < 1005 || pressure > 1025) score -= 15;
 
-    if (wind > 5 && wind < 20) score += 10; // Light breeze creates water surface ripples
+    if (wind > 5 && wind < 20) score += 10;
     return Math.min(Math.max(score, 45), 98);
   };
 
@@ -131,7 +142,7 @@ export default function WeatherSolunarClient() {
                 }`}
               >
                 <span>{isTr ? spot.nameTr : spot.nameEn}</span>
-                <span className={`text-[10px] mt-1 font-medium ${isSelected ? 'text-emerald-400' : 'text-slate-400'}`}>
+                <span className={`text-[10px] mt-1 font-semibold ${isSelected ? 'text-emerald-400' : 'text-slate-400'}`}>
                   {spot.type}
                 </span>
               </button>

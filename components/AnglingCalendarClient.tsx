@@ -7,12 +7,9 @@ import { RICH_MOCK_FISHES } from './FishGrid';
 import { Link } from '@/i18n/routing';
 import {
   Calendar,
-  Waves,
-  Mountain,
   Sparkles,
   Info,
   ChevronRight,
-  Filter,
   CheckCircle2
 } from 'lucide-react';
 

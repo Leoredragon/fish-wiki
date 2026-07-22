@@ -9,8 +9,6 @@ import { Link } from '@/i18n/routing';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   ArrowLeft,
-  Waves,
-  Mountain,
   Calendar,
   Layers,
   Sparkles,
@@ -43,36 +41,46 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    fetchFish();
-  }, [id]);
+    let isSubscribed = true;
+    async function loadFishData() {
+      try {
+        const mockMatch = RICH_MOCK_FISHES.find((f) => f.id === id);
+        if (mockMatch) {
+          if (isSubscribed) {
+            setFish(mockMatch);
+            setLoading(false);
+          }
+          return;
+        }
 
-  const fetchFish = async () => {
-    setLoading(true);
-    try {
-      const mockMatch = RICH_MOCK_FISHES.find((f) => f.id === id);
-      if (mockMatch) {
-        setFish(mockMatch);
-        setLoading(false);
-        return;
+        const { data, error } = await supabase
+          .from('fishes')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (isSubscribed) {
+          if (!error && data) {
+            setFish(data);
+          } else {
+            setFish(RICH_MOCK_FISHES[0]);
+          }
+          setLoading(false);
+        }
+      } catch {
+        if (isSubscribed) {
+          setFish(RICH_MOCK_FISHES[0]);
+          setLoading(false);
+        }
       }
-
-      const { data, error } = await supabase
-        .from('fishes')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (!error && data) {
-        setFish(data);
-      } else {
-        setFish(RICH_MOCK_FISHES[0]);
-      }
-    } catch {
-      setFish(RICH_MOCK_FISHES[0]);
-    } finally {
-      setLoading(false);
     }
-  };
+
+    loadFishData();
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [id]);
 
   const handleShare = () => {
     if (typeof window !== 'undefined') {

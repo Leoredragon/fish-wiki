@@ -159,29 +159,37 @@ export default function FishGrid({ selectedCategory, onSelectCategory }: FishGri
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetchFishes();
-  }, []);
+    let isSubscribed = true;
+    async function loadData() {
+      try {
+        const { data, error } = await supabase
+          .from('fishes')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
 
-  const fetchFishes = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('fishes')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-
-      if (error || !data || data.length === 0) {
-        setFishes(RICH_MOCK_FISHES);
-      } else {
-        setFishes(data);
+        if (isSubscribed) {
+          if (error || !data || data.length === 0) {
+            setFishes(RICH_MOCK_FISHES);
+          } else {
+            setFishes(data);
+          }
+          setLoading(false);
+        }
+      } catch {
+        if (isSubscribed) {
+          setFishes(RICH_MOCK_FISHES);
+          setLoading(false);
+        }
       }
-    } catch {
-      setFishes(RICH_MOCK_FISHES);
-    } finally {
-      setLoading(false);
     }
-  };
+
+    loadData();
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, []);
 
   const filteredFishes = fishes.filter((fish) => {
     const name = locale === 'tr' ? fish.name_tr : fish.name_en;

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Waves, Mountain, ShieldCheck, Sparkles } from 'lucide-react';
+import { Waves, Mountain, Sparkles } from 'lucide-react';
 import { useLocale } from 'next-intl';
 
 interface HeroSectionProps {

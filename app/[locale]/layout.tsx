@@ -38,7 +38,7 @@ export default async function LocaleLayout({
 }) {
   const { locale } = await params;
 
-  if (!routing.locales.includes(locale as any)) {
+  if (!routing.locales.includes(locale as 'tr' | 'en')) {
     notFound();
   }
 
@@ -50,7 +50,7 @@ export default async function LocaleLayout({
     <html lang={locale} className="h-full scroll-smooth">
       <body className="flex min-h-full flex-col bg-[#F8FAFC] text-[#1E293B] antialiased">
         <NextIntlClientProvider messages={messages}>
-          <Header locale={locale} />
+          <Header />
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {children}
           </main>

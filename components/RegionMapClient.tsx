@@ -3,9 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocale } from 'next-intl';
-import { RICH_MOCK_FISHES } from './FishGrid';
-import { Link } from '@/i18n/routing';
-import { MapPin, Compass, Waves, Mountain, ChevronRight, Anchor, Sparkles } from 'lucide-react';
+import { MapPin, Compass, Anchor, Sparkles } from 'lucide-react';
 
 interface Region {
   id: string;

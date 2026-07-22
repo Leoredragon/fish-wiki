@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase, Fish } from '@/lib/supabase';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import {
-  PlusCircle,
   List,
   CheckCircle2,
   XCircle,
@@ -21,8 +20,7 @@ import {
   Info,
   FileText,
   Utensils,
-  Upload,
-  Image as ImageIcon
+  Upload
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -57,12 +55,7 @@ export default function AdminPage() {
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [fishes, setFishes] = useState<Fish[]>([]);
 
-  useEffect(() => {
-    loadFishes();
-  }, []);
-
-  const loadFishes = async () => {
-    setFetching(true);
+  const loadFishes = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('fishes')
@@ -77,7 +70,34 @@ export default function AdminPage() {
     } finally {
       setFetching(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    let isSubscribed = true;
+    async function fetchList() {
+      try {
+        const { data, error } = await supabase
+          .from('fishes')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (isSubscribed) {
+          if (!error && data) {
+            setFishes(data);
+          }
+          setFetching(false);
+        }
+      } catch {
+        if (isSubscribed) {
+          setFetching(false);
+        }
+      }
+    }
+    fetchList();
+    return () => {
+      isSubscribed = false;
+    };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -89,7 +109,6 @@ export default function AdminPage() {
     }
   };
 
-  // Image File Upload to Supabase Storage or Base64/Public URL
   const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -100,13 +119,11 @@ export default function AdminPage() {
       const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
       const filePath = `fish-images/${fileName}`;
 
-      // Try uploading to Supabase Storage bucket 'fish-images'
       const { error: uploadError } = await supabase.storage
         .from('fish-images')
         .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
       if (uploadError) {
-        // Fallback: Read file as Data URL if bucket does not exist yet
         const reader = new FileReader();
         reader.onloadend = () => {
           setFormData(prev => ({ ...prev, image_url: reader.result as string }));
@@ -171,7 +188,6 @@ export default function AdminPage() {
 
       setNotification({ type: 'success', message: t('success') });
 
-      // Reset form
       setFormData({
         name_tr: '',
         name_en: '',
@@ -194,8 +210,9 @@ export default function AdminPage() {
         is_active: true
       });
       loadFishes();
-    } catch (err: any) {
-      setNotification({ type: 'error', message: err.message || t('error') });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t('error');
+      setNotification({ type: 'error', message: msg });
     } finally {
       setLoading(false);
     }
@@ -533,7 +550,6 @@ export default function AdminPage() {
             </div>
 
             <div className="space-y-4 text-xs sm:text-sm">
-              {/* Image Upload Option + URL Input */}
               <div className="space-y-2">
                 <label className="block font-semibold text-slate-700">
                   {t('imageUrl')} / Görsel Yükleme
@@ -594,7 +610,6 @@ export default function AdminPage() {
                 />
               </div>
 
-              {/* Is Active Switch */}
               <div className="flex items-center space-x-3 pt-2">
                 <input
                   type="checkbox"
@@ -611,7 +626,6 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
@@ -631,7 +645,6 @@ export default function AdminPage() {
           </button>
         </form>
 
-        {/* Right Side: Registered Species List (Card) */}
         <div className="lg:col-span-4 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-6 flex flex-col h-fit">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div className="flex items-center space-x-2">

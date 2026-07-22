@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import LanguageSwitcher from './LanguageSwitcher';
 import { Shield, Fish, Calendar, CloudSun, MapPin, Compass, Camera } from 'lucide-react';
 
-export default function Header({ locale }: { locale: string }) {
+export default function Header() {
   const t = useTranslations('Header');
   const pathname = usePathname();
 
