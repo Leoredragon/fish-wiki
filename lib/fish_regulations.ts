@@ -27,7 +27,14 @@ export const FISH_REGULATIONS: Record<string, number> = {
   'tatlı su kefali': 20,
   'sudak': 26,
   'yayın': 90,
-  'turna': 40
+  'turna': 40,
+  'fırat turnası': 50,
+  'kırmızı benekli alabalık': 20,
+  'şabut': 30,
+  'kadife': 26,
+  'tatlı su levreği': 18,
+  'kızılkanat': 15,
+  'yılan balığı': 50
 };
 
 export function getLegalMinSize(fishName: string): number | null {
