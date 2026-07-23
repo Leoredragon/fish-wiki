@@ -343,9 +343,6 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
           <span>{isTr ? 'Profil Ayarları' : 'Settings'}</span>
         </button>
       </div>
-          <span>{isTr ? 'Malzeme Çantası' : 'Tackle Box'}</span>
-        </button>
-      </div>
 
       {/* Tab Content */}
       <div className="min-h-[400px]">
