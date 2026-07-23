@@ -21,8 +21,11 @@ import {
 import { createClient } from '@/lib/supabase/client';
 
 export const INITIAL_WIKI_ARTICLES = [
+  // ==========================================
+  // DISIPLINES (BALIKÇILIK STİLLERİ & DİSİPLİNLERİ)
+  // ==========================================
   {
-    id: '1',
+    id: 'd1',
     category: 'disciplines',
     title_tr: 'Spinning (At-Çek) Balıkçılığı',
     title_en: 'Spin Fishing',
@@ -39,14 +42,14 @@ HEDEF BALIKLAR:
 Deniz Levreği, Lüfer, Çinekop, Palamut, Akya, Baracuda ve Alabalık.
 
 AV TAKTİKLERİ:
-Sabahın ilk ışıklarında ve gün batımında (sabah suyu / akşam suyu) su üstü sahteleri (WTD aksiyonu) veya sığ dalar maketler maksimum verim sağlar. Bulanık ve dalgalı havalarda beyaz, limon veya pembe renkli sahteler tercih edilmelidir.`,
+Sabahın ilk ışıklarında ve gün batımında su üstü sahteleri (WTD aksiyonu) veya sığ dalar maketler maksimum verim sağlar. Bulanık ve dalgalı havalarda beyaz, limon veya pembe renkli sahteler tercih edilmelidir.`,
     content_en: 'Spinning relies on casting hard lures or spinners and retrieving them with action.',
     image_url: 'https://images.unsplash.com/photo-1541432901042-2d8bd64b4a9b?auto=format&fit=crop&w=800&q=80',
     water_type: 'Tüm Sular',
     difficulty_level: 'Orta'
   },
   {
-    id: '2',
+    id: 'd2',
     category: 'disciplines',
     title_tr: 'LRF (Light Rock Fishing / Ultra Hafif At-Çek)',
     title_en: 'Light Rock Fishing (LRF)',
@@ -70,7 +73,31 @@ AV TAKTİKLERİ:
     difficulty_level: 'Başlangıç'
   },
   {
-    id: '3',
+    id: 'd3',
+    category: 'disciplines',
+    title_tr: 'Sazan Balıkçılığı (Carp Angling)',
+    title_en: 'Carp Angling',
+    short_desc_tr: 'Rod podlar, ısırma alarmları, boilie yemler ve özel rig montajları ile trofe sazan avı.',
+    short_desc_en: 'Specialized carp fishing using rod pods, bite alarms, boilies, and hair rigs.',
+    content_tr: `Sazan balıkçılığı; yüksek sabır, nokta yemlemesi ve özel takımlarla göllerde ve barajlarda yapılan dünyanın en popüler tatlı su trofe disiplinidir.
+
+EKİPMAN SEÇİMİ:
+• Kamış: 3.60m - 3.90m (12 - 13ft) uzunluğunda, 3.0 lb - 3.5 lb test eğrili (Test Curve) sazan kamışları.
+• Makine: 8000 - 10000 kafa serbest makaralı (Baitrunner veya Quick Drag) sazan makineleri.
+• Destek & Elektronik: Rod Pod sehpa, elektronik ısırma alarmı (Bite Alarm) ve ışıklı Swinger takımları.
+
+YEM VE RİG SEÇİMİ:
+Boilie (haşlanmış yem topu), Pop-up (yüzen boilie), Wafters, haşlanmış mısır ve kaplan fıstığı kullanılır. İğneye yem doğrudan takılmaz; Hair Rig (Kıl Rig), Ronnie Rig veya Chod Rig ile bağımsız dizilir.
+
+AV TAKTİKLERİ:
+Yemleme roketleri (Spomb) veya kumandalı yemleme botları ile mera önceden yemlenir. Sazan yemi vakumlayarak yuttuğunda iğne alt dudağa saplanır ve alarm çalar.`,
+    content_en: 'Carp angling requires specialized tackle like Hair Rigs, boilies, rod pods, and bite alarms to target massive mirror and common carp.',
+    image_url: 'https://images.unsplash.com/photo-1439853949127-fa647821eba0?auto=format&fit=crop&w=800&q=80',
+    water_type: 'Tatlı Su',
+    difficulty_level: 'Orta'
+  },
+  {
+    id: 'd4',
     category: 'disciplines',
     title_tr: 'Shore Jigging (Kıyı Ağır Metal Jig)',
     title_en: 'Shore Jigging',
@@ -84,17 +111,14 @@ EKİPMAN SEÇİMİ:
 • Misina: PE 1.5 - PE 3.0 örgü ip + 0.45mm - 0.65mm Fluorocarbon şok lider.
 
 HEDEF BALIKLAR:
-Akya, Torik, Palamut, Kuzu (Greater Amberjack), Baracuda, Lagos, Sinarit.
-
-AV TAKTİKLERİ:
-Metal jig dibe değdikten sonra ritmik olarak kamış yukarı fırlatılıp hızlıca sarılır. Jig dibe düşerken süzülme anında vuruşlar çok yoğundur.`,
+Akya, Torik, Palamut, Kuzu (Greater Amberjack), Baracuda, Lagos, Sinarit.`,
     content_en: 'Shore jigging involves casting heavy metal lures from coastal rocks to target pelagic predators.',
     image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
     water_type: 'Tuzlu Su',
     difficulty_level: 'İleri'
   },
   {
-    id: '4',
+    id: 'd5',
     category: 'disciplines',
     title_tr: 'Surfcasting (Kıyı İleri Atış & Ağır Dip)',
     title_en: 'Surfcasting',
@@ -108,134 +132,268 @@ EKİPMAN SEÇİMİ:
 • Misina: 0.16mm - 0.20mm Örgü İp + Konik Şok Lider (Shockleader) veya 0.30mm - 0.35mm Monofilament.
 
 HEDEF BALIKLAR:
-Çupra, Kalkan, Mırmır, Levrek, Eşkina ve Kurşun Arkası tekniği ile Çinekop / Lüfer / Palamut.
-
-AV TAKTİKLERİ:
-Yem olarak boru kurdu, sülünes, canlı yengeç, madya ve taze hamsi/istavrit fletos tercih edilir. Kurşun arkası yapılıyorsa 150-200g kurşun arkasına 3-7cm maket balık bağlanarak Boğaz akıntısında uzak mesafeler taranır.`,
+Çupra, Kalkan, Mırmır, Levrek, Eşkina ve Kurşun Arkası tekniği ile Çinekop / Lüfer / Palamut.`,
     content_en: 'Surfcasting utilizes 4.2m-4.5m stiff rods to cast heavy sinkers over 100 meters into the surf zone.',
     image_url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
     water_type: 'Tuzlu Su',
     difficulty_level: 'Orta'
   },
+
+  // ==========================================
+  // RIGS (SAZAN & DENİZ RİGLERİ)
+  // ==========================================
   {
-    id: '5',
-    category: 'disciplines',
-    title_tr: 'Tekneden Slow Jigging & Vertical Jigging',
-    title_en: 'Slow Pitch Jigging',
-    short_desc_tr: 'Tekneden derin deniz kanyonlarına dikey zıplatma sahteleri ile trofe avcılığı.',
-    short_desc_en: 'Vertical boat angling using weighted jigs in deep sea structures.',
-    content_tr: `Slow ve Vertical Jigging; açık denizde 30 metreden 150 metreye kadar olan derin taşlarda ve kanyonlarda tekneden dikine yapılan trofe avcılığı yöntemidir.
+    id: 'r1',
+    category: 'rigs',
+    title_tr: 'Hair Rig (Kıl Rig)',
+    title_en: 'Hair Rig',
+    short_desc_tr: 'Yemi iğneden bağımsız kıl misinaya dizerek balığın temkinsiz emmesini sağlayan temel sazan rigi.',
+    short_desc_en: 'The classic carp rig that presents the bait on a hair independent of the hook.',
+    content_tr: `Hair Rig (Kıl Rig), modern sazan balıkçılığının temelini oluşturan en devrimsel montajdır. Yem (boilie veya mısır) iğne üzerine takılmaz; iğne sapının uzantısı olan ince kıl misinaya yem stoperi ile dizilir.
 
-EKİPMAN SEÇİMİ:
-• Kamış: 1.80m - 2.10m hassas esneme yapısına sahip tetikli (Baitcast) veya Jig kamışları.
-• Makine: Güçlü çıkrık/baitcasting makinesi veya 5000-8000 boyutunda yüksek torklu spin makinesi.
-• Misina: PE 2.0 - PE 4.0 örgü ip + 0.50mm - 0.70mm Fluorocarbon lider.
+ÇALIŞMA MANTIĞI:
+Sazan dipteki yemi vakumlayarak ağzına çekerken iğnenin varlığını hissetmez. Yemi yuttuğu anda iğne boşta olduğu için balığın alt dudağına kendiliğinden batar (Self-Hooking).
 
-HEDEF BALIKLAR:
-Lagos, Grida, Akya, Sinarit, Trança, Orfoz, Fangri Mercan.
-
-AV TAKTİKLERİ:
-80g ile 250g arasındaki yaprak (Slow Pitch) jigler dibe indirildikten sonra yarım tur sarım ve kamış ucu sektirmeleri ile geniş yaprak süzülmeleri yaptırılır.`,
-    content_en: 'Slow pitch jigging lures sink and flutter in deep water to entice large bottom dwellers like groupers and dentex.',
-    image_url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
-    water_type: 'Tuzlu Su',
-    difficulty_level: 'İleri'
+KULLANIM ALANLARI:
+Batan boilieler, haşlanmış mısır ve kaplan fıstığı ile tüm sazan avlarında kullanılır.`,
+    content_en: 'Hair rig is the cornerstone of carp fishing presenting bait naturally next to the hook.',
+    image_url: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&q=80',
+    water_type: 'Tatlı Su',
+    difficulty_level: 'Başlangıç'
   },
   {
-    id: '6',
-    category: 'disciplines',
-    title_tr: 'Fly Fishing (Sinek Oltacılığı)',
-    title_en: 'Fly Fishing',
-    short_desc_tr: 'Özel ağırlıklı misina ve el yapımı böcek/sinek sahteleri ile zarif akarsu avı.',
-    short_desc_en: 'Elegant stream angling using weighted fly lines and handcrafted flies.',
-    content_tr: `Fly Fishing; ağırlığı yem yerine misinada olan, el yapımı tüy ve ipliklerden üretilmiş böcek sahtelerinin akarsu yüzeyine zarifçe kondurulması sanatıdır.
+    id: 'r2',
+    category: 'rigs',
+    title_tr: 'Ronnie Rig / Spinner Rig',
+    title_en: 'Ronnie Rig / Spinner Rig',
+    short_desc_tr: 'Pop-up yüzen yemler için 360 derece dönebilen fırdöndülü agresif sazan rigi.',
+    short_desc_en: 'Pop-up carp rig providing 360 degree rotation for aggressive hook holds.',
+    content_tr: `Ronnie Rig (Spinner Rig); pop-up (dibe batmayan yüzen) boilie yemler için günümüzün en çok tercih edilen agresif sazan montajıdır.
 
-EKİPMAN SEÇİMİ:
-• Kamış: 2.40m - 2.70m uzunluğunda, #3 ile #6 numara arası Fly kamışları.
-• Makine: Özel geniş hazneli Fly makinesi (Fly Reel).
-• Misina: Yüzen (WF-Floating) ağır Fly misinası + Şeffaf incelen konik lider (Leader) + Tippet.
+ÇALIŞMA MANTIĞI:
+İğne gözüne takılan halkalı fırdöndü (Quick Change Swivel) sayesinde iğne 360 derece serbestçe dönebilir. Balık hangi açıdan yaklaşırsa yaklaşsın iğne ucu anında aşağı döner ve alt dudağı yakalar.
 
-HEDEF BALIKLAR:
-Kırmızı Benekli Alabalık, Abant Alası, Dere Alabalığı, Tatlı Su Kefali (Kasna).
+AVANTAJLARI:
+• İğne değişimi birkaç saniye sürer.
+• Yem dipteki otların ve tortuların 2-4 cm üstünde mükemmel askıda kalır.`,
+    content_en: 'Ronnie rig offers 360 rotation around a swivel for pop-up baits.',
+    image_url: 'https://images.unsplash.com/photo-1439853949127-fa647821eba0?auto=format&fit=crop&w=800&q=80',
+    water_type: 'Tatlı Su',
+    difficulty_level: 'Orta'
+  },
+  {
+    id: 'r3',
+    category: 'rigs',
+    title_tr: 'Chod Rig',
+    title_en: 'Chod Rig',
+    short_desc_tr: 'Çamurlu ve otlu zeminlerde yemin gömülmeden otların üstünde durmasını sağlayan sert pop-up rigi.',
+    short_desc_en: 'Sinker-independent rig for fishing muddy and weed-covered lake bottoms.',
+    content_tr: `Chod Rig; çamurlu, yosunlu ve mil kaplı göl tabanlarında kurşun çamura gömülse bile yemin lider misina üzerinde kayarak otların üstünde tertemiz durmasını sağlayan sert fluorocarbon (Mouth Trap) rigidir.
 
-AV TAKTİKLERİ:
-Suların durgunlaştığı havuzcuklarda yüzeyde yüzen kuru sinekler (Dry Fly) veya dipte süzülen nimfler (Nymph) akıntıya bırakılır.`,
-    content_en: 'Fly fishing relies on casting lightweight artificial flies using weighted fly lines in clear streams.',
-    image_url: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=800&q=80',
+ÖZELLİKLERİ:
+• Sert kavisli fluorocarbon beden kullanılır.
+• Kurşun ile rig arasındaki helikopter boncuk sistemi sayesinde yem serbestçe yükselir.`,
+    content_en: 'Chod rig stays on top of heavy silt and weed beds.',
+    image_url: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800&q=80',
     water_type: 'Tatlı Su',
     difficulty_level: 'İleri'
   },
   {
-    id: '7',
-    category: 'disciplines',
-    title_tr: 'Yemli Dip Balıkçılığı (Kıyı & Tekne)',
-    title_en: 'Bottom Bait Fishing',
-    short_desc_tr: 'Doğal yemler, ağır kurşunlar ve köstekli takımlarla klasik dip balıkçılığı.',
-    short_desc_en: 'Classic bottom fishing with natural baits and multi-hook rigs.',
-    content_tr: `Yemli dip balıkçılığı; deniz ve tatlı su dip canlılarını taklit eden doğal yemlerin (boru kurdu, sülünes, yengeç, mısır, hamur vb.) kurşunlu takımlarla dibe yatırılmasıdır.
+    id: 'r4',
+    category: 'rigs',
+    title_tr: 'Snowman Rig (Kardan Adam Rig)',
+    title_en: 'Snowman Rig',
+    short_desc_tr: 'Batan boilie üzerine yüzen pop-up eklenerek hazırlanan nötr dengeli kardan adam yem kombinasyonu.',
+    short_desc_en: 'Combination of a bottom boilie and a pop-up creating a neutral balanced snowman presentation.',
+    content_tr: `Snowman Rig; dipte doğal duran batan bir boilie'nin üzerine parlak renkli yüzen bir pop-up eklenerek üst üste dizilmesiyle oluşan kardan adam yem sunumudur.
 
-EKİPMAN SEÇİMİ:
-• Kamış: 2.70m - 3.60m 50-150g atarlı esnek uçlu dip kamışları.
-• Makine: 4000 - 6000 kafa kalamalı veya arkadan serbest makaralı (Baitrunner) makineler.
-• Takım: 2'li veya 3'lü klasik beden köstek takımları, Gezer kurşunlu tek iğneli mantarlı takımlar.
+AVANTAJLARI:
+Pop-up yem batan yemin ağırlığını hafiflettiği için yem su altında nötr dengeli hale gelir. Sazan yeme dokunduğu anda yem çabucak ağzına girer.`,
+    content_en: 'Snowman rig balances a bottom bait with a top pop-up for easy ingestion.',
+    image_url: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&q=80',
+    water_type: 'Tatlı Su',
+    difficulty_level: 'Başlangıç'
+  },
+  {
+    id: 'r5',
+    category: 'rigs',
+    title_tr: 'Method Feeder Hair Rig',
+    title_en: 'Method Feeder Hair Rig',
+    short_desc_tr: 'Feeder kafes yemliği etrafında sıkıştırılan pelet/hamur merkezinde kısa 8-10cm hızlı kanca rigi.',
+    short_desc_en: 'Short hair rig embedded inside a method feeder pellet ball.',
+    content_tr: `Method Feeder Rig; özel döküm yemlik kalıbı etrafına sıkıştırılan nemli pelet veya sazan hamurunun tam ortasına 8-10 cm'lik kısa hair rig yerleştirilerek hazırlanan yüksek avcılıklı sistemdir.
 
-HEDEF BALIKLAR:
-Sazan, Yayın, Eşkina, Karagöz, Çupra, Mırmır, Mercan.
+AVANTAJLARI:
+Yemlik dibe düştüğünde hamur dağılır ve yem tam da dağılan yemin merkezinde balığa sunulur.`,
+    content_en: 'Method feeder rig places the hook bait right inside the feeding spot.',
+    image_url: 'https://images.unsplash.com/photo-1439853949127-fa647821eba0?auto=format&fit=crop&w=800&q=80',
+    water_type: 'Tatlı Su',
+    difficulty_level: 'Başlangıç'
+  },
 
-AV TAKTİKLERİ:
-Akşam ve gece saatlerinde kıyı kayalıklarında boru kurdu ve mamun ile Eşkina ve Karagöz; kumluk sahil kırmalıklarında ise Çupra ve Mırmır avı için en güvenilir av disiplinidir.`,
-    content_en: 'Traditional bottom fishing targeting bottom dwellers with natural baits.',
+  // ==========================================
+  // KNOTS (BALIKÇILIK DÜĞÜMLERİ)
+  // ==========================================
+  {
+    id: 'k1',
+    category: 'knots',
+    title_tr: 'FG Knot (İp + Fluorocarbon Lider Düğümü)',
+    title_en: 'FG Knot',
+    short_desc_tr: 'İp misina ile Fluorocarbon lider birleştirmede sıfır pürüzlü en güçlü düğüm.',
+    short_desc_en: 'Slimmest and strongest knot for connecting braided mainline to fluorocarbon leader.',
+    content_tr: `FG Knot; örgü ip misina ile kalın Fluorocarbon lideri birbirine eklemek için geliştirilmiş dünyadaki en güçlü ve en ince profilli düğümdür.
+
+ÖZELLİKLERİ:
+• Pürüzsüz yapısı sayesinde kamış fincanlarına ve porselenlerine hiç takılmadan geçer.
+• Düğüm noktası esneme yapmaz ve %100 çeker gücünü korur.
+• Spin, LRF ve Shore Jigging disiplinlerinin vazgeçilmez lider düğümüdür.`,
+    content_en: 'FG knot binds braid around fluorocarbon with no bulky knot stack, letting it pass smoothly through rod guides.',
+    image_url: 'https://images.unsplash.com/photo-1527838832700-5059252407fa?auto=format&fit=crop&w=800&q=80',
+    water_type: 'Tüm Sular',
+    difficulty_level: 'İleri'
+  },
+  {
+    id: 'k2',
+    category: 'knots',
+    title_tr: 'Alberto Knot (Crazy Alberto Düğümü)',
+    title_en: 'Alberto Knot',
+    short_desc_tr: 'İp ile lider misinayı sahada çok hızlı ve pratik birleştiren yüksek dayanımlı düğüm.',
+    short_desc_en: 'Fast and reliable line-to-line knot for joining braid to fluorocarbon.',
+    content_tr: `Alberto Knot; rüzgarlı sahada veya gece avlarında FG Knot'a göre çok daha kısa sürede ve kolayca atılabilen güçlü bir lider düğümüdür.
+
+NASIL ATILIR:
+1. Fluorocarbon misinada bir kıvrım (halka) oluşturulur.
+2. Örgü ip halkanın içinden geçirilip öne doğru 7 tur, geriye doğru 7 tur sarılarak kilitlenir.`,
+    content_en: 'Alberto knot is a quick and extremely strong braid-to-leader connection.',
+    image_url: 'https://images.unsplash.com/photo-1527838832700-5059252407fa?auto=format&fit=crop&w=800&q=80',
+    water_type: 'Tüm Sular',
+    difficulty_level: 'Orta'
+  },
+  {
+    id: 'k3',
+    category: 'knots',
+    title_tr: 'Knotless Knot (Düğümsüz Düğüm)',
+    title_en: 'Knotless Knot',
+    short_desc_tr: 'Sazan balıkçılığında Hair Rig hazırlamak için kanca sapına sarılan temel sazan düğümü.',
+    short_desc_en: 'Essential carp fishing knot used to create hair rigs.',
+    content_tr: `Knotless Knot (Düğümsüz Düğüm); sazan iğnelerine kılı uzatarak yemi bağlamak için kullanılan en pratik montaj düğümüdür.
+
+NASIL ATILIR:
+Misina iğne gözünden arkadan öne geçirilip yem boyu (kıl) ayarlanır. Ardından iğne sapı etrafına 7-8 tur sıkıca sarılıp tekrar gözden arkadan öne doğru çıkarılarak çekilir.`,
+    content_en: 'Knotless knot ties the hook while leaving a hair loop for boilies.',
+    image_url: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&q=80',
+    water_type: 'Tatlı Su',
+    difficulty_level: 'Başlangıç'
+  },
+  {
+    id: 'k4',
+    category: 'knots',
+    title_tr: 'Palomar Knot (Palomar Düğümü)',
+    title_en: 'Palomar Knot',
+    short_desc_tr: 'Fırdöndü, klips ve iğnelere misina bağlamada %95+ çeker güçlü en güvenilir düğüm.',
+    short_desc_en: 'Simplest and strongest knot for tying hooks, swivels, and snaps.',
+    content_tr: `Palomar Knot; özellikle örgü ip misinalarda kayma yapmayan, %95 çeker mukavemeti koruyan en sağlam kanca ve klips bağlama düğümüdür.
+
+NASIL ATILIR:
+Misina ikiye katlanıp klips gözünden geçirilir. Basit bir düğüm atılıp oluşan halka klipsin üzerinden geçirilerek ıslatılır ve sıkılır.`,
+    content_en: 'Palomar knot is widely considered the strongest knot for braided line.',
     image_url: 'https://images.unsplash.com/photo-1527838832700-5059252407fa?auto=format&fit=crop&w=800&q=80',
     water_type: 'Tüm Sular',
     difficulty_level: 'Başlangıç'
   },
+
+  // ==========================================
+  // LURES (SAHTE YEMLER)
+  // ==========================================
   {
-    id: '8',
-    category: 'disciplines',
-    title_tr: 'Şamandıralı (Bolognese & Göl) Balıkçılık',
-    title_en: 'Float / Match Fishing',
-    short_desc_tr: 'Hassas şamandıralar ve ince misinalarla su kolonundaki balıkları avlama.',
-    short_desc_en: 'Precision angling using delicate floats to target mid-water species.',
-    content_tr: `Şamandıralı balıkçılık; suyun üstünde yüzen şamandıranın batma veya sallanma hareketini takip ederek yemi belirli bir derinlikte sabit tutma yöntemidir.
+    id: 'l1',
+    category: 'lures',
+    title_tr: 'Floating & Sinking Minnow (Maket Balıklar)',
+    title_en: 'Minnow Lures',
+    short_desc_tr: 'Yüzey ve orta suda yaralı balık aksiyonu veren gagalı maket sahteler.',
+    short_desc_en: 'Hard plastic minnows with diving lip for midwater action.',
+    content_tr: `Minnow maketler; gaga yapıları sayesinde suyun direncini kullanarak sağa-sola sallanma (wobbling) ve yalpalama (rolling) aksiyonu veren en yaygın sahtelerdir.
 
-EKİPMAN SEÇİMİ:
-• Kamış: 4.00m - 7.00m uzunluğunda Bolognese kamışlar veya makineli esnek göl kamışları.
-• Makine: 2000 - 3000 hafif spin veya kibar göl makineleri.
-• Takım: Hassas stoperli gezer şamandıra, kıstırma kurşunlar ve ince beden (0.12mm - 0.18mm).
+TÜRLERİ:
+• Floating (Yüzen): Sarım durduğunda su yüzeyine doğru yükselir. Sığ sularda idealdir.
+• Sinking (Batan): Sarım durduğunda dibe doğru süzülür. Derin su taramasında tercih edilir.
+• Suspending (Askıda Kalan): Suyun içinde nötr özgül ağırlıkta durarak dur-kalk (Jerk) aksiyonunda vuruş alır.`,
+    content_en: 'Minnow lures imitate small forage fish with wobbling lip actions.',
+    image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
+    water_type: 'Tüm Sular',
+    difficulty_level: 'Orta'
+  },
+  {
+    id: 'l2',
+    category: 'lures',
+    title_tr: 'Popper & WTD Stickbait (Su Üstü Sahteler)',
+    title_en: 'Topwater Lures',
+    short_desc_tr: 'Su yüzeyinde şapırtı ve WTD zikzağı ile avcı balıkları uyaran gürültülü sahteler.',
+    short_desc_en: 'Surface splashers and zigzagging walking baits for topwater strikes.',
+    content_tr: `Su üstü sahteleri; su yüzeyinde kırılma ve ses çıkararak yırtıcı balıkların hücum refleksini tetikleyen en heyecanlı sahte türüdür.
 
-HEDEF BALIKLAR:
-Kefal, Kızılkanat, Kadife, Karagöz, İstavrit, Tatlı Su Kefali.
+ÇEŞİTLERİ:
+• Popper: Oyuk ağzı sayesinde kamış darbeleriyle "pop-pop" sesi ve su fışkırtması çıkarır.
+• WTD (Walk The Dog) Stickbait: Gagası yoktur; kamış ucunun ritmik sekmesiyle su üstünde zikzak çizer.`,
+    content_en: 'Topwater lures walk and splash on the surface to trigger explosive strikes.',
+    image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
+    water_type: 'Tüm Sular',
+    difficulty_level: 'Orta'
+  },
 
-AV TAKTİKLERİ:
-Ekmek içi, solucan veya hamur kullanılan avlarda şamandıranın en ufak batma anında seri ve yumuşak tasma vurulmalıdır.`,
-    content_en: 'Float fishing provides visual excitement watching the float plunge underwater upon a strike.',
-    image_url: 'https://images.unsplash.com/photo-1439853949127-fa647821eba0?auto=format&fit=crop&w=800&q=80',
+  // ==========================================
+  // TACKLES (KAMIŞ & MAKİNE)
+  // ==========================================
+  {
+    id: 't1',
+    category: 'tackles',
+    title_tr: 'Spin Makinesi (Spinning Reel)',
+    title_en: 'Spinning Reel',
+    short_desc_tr: 'At-çek balıkçılığı için ön kalamalı, yüksek torklu standart olta makinesi.',
+    short_desc_en: 'Standard front drag reel used for lure casting and active angling.',
+    content_tr: `Spin makineleri; hafiflikleri, yüksek sarım kalitesi ve hassas kalama (drag) mekanizmaları ile dünyada en çok kullanılan olta makinesi türüdür.
+
+BOYUT SEÇİMİ:
+• 1000 - 2000 Kafa: LRF ve Ultra-light avlar.
+• 3000 - 4000 Kafa: Spin at-çek, tatlı su levreği ve lüfer avları.
+• 5000 - 6000 Kafa: Shore Jigging ve ağır kıyı avları.`,
+    content_en: 'Spinning reels offer versatile performance across all freshwater and saltwater casting applications.',
+    image_url: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=800&q=80',
     water_type: 'Tüm Sular',
     difficulty_level: 'Başlangıç'
   },
   {
-    id: '9',
-    category: 'disciplines',
-    title_tr: 'Trolling (Sırtı Çekme / Tekne Arkası)',
-    title_en: 'Trolling',
-    short_desc_tr: 'Hareket halindeki teknenin arkasından sahte veya canlı yem sürütme tekniği.',
-    short_desc_en: 'Boat trolling with hard lures or live bait behind a moving vessel.',
-    content_tr: `Sırtı çekme (Trolling); teknenin 2 ile 5 mil arasındaki sabit hızında su üstünden veya daldırıcı aparatlar (daldırma tahtası, downrigger) ile derinden yem çekilmesi yöntemidir.
+    id: 't2',
+    category: 'tackles',
+    title_tr: 'Surfcast (Big Pit) Makine',
+    title_en: 'Surf Big Pit Reel',
+    short_desc_tr: 'Geniş konik makaralı, 100 metre üzeri uzağa atış ve Boğaz makinesi.',
+    short_desc_en: 'Long cast shallow spool reel for heavy beach and current surfcasting.',
+    content_tr: `Surf makineleri (Big Pit); sığ ve geniş açılı konik misina makarası sayesinde atış esnasında ipin sürtünmesizce boşalmasını ve 100-150m mesafelere ulaşmasını sağlar. 
 
-EKİPMAN SEÇİMİ:
-• Kamış: 1.60m - 2.10m 20-50 lb sınıfı Trolling / Çıkrık kamışları.
-• Makine: Kol kontrollü (Lever Drag) güçlü çıkrık makineleri.
-• Yemler: Derin dalan uzun gaga maket balıklar, tüy silikonlar, canlı Zargana veya Kalamar.
-
-HEDEF BALIKLAR:
-Palamut, Torik, Akya, Baracuda, Kuzu, Orkinos, Kılıç Balığı.
-
-AV TAKTİKLERİ:
-Sonbahar palamut akınında yüzeyden 10-15 cm maket balıklar veya silikon çapariler çekilirken, Akya ve Kuzu avında canlı Zargana ile dibe yakın sırtı çekilir.`,
-    content_en: 'Trolling covers vast water surfaces by pulling lures behind a slowly moving boat.',
-    image_url: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=800&q=80',
+ÖZELLİKLERİ:
+• 7000 - 10000 kafa boyutundadır.
+• Ağır kurşunları akıntıdan rahat çekmek için güçlü dişli oranlarına (4.1:1 - 4.6:1) sahiptir.`,
+    content_en: 'Big Pit reels feature large tapered spools engineered for extreme distance casting.',
+    image_url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
     water_type: 'Tuzlu Su',
     difficulty_level: 'Orta'
+  },
+  {
+    id: 't3',
+    category: 'tackles',
+    title_tr: 'Sazan Makinesi (Baitrunner / Serbest Makara)',
+    title_en: 'Carp Baitrunner Reel',
+    short_desc_tr: 'Çift kalamalı, balık asıldığında misinayı boşa salan ve kol çevrilince devreye giren sazan makinesi.',
+    short_desc_en: 'Dual drag free-spool reel designed specifically for static carp angling.',
+    content_tr: `Sazan makineleri (Baitrunner); arkada bulunan ek bir kol yardımıyla balık yemi alıp kaçarken misinayı sıfır dirençle boşa salan özel çift kalama mekanizmasına sahiptir.
+
+AVANTAJLARI:
+Balık oltaya vurup kaçarken kamışı sehpadan suya çekemez. Kol bir tur çevrildiği anda arka kalama devreden çıkar ve ön savaş kalaması devreye girer.`,
+    content_en: 'Baitrunner reels allow carp to take line freely until the angler turns the handle.',
+    image_url: 'https://images.unsplash.com/photo-1439853949127-fa647821eba0?auto=format&fit=crop&w=800&q=80',
+    water_type: 'Tatlı Su',
+    difficulty_level: 'Başlangıç'
   }
 ];
 
@@ -279,6 +437,7 @@ export default function WikiClient() {
     { id: 'lines', label_tr: 'Misinalar & Liderler', label_en: 'Fishing Lines' },
     { id: 'lures', label_tr: 'Sahte Yemler', label_en: 'Lures & Baits' },
     { id: 'rigs', label_tr: 'Rig & Takımlar', label_en: 'Rigs & Assemblies' },
+    { id: 'knots', label_tr: 'Balıkçılık Düğümleri', label_en: 'Fishing Knots' },
     { id: 'accessories', label_tr: 'Aksesuarlar', label_en: 'Accessories' }
   ];
 
@@ -316,8 +475,8 @@ export default function WikiClient() {
 
           <p className="text-sm sm:text-base text-slate-300 font-medium leading-relaxed">
             {isTr
-              ? 'Balıkçılık stilleri, makine/kamış seçimleri, dügüm teknikleri, sahte yem aksiyonları ve rig montajlarına dair aradığınız tüm profesyonel bilgiler.'
-              : 'Complete expert guide on fishing styles, tackle choices, lure actions, and rig assemblies.'}
+              ? 'Balıkçılık stilleri, makine/kamış seçimleri, düğüm teknikleri, sahte yem aksiyonları ve rig montajlarına dair aradığınız tüm profesyonel bilgiler.'
+              : 'Complete expert guide on fishing styles, tackle choices, lure actions, knots, and rig setups.'}
           </p>
         </div>
       </div>
@@ -332,7 +491,7 @@ export default function WikiClient() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={isTr ? 'Wiki rehberlerinde ara (Örn: LRF, Texas Rig, Fluorocarbon...)' : 'Search wiki guides...'}
+              placeholder={isTr ? 'Wiki rehberlerinde ara (Örn: LRF, Hair Rig, FG Knot, Sazan...)' : 'Search wiki guides...'}
               className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-sm font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all"
             />
             {searchQuery && (
@@ -412,7 +571,7 @@ export default function WikiClient() {
               key={article.id || idx}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05 }}
+              transition={{ delay: idx * 0.04 }}
               onClick={() => setActiveArticle(article)}
               className="group bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
             >
