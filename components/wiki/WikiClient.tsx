@@ -771,11 +771,13 @@ export default function WikiClient() {
             >
               <div className="space-y-2 sm:space-y-4">
                 {/* Cover Image & Badges */}
-                <div className="relative aspect-[4/3] sm:aspect-video bg-slate-100 overflow-hidden">
+                <div className="relative aspect-video bg-slate-900 overflow-hidden">
                   {article.image_url ? (
                     <img
                       src={article.image_url}
                       alt={article.title_tr}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
