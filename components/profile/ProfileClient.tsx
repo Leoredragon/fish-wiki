@@ -27,17 +27,17 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
   const [locationNote, setLocationNote] = useState('');
   const [tackleBoxId, setTackleBoxId] = useState<string>('');
   
-  // User Tackle Box items for the dropdown
-  const [userTackleItems, setUserTackleItems] = useState<any[]>([]);
+  // User Tackle Sets for the dropdown
+  const [userTackleSets, setUserTackleSets] = useState<any[]>([]);
 
   useEffect(() => {
-    // Fetch tackle items for the dropdown
-    const fetchTackleItems = async () => {
+    // Fetch tackle sets for the dropdown
+    const fetchTackleSets = async () => {
       const supabase = createClient();
-      const { data } = await supabase.from('tackle_box').select('id, name, category').eq('user_id', user.id);
-      if (data) setUserTackleItems(data);
+      const { data } = await supabase.from('tackle_sets').select('id, name').eq('user_id', user.id);
+      if (data) setUserTackleSets(data);
     };
-    fetchTackleItems();
+    fetchTackleSets();
   }, [user.id]);
 
   const handleAddCatch = async (e: React.FormEvent) => {
@@ -314,14 +314,14 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
                 </h3>
                 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Çantanızdan Seçin' : 'Select from Tackle Box'}</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Setlerinizden Seçin' : 'Select from Your Sets'}</label>
                   <select 
                     value={tackleBoxId} 
                     onChange={e => setTackleBoxId(e.target.value)}
                     className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 font-medium text-slate-700"
                   >
-                    <option value="">{isTr ? '-- Seçilmedi --' : '-- None --'}</option>
-                    {userTackleItems.map(item => (
+                    <option value="">{isTr ? '-- Set Seçilmedi --' : '-- None --'}</option>
+                    {userTackleSets.map(item => (
                       <option key={item.id} value={item.id}>{item.name}</option>
                     ))}
                   </select>
