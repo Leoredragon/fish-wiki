@@ -163,46 +163,70 @@ export default function RegionMapClient() {
 
   const handleSaveSpotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tempPickedLocation) return;
-    if (!spotTitle.trim() || !spotDescription.trim()) return alert('Lütfen mera adı ve kısa bilgi girin.');
+    if (!tempPickedLocation) {
+      alert('Lütfen haritadan bir konum seçin.');
+      return;
+    }
+    if (!currentUser) {
+      alert('Mera eklemek için üye girişi yapmalısınız.');
+      setIsGuestModalOpen(true);
+      return;
+    }
+    if (!spotTitle.trim() || !spotDescription.trim()) {
+      alert('Lütfen mera adı ve kısa bilgi girin.');
+      return;
+    }
 
     setSavingSpot(true);
 
-    let image_url = null;
-    if (imageFile) {
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `spots/${Math.random()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('user_uploads').upload(fileName, imageFile);
-      if (!uploadError) {
-        const { data: publicUrlData } = supabase.storage.from('user_uploads').getPublicUrl(fileName);
-        image_url = publicUrlData.publicUrl;
+    try {
+      let image_url = null;
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `spots/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from('user_uploads').upload(fileName, imageFile);
+        if (uploadError) {
+          console.warn('Storage upload warning:', uploadError);
+          alert(`Mera görseli yüklenemedi: ${uploadError.message}. Mera görselsiz olarak kaydedilecek.`);
+        } else {
+          const { data: publicUrlData } = supabase.storage.from('user_uploads').getPublicUrl(fileName);
+          image_url = publicUrlData?.publicUrl || null;
+        }
       }
+
+      const creator_name = currentUser?.user_metadata?.username || currentUser?.email?.split('@')[0] || 'Oltapp Üyesi';
+
+      const { data, error } = await supabase
+        .from('fishing_spots')
+        .insert({
+          user_id: currentUser?.id,
+          creator_name,
+          title: spotTitle.trim(),
+          description: spotDescription.trim(),
+          lat: tempPickedLocation.lat,
+          lng: tempPickedLocation.lng,
+          image_url
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Fishing spot insert error:', error);
+        alert(`Mera kaydedilemedi!\n\nHata: ${error.message}\n\nEğer tablo henüz veritabanında yoksa lütfen verilen SQL scriptini Supabase SQL Editor'da çalıştırın.`);
+      } else if (data) {
+        alert('🎉 Mera haritaya başarıyla eklendi!');
+        setFishingSpots(prev => [data, ...prev]);
+        setIsAddFormOpen(false);
+        setIsPickingLocation(false);
+        setTempPickedLocation(null);
+        resetAddForm();
+      }
+    } catch (err: any) {
+      console.error('Unexpected error:', err);
+      alert('Beklenmeyen bir hata oluştu: ' + (err?.message || err));
+    } finally {
+      setSavingSpot(false);
     }
-
-    const creator_name = currentUser?.user_metadata?.username || currentUser?.email?.split('@')[0] || 'Oltapp Üyesi';
-
-    const { data, error } = await supabase
-      .from('fishing_spots')
-      .insert({
-        user_id: currentUser.id,
-        creator_name,
-        title: spotTitle.trim(),
-        description: spotDescription.trim(),
-        lat: tempPickedLocation.lat,
-        lng: tempPickedLocation.lng,
-        image_url
-      })
-      .select()
-      .single();
-
-    if (!error && data) {
-      setFishingSpots(prev => [data, ...prev]);
-      setIsAddFormOpen(false);
-      setIsPickingLocation(false);
-      setTempPickedLocation(null);
-      resetAddForm();
-    }
-    setSavingSpot(false);
   };
 
   const resetAddForm = () => {

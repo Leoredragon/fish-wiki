@@ -143,64 +143,82 @@ export default function TackleBox({ userId }: { userId: string }) {
 
     setSaving(true);
 
-    let image_url = existingImageUrl;
-    if (imageFile) {
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `tackle/${userId}/${fileName}`;
-      const { error: uploadError } = await supabase.storage.from('user_uploads').upload(filePath, imageFile);
-      if (!uploadError) {
-        const { data: publicUrlData } = supabase.storage.from('user_uploads').getPublicUrl(filePath);
-        image_url = publicUrlData.publicUrl;
+    try {
+      let image_url = existingImageUrl;
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+        const filePath = `tackle/${userId}/${fileName}`;
+        const { error: uploadError } = await supabase.storage.from('user_uploads').upload(filePath, imageFile);
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage.from('user_uploads').getPublicUrl(filePath);
+          image_url = publicUrlData?.publicUrl || null;
+        } else {
+          console.warn('Tackle image upload warning:', uploadError);
+        }
       }
+
+      const payload = {
+        user_id: userId,
+        name: setName.trim(),
+        notes,
+        image_url,
+        rod: { brand: rodBrand, model: rodModel, length: rodLength, action: rodAction },
+        reel: { brand: reelBrand, model: reelModel, size: reelSize, ratio: reelRatio },
+        line: { brand: lineBrand, model: lineModel, thickness: lineThickness, test: lineTest },
+        lure: (lureBrand || lureModel || lureType) ? { brand: lureBrand, model: lureModel, type: lureType } : null,
+      };
+
+      if (editingSetId) {
+        const { data, error } = await supabase
+          .from('tackle_sets')
+          .update(payload)
+          .eq('id', editingSetId)
+          .select()
+          .single();
+
+        if (error) {
+          alert(`Set güncellenemedi: ${error.message}`);
+        } else if (data) {
+          setTackleSets(prev => prev.map(s => s.id === editingSetId ? data : s));
+          setIsFormOpen(false);
+          resetForm();
+          alert('Ekipman seti başarıyla güncellendi!');
+        }
+      } else {
+        const { data, error } = await supabase
+          .from('tackle_sets')
+          .insert(payload)
+          .select()
+          .single();
+
+        if (error) {
+          alert(`Set kaydedilemedi: ${error.message}`);
+        } else if (data) {
+          setTackleSets([data, ...tackleSets]);
+          setIsFormOpen(false);
+          resetForm();
+          alert('🎉 Yeni ekipman seti başarıyla kaydedildi!');
+        }
+      }
+    } catch (err: any) {
+      console.error('Error saving tackle set:', err);
+      alert('Beklenmeyen hata: ' + (err?.message || err));
+    } finally {
+      setSaving(false);
     }
-
-    const payload = {
-      user_id: userId,
-      name: setName,
-      notes,
-      image_url,
-      rod: { brand: rodBrand, model: rodModel, length: rodLength, action: rodAction },
-      reel: { brand: reelBrand, model: reelModel, size: reelSize, ratio: reelRatio },
-      line: { brand: lineBrand, model: lineModel, thickness: lineThickness, test: lineTest },
-      lure: (lureBrand || lureModel || lureType) ? { brand: lureBrand, model: lureModel, type: lureType } : null,
-    };
-
-    if (editingSetId) {
-      const { data, error } = await supabase
-        .from('tackle_sets')
-        .update(payload)
-        .eq('id', editingSetId)
-        .select()
-        .single();
-
-      if (!error && data) {
-        setTackleSets(prev => prev.map(s => s.id === editingSetId ? data : s));
-        setIsFormOpen(false);
-        resetForm();
-      }
-    } else {
-      const { data, error } = await supabase
-        .from('tackle_sets')
-        .insert(payload)
-        .select()
-        .single();
-
-      if (!error && data) {
-        setTackleSets([data, ...tackleSets]);
-        setIsFormOpen(false);
-        resetForm();
-      }
-    }
-    setSaving(false);
   };
 
   const handleDeleteSet = async (setId: string) => {
     if (!confirm(isTr ? 'Bu seti silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this set?')) return;
     
-    await supabase.from('tackle_sets').delete().eq('id', setId);
-    setTackleSets(prev => prev.filter(s => s.id !== setId));
-    setSelectedSet(null);
+    const { error } = await supabase.from('tackle_sets').delete().eq('id', setId);
+    if (error) {
+      alert(`Set silinemedi: ${error.message}`);
+    } else {
+      setTackleSets(prev => prev.filter(s => s.id !== setId));
+      setSelectedSet(null);
+    }
   };
 
   const getBrandsForCategory = (cat: string) => brands.filter(b => b.category === cat);

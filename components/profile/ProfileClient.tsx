@@ -43,55 +43,80 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
 
   const handleAddCatch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!imageFile) return;
-    setLoading(true);
-
-    const supabase = createClient();
-    
-    // 1. Upload Image
-    const fileExt = imageFile.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `${user.id}/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('user_uploads')
-      .upload(filePath, imageFile);
-
-    if (uploadError) {
-      console.error(uploadError);
-      setLoading(false);
+    if (!user) {
+      alert(isTr ? 'Giriş yapmış olmanız gerekmektedir.' : 'You must be logged in.');
       return;
     }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('user_uploads')
-      .getPublicUrl(filePath);
-
-    // 2. Insert Record
-    const { error: insertError } = await supabase
-      .from('catch_logs')
-      .insert({
-        user_id: user.id,
-        image_url: publicUrl,
-        weight: weight ? parseFloat(weight) : null,
-        length: length ? parseFloat(length) : null,
-        lure_used: lureUsed,
-        location_note: locationNote,
-        tackle_box_id: tackleBoxId || null
-      });
-
-    if (!insertError) {
-      setIsModalOpen(false);
-      router.refresh();
-      // Reset form
-      setImageFile(null);
-      setWeight('');
-      setLength('');
-      setLureUsed('');
-      setLocationNote('');
-      setTackleBoxId('');
+    if (!imageFile) {
+      alert(isTr ? 'Lütfen bir av fotoğrafı seçin.' : 'Please select a catch photo.');
+      return;
     }
-    setLoading(false);
+    
+    setLoading(true);
+
+    try {
+      const supabase = createClient();
+      
+      // 1. Upload Image
+      const fileExt = imageFile.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('user_uploads')
+        .upload(filePath, imageFile);
+
+      if (uploadError) {
+        console.error('Storage Upload Error:', uploadError);
+        alert(isTr 
+          ? `Fotoğraf yüklenemedi!\n\nHata: ${uploadError.message}\n\nLütfen Supabase panelinizde 'user_uploads' depolama alanının (Storage Bucket) açık ve yetkilendirilmiş olduğundan emin olun.` 
+          : `Failed to upload image: ${uploadError.message}`);
+        setLoading(false);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('user_uploads')
+        .getPublicUrl(filePath);
+
+      const publicUrl = publicUrlData?.publicUrl;
+
+      // 2. Insert Record
+      const { error: insertError } = await supabase
+        .from('catch_logs')
+        .insert({
+          user_id: user.id,
+          image_url: publicUrl,
+          weight: weight ? parseFloat(weight) : null,
+          length: length ? parseFloat(length) : null,
+          lure_used: lureUsed || null,
+          location_note: locationNote || null,
+          tackle_box_id: tackleBoxId || null
+        });
+
+      if (insertError) {
+        console.error('Catch Log Insert Error:', insertError);
+        alert(isTr 
+          ? `Av kaydı veritabanına eklenemedi!\n\nHata: ${insertError.message}\n\nEğer tablo henüz oluşmadıysa lütfen Supabase panelinizde SQL kodunu çalıştırın.` 
+          : `Database error: ${insertError.message}`);
+      } else {
+        alert(isTr ? '🎉 Av kaydı başarıyla günlüğe eklendi!' : 'Catch log saved successfully!');
+        setIsModalOpen(false);
+        // Reset form
+        setImageFile(null);
+        setWeight('');
+        setLength('');
+        setLureUsed('');
+        setLocationNote('');
+        setTackleBoxId('');
+        router.refresh();
+      }
+    } catch (err: any) {
+      console.error('Unexpected error:', err);
+      alert(isTr ? `Beklenmeyen bir hata oluştu: ${err?.message || err}` : `An error occurred: ${err?.message || err}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Stats Calculations
