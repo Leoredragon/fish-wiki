@@ -431,17 +431,18 @@ function CatchPostItem({
 
       // Trigger Notification
       if (log.user_id && log.user_id !== currentUser.id) {
-        const actorName = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Üyesi';
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: log.user_id,
-            actor_id: currentUser.id,
-            actor_name: actorName,
-            type: 'like',
-            catch_id: log.id
-          })
-          .catch(() => {});
+        try {
+          const actorName = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Üyesi';
+          await supabase
+            .from('notifications')
+            .insert({
+              user_id: log.user_id,
+              actor_id: currentUser.id,
+              actor_name: actorName,
+              type: 'like',
+              catch_id: log.id
+            });
+        } catch {}
       }
     }
     setLikeLoading(false);
@@ -472,16 +473,17 @@ function CatchPostItem({
 
       // Trigger Notification
       if (log.user_id && log.user_id !== currentUser.id) {
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: log.user_id,
-            actor_id: currentUser.id,
-            actor_name: username,
-            type: 'comment',
-            catch_id: log.id
-          })
-          .catch(() => {});
+        try {
+          await supabase
+            .from('notifications')
+            .insert({
+              user_id: log.user_id,
+              actor_id: currentUser.id,
+              actor_name: username,
+              type: 'comment',
+              catch_id: log.id
+            });
+        } catch {}
       }
     }
     setCommenting(false);
