@@ -81,6 +81,8 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
 
       const publicUrl = publicUrlData?.publicUrl;
 
+      const formattedTackleBoxId = (tackleBoxId && tackleBoxId.trim() !== '') ? tackleBoxId : null;
+
       // 2. Insert Record
       const { error: insertError } = await supabase
         .from('catch_logs')
@@ -91,14 +93,22 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
           length: length ? parseFloat(length) : null,
           lure_used: lureUsed || null,
           location_note: locationNote || null,
-          tackle_box_id: tackleBoxId || null
+          tackle_box_id: formattedTackleBoxId
         });
 
       if (insertError) {
         console.error('Catch Log Insert Error:', insertError);
-        alert(isTr 
-          ? `Av kaydı veritabanına eklenemedi!\n\nHata: ${insertError.message}\n\nEğer tablo henüz oluşmadıysa lütfen Supabase panelinizde SQL kodunu çalıştırın.` 
-          : `Database error: ${insertError.message}`);
+        const isFkeyError = insertError.message?.includes('foreign key constraint') || insertError.message?.includes('catch_logs_tackle_box_id_fkey');
+        
+        if (isFkeyError) {
+          alert(isTr 
+            ? `Av kaydı veritabanına eklenemedi!\n\nHata (İlişkisel Veri Bağlantısı): ${insertError.message}\n\nÇözüm: Supabase panelinizdeki SQL Editor alanında 'complete_database_setup.sql' dosyasını çalıştırarak veritabanı bağlantı yetkilerini güncelleyin.` 
+            : `Foreign Key Error: Please run complete_database_setup.sql in Supabase SQL Editor.`);
+        } else {
+          alert(isTr 
+            ? `Av kaydı veritabanına eklenemedi!\n\nHata: ${insertError.message}\n\nEğer tablo henüz oluşmadıysa lütfen Supabase panelinizde SQL kodunu çalıştırın.` 
+            : `Database error: ${insertError.message}`);
+        }
       } else {
         alert(isTr ? '🎉 Av kaydı başarıyla günlüğe eklendi!' : 'Catch log saved successfully!');
         setIsModalOpen(false);

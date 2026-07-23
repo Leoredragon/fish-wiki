@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS public.catch_logs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   fish_id UUID,
-  tackle_box_id UUID REFERENCES public.tackle_sets(id) ON DELETE SET NULL,
+  tackle_box_id UUID,
   image_url TEXT NOT NULL,
   weight NUMERIC,
   length NUMERIC,
@@ -96,6 +96,23 @@ CREATE POLICY "Users update own catch_logs" ON public.catch_logs FOR UPDATE USIN
 
 DROP POLICY IF EXISTS "Users delete own catch_logs" ON public.catch_logs;
 CREATE POLICY "Users delete own catch_logs" ON public.catch_logs FOR DELETE USING (auth.uid() = user_id);
+
+-- Foreign key bağlantısını tackle_sets tablosuna güncellemeli olarak düzeltme
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE constraint_name = 'catch_logs_tackle_box_id_fkey' AND table_name = 'catch_logs'
+  ) THEN
+    ALTER TABLE public.catch_logs DROP CONSTRAINT catch_logs_tackle_box_id_fkey;
+  END IF;
+END $$;
+
+ALTER TABLE public.catch_logs 
+  ADD CONSTRAINT catch_logs_tackle_box_id_fkey 
+  FOREIGN KEY (tackle_box_id) 
+  REFERENCES public.tackle_sets(id) 
+  ON DELETE SET NULL;
 
 
 -- 4. AV MERALARI (fishing_spots)
