@@ -281,13 +281,11 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
             <form onSubmit={handleAddCatch} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Av Fotoğrafı' : 'Catch Photo'} *</label>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  required
-                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                  className="w-full text-sm font-medium text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-600 hover:file:bg-emerald-100"
-                />
+                <label className="cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-4 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors w-full">
+                  <Camera className="w-6 h-6 text-emerald-500 mb-2" />
+                  <span className="text-sm font-semibold text-slate-600">{imageFile ? imageFile.name : (isTr ? 'Fotoğraf Seç' : 'Choose Photo')}</span>
+                  <input type="file" accept="image/*" required onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="hidden" />
+                </label>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

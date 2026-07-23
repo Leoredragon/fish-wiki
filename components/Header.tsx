@@ -37,7 +37,7 @@ export default function Header() {
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push(`/${locale}`);
+    router.push('/');
   };
 
   const navItems = [

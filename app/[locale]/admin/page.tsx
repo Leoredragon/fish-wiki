@@ -24,6 +24,7 @@ import {
   Pencil,
   PlusCircle
 } from 'lucide-react';
+import BrandManager from '@/components/admin/BrandManager';
 
 export default function AdminPage() {
   const t = useTranslations('Admin');
@@ -784,6 +785,9 @@ export default function AdminPage() {
           )}
         </div>
       </div>
+      
+      {/* Brand Manager Component */}
+      <BrandManager />
     </div>
   );
 }

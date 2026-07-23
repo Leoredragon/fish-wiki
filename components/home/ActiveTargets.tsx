@@ -102,10 +102,10 @@ export default function ActiveTargets() {
               href={`/fish/${fish.id}`}
               className="block h-full group bg-white rounded-2xl sm:rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
             >
-              <div className="aspect-square sm:aspect-video bg-slate-100 relative overflow-hidden">
+              <div className="aspect-video bg-slate-100 relative overflow-hidden flex items-center justify-center">
                 {fish.image_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={fish.image_url} alt={fish.name_tr} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <img src={fish.image_url} alt={fish.name_tr} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400 font-bold text-xs sm:text-lg text-center p-2">
                     {isTr ? 'Görsel Yok' : 'No Image'}
