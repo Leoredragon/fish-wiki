@@ -13,6 +13,7 @@ export const FISH_REGULATIONS: Record<string, number> = {
   'levrek': 40,
   'sazan': 40,
   'aynalı sazan': 40,
+  'pullu sazan': 40,
   'palamut': 25,
   'torik': 25,
   'çupra': 20,
