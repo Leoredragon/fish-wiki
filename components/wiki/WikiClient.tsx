@@ -25,7 +25,7 @@ export const INITIAL_WIKI_ARTICLES = [
   // DISIPLINES (BALIKÇILIK STİLLERİ & DİSİPLİNLERİ)
   // ==========================================
   {
-    id: 'd1',
+    id: '00000000-0000-0000-0000-000000000001',
     category: 'disciplines',
     title_tr: 'Spinning (At-Çek) Balıkçılığı',
     title_en: 'Spin Fishing',
@@ -49,7 +49,7 @@ Sabahın ilk ışıklarında ve gün batımında su üstü sahteleri (WTD aksiyo
     difficulty_level: 'Orta'
   },
   {
-    id: 'd2',
+    id: '00000000-0000-0000-0000-000000000002',
     category: 'disciplines',
     title_tr: 'LRF (Light Rock Fishing / Ultra Hafif At-Çek)',
     title_en: 'Light Rock Fishing (LRF)',
