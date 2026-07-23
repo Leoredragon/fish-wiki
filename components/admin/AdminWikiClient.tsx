@@ -55,11 +55,16 @@ export default function AdminWikiClient() {
         .order('created_at', { ascending: false });
 
       if (!error && data && data.length > 0) {
-        setArticles(data);
+        const supabaseIds = new Set(data.map((item: any) => item.id));
+        const remainingInitial = INITIAL_WIKI_ARTICLES.filter((item: any) => !supabaseIds.has(item.id));
+        setArticles([...data, ...remainingInitial]);
+      } else {
+        setArticles(INITIAL_WIKI_ARTICLES);
       }
     } catch {
-      // ignore
-    } finally {      setLoading(false);
+      setArticles(INITIAL_WIKI_ARTICLES);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -158,27 +163,24 @@ export default function AdminWikiClient() {
     const isValidUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
     try {
-      if (editingId && isValidUUID(editingId)) {
-        const { error } = await supabase
-          .from('wiki_articles')
-          .update(payload)
-          .eq('id', editingId);
+      const recordToSave = editingId && isValidUUID(editingId) ? { id: editingId, ...payload } : payload;
+      const { error } = await supabase
+        .from('wiki_articles')
+        .upsert([recordToSave]);
 
-        if (error) throw error;
-        setNotification({ type: 'success', message: 'Wiki rehber içeriği güncellendi.' });
-      } else {
-        const { error } = await supabase
-          .from('wiki_articles')
-          .insert([payload]);
-
-        if (error) throw error;
-        setNotification({ type: 'success', message: 'Yeni Wiki rehberi eklendi.' });
+      if (error) {
+        throw error;
       }
 
+      setNotification({ type: 'success', message: 'Wiki rehber içeriği ve görseli başarıyla veritabanına kaydedildi.' });
       resetForm();
-      loadArticles();
+      await loadArticles();
     } catch (err: any) {
-      setNotification({ type: 'error', message: err.message || 'Hata oluştu.' });
+      console.error('Wiki Save Error:', err);
+      setNotification({
+        type: 'error',
+        message: err.message || 'Veri kaydedilirken bir hata oluştu. Lütfen Supabase veritabanı tablosunun kurulu olduğundan emin olun.'
+      });
     } finally {
       setSaving(false);
     }

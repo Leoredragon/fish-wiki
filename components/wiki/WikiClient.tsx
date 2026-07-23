@@ -419,7 +419,9 @@ export default function WikiClient() {
           .order('created_at', { ascending: false });
 
         if (!error && data && data.length > 0) {
-          setArticles(data);
+          const supabaseIds = new Set(data.map((item: any) => item.id));
+          const remainingInitial = INITIAL_WIKI_ARTICLES.filter((item: any) => !supabaseIds.has(item.id));
+          setArticles([...data, ...remainingInitial]);
         }
       } catch {
         // use fallback initial articles
