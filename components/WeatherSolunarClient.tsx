@@ -407,15 +407,15 @@ export default function WeatherSolunarClient() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                <div className="flex sm:grid sm:grid-cols-5 gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-none">
                   {dailyForecast.map((day, idx) => {
                     const parsed = parseWeatherCode(day.weatherCode, isTr);
                     return (
                       <div
                         key={day.date}
-                        className={`p-4 rounded-2xl border transition-all space-y-3 flex flex-col justify-between ${
+                        className={`min-w-[155px] sm:min-w-0 flex-1 snap-start p-4 rounded-2xl border transition-all space-y-3 flex flex-col justify-between shrink-0 sm:shrink ${
                           idx === 0 
-                            ? 'bg-slate-900 text-white border-slate-800 shadow-md scale-[1.02]' 
+                            ? 'bg-slate-900 text-white border-slate-800 shadow-md scale-[1.01]' 
                             : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200'
                         }`}
                       >
