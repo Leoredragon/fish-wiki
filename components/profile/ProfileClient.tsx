@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useLocale } from 'next-intl';
 import { motion } from 'framer-motion';
-import { Plus, MapPin, Scale, Ruler, Camera, BarChart3, Package, BookOpen, User, Settings, ShieldCheck, Key, Upload, UserCheck, Loader2 } from 'lucide-react';
+import { Plus, MapPin, Scale, Ruler, Camera, BarChart3, Package, BookOpen, User, Settings, ShieldCheck, Key, Upload, UserCheck, Loader2, Edit, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import TackleBox from './TackleBox';
@@ -33,6 +33,15 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [updatingPassword, setUpdatingPassword] = useState(false);
+
+  // Catch Edit State
+  const [editingCatch, setEditingCatch] = useState<any | null>(null);
+  const [editLocationNote, setEditLocationNote] = useState('');
+  const [editWeight, setEditWeight] = useState('');
+  const [editLength, setEditLength] = useState('');
+  const [editLureUsed, setEditLureUsed] = useState('');
+  const [editTackleBoxId, setEditTackleBoxId] = useState('');
+  const [updatingCatch, setUpdatingCatch] = useState(false);
 
   // Form State for Catch Log
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -247,6 +256,69 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
     }
   };
 
+  // Open Edit Catch Modal
+  const openEditCatchModal = (log: any) => {
+    setEditingCatch(log);
+    setEditLocationNote(log.location_note || '');
+    setEditWeight(log.weight ? String(log.weight) : '');
+    setEditLength(log.length ? String(log.length) : '');
+    setEditLureUsed(log.lure_used || '');
+    setEditTackleBoxId(log.tackle_box_id || '');
+  };
+
+  // Update Catch Handler
+  const handleUpdateCatch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCatch) return;
+
+    setUpdatingCatch(true);
+    try {
+      const supabase = createClient();
+      const formattedTackleId = (editTackleBoxId && editTackleBoxId.trim() !== '') ? editTackleBoxId : null;
+
+      const { error } = await supabase
+        .from('catch_logs')
+        .update({
+          location_note: editLocationNote.trim(),
+          weight: editWeight ? parseFloat(editWeight) : null,
+          length: editLength ? parseFloat(editLength) : null,
+          lure_used: editLureUsed || null,
+          tackle_box_id: formattedTackleId
+        })
+        .eq('id', editingCatch.id);
+
+      if (error) {
+        alert(isTr ? `Av kaydı güncellenemedi: ${error.message}` : `Failed to update catch: ${error.message}`);
+      } else {
+        alert(isTr ? '🎉 Av kaydınız başarıyla güncellendi!' : 'Catch log updated successfully!');
+        setEditingCatch(null);
+        router.refresh();
+      }
+    } catch (err: any) {
+      alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
+    } finally {
+      setUpdatingCatch(false);
+    }
+  };
+
+  // Delete Catch Handler
+  const handleDeleteCatch = async (logId: string) => {
+    if (!confirm(isTr ? 'Bu av kaydını silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this catch log?')) return;
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from('catch_logs').delete().eq('id', logId);
+
+      if (error) {
+        alert(isTr ? `Av kaydı silinemedi: ${error.message}` : `Failed to delete catch log: ${error.message}`);
+      } else {
+        alert(isTr ? '🗑️ Av kaydı başarıyla silindi.' : 'Catch log deleted.');
+        router.refresh();
+      }
+    } catch (err: any) {
+      alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
+    }
+  };
+
   // Stats Calculations
   const totalCatches = initialCatches.length;
   const biggestCatch = initialCatches.reduce((max, log) => (log.weight > (max.weight || 0) ? log : max), initialCatches[0] || null);
@@ -413,7 +485,24 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
                           )}
                         </div>
                       )}
-                      <div className="pt-3 border-t border-slate-100 flex justify-end">
+                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                        <div className="flex items-center space-x-1">
+                          <button
+                            onClick={() => openEditCatchModal(log)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                            title={isTr ? 'Avı Düzenle' : 'Edit Catch'}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCatch(log.id)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                            title={isTr ? 'Avı Sil' : 'Delete Catch'}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+
                         <CatchCardExport log={log} profileName={profile?.username || 'Oltapp User'} />
                       </div>
                     </div>
@@ -448,49 +537,48 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
 
               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center space-y-2">
                 <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center mb-2">
-                  <BarChart3 className="w-6 h-6" />
+                  <Ruler className="w-6 h-6" />
                 </div>
-                <div className="text-sm font-bold text-slate-400 uppercase tracking-wide">{isTr ? 'Toplam Yakalanan Ağırlık' : 'Total Caught Weight'}</div>
+                <div className="text-sm font-bold text-slate-400 uppercase tracking-wide">{isTr ? 'Toplam Ağırlık' : 'Total Weight'}</div>
                 <div className="text-4xl font-black text-[#0F172A]">{totalWeight.toFixed(1)} kg</div>
               </div>
 
             </div>
 
-            {/* Advanced Livar Analytics Section */}
+            {/* Detailed Analytics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-              {/* Location & Species Breakdown */}
+              
+              {/* Species Breakdown */}
               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
                 <h3 className="text-base font-extrabold text-[#0F172A] flex items-center space-x-2 border-b border-slate-100 pb-3">
-                  <span className="text-lg">📊</span>
-                  <span>{isTr ? 'En Çok Av Yapılan Meralar' : 'Top Fishing Spots'}</span>
+                  <span className="text-lg">🐟</span>
+                  <span>{isTr ? 'Avlanan Balık Türleri Dağılımı' : 'Species Breakdown'}</span>
                 </h3>
                 {initialCatches.length === 0 ? (
-                  <p className="text-xs text-slate-400 font-medium">Veri yok</p>
+                  <p className="text-xs text-slate-400 font-medium">Henüz veritabanında av bulunmuyor.</p>
                 ) : (
                   <div className="space-y-3">
-                    {Object.entries(
-                      initialCatches.reduce((acc: Record<string, number>, log) => {
-                        const spot = log.location_note || 'Genel Mera';
-                        acc[spot] = (acc[spot] || 0) + 1;
-                        return acc;
-                      }, {})
-                    )
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 4)
-                    .map(([spotName, count]) => {
-                      const percentage = Math.round((count / initialCatches.length) * 100);
-                      return (
-                        <div key={spotName} className="space-y-1">
-                          <div className="flex justify-between text-xs font-bold text-slate-700">
-                            <span>{spotName}</span>
-                            <span className="text-emerald-600">{count} av ({percentage}%)</span>
+                    {(() => {
+                      const counts: Record<string, number> = {};
+                      initialCatches.forEach(c => {
+                        const species = c.lure_used || c.location_note || 'Diğer';
+                        counts[species] = (counts[species] || 0) + 1;
+                      });
+                      return Object.entries(counts).map(([name, count]) => {
+                        const pct = Math.round((count / initialCatches.length) * 100);
+                        return (
+                          <div key={name} className="space-y-1">
+                            <div className="flex justify-between text-xs font-bold text-slate-700">
+                              <span>{name}</span>
+                              <span className="text-emerald-600">{count} adet (%{pct})</span>
+                            </div>
+                            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                              <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                            </div>
                           </div>
-                          <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                            <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${percentage}%` }}></div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      });
+                    })()}
                   </div>
                 )}
               </div>
@@ -772,6 +860,80 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
               <div className="pt-4 flex justify-end">
                 <button type="submit" disabled={loading} className="bg-[#0F172A] hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl transition-all disabled:opacity-70 w-full sm:w-auto">
                   {loading ? (isTr ? 'Yükleniyor...' : 'Uploading...') : (isTr ? 'Günlüğe Kaydet' : 'Save to Log')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Catch Modal */}
+      {editingCatch && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto pt-20 pb-20">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white rounded-t-3xl z-10">
+              <h2 className="text-xl font-extrabold text-[#0F172A]">{isTr ? 'Av Kaydını Düzenle' : 'Edit Catch Log'}</h2>
+              <button onClick={() => setEditingCatch(null)} className="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+            </div>
+            
+            <form onSubmit={handleUpdateCatch} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Ağırlık (kg)' : 'Weight (kg)'}</label>
+                  <input type="number" step="0.1" value={editWeight} onChange={e=>setEditWeight(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 font-medium" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Uzunluk (cm)' : 'Length (cm)'}</label>
+                  <input type="number" step="0.1" value={editLength} onChange={e=>setEditLength(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 font-medium" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Mera / Konum' : 'Location'}</label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                  <input type="text" value={editLocationNote} onChange={e=>setEditLocationNote(e.target.value)} placeholder={isTr ? 'Örn: İstanbul Boğazı' : 'e.g. Bosphorus'} className="w-full pl-9 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 font-medium" />
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <h3 className="text-sm font-bold text-slate-700 flex items-center space-x-1.5">
+                  <Package className="w-4 h-4 text-emerald-500" />
+                  <span>{isTr ? 'Kullanılan Ekipman' : 'Gear Used'}</span>
+                </h3>
+                
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Setlerinizden Seçin' : 'Select from Your Sets'}</label>
+                  <select 
+                    value={editTackleBoxId} 
+                    onChange={e => setEditTackleBoxId(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 font-medium text-slate-700"
+                  >
+                    <option value="">{isTr ? '-- Set Seçilmedi --' : '-- None --'}</option>
+                    {userTackleSets.map(item => (
+                      <option key={item.id} value={item.id}>{item.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="relative flex items-center py-2">
+                  <div className="flex-grow border-t border-slate-200"></div>
+                  <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase">{isTr ? 'veya' : 'or'}</span>
+                  <div className="flex-grow border-t border-slate-200"></div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Manuel Yazın (Yem / Sahte)' : 'Enter Manually (Lure / Bait)'}</label>
+                  <input type="text" value={editLureUsed} onChange={e=>setEditLureUsed(e.target.value)} placeholder={isTr ? 'Örn: 10g Kaşık' : 'e.g. 10g Spoon'} disabled={!!editTackleBoxId} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 font-medium disabled:opacity-50" />
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end space-x-2">
+                <button type="button" onClick={() => setEditingCatch(null)} className="px-5 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs">
+                  {isTr ? 'İptal' : 'Cancel'}
+                </button>
+                <button type="submit" disabled={updatingCatch} className="bg-[#0F172A] hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl transition-all disabled:opacity-70 text-xs flex items-center space-x-2">
+                  {updatingCatch ? <Loader2 className="w-4 h-4 animate-spin text-emerald-400" /> : <span>{isTr ? 'Güncelle' : 'Update'}</span>}
                 </button>
               </div>
             </form>
