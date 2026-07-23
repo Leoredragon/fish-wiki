@@ -1,4 +1,4 @@
-import AdminUsersClient from '@/components/admin/AdminUsersClient';
+import AdminDashboard from '@/components/admin/AdminDashboard';
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
   return {
@@ -7,5 +7,5 @@ export async function generateMetadata({ params: { locale } }: { params: { local
 }
 
 export default function AdminPage() {
-  return <AdminUsersClient />;
+  return <AdminDashboard />;
 }
