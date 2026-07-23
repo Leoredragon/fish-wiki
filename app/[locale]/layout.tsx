@@ -5,6 +5,7 @@ import { routing } from '@/i18n/routing';
 import '../globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import PWAInstallBanner from '@/components/PWAInstallBanner';
 import { Metadata, Viewport } from 'next';
 
 export const metadata: Metadata = {
@@ -55,6 +56,7 @@ export default async function LocaleLayout({
       <body className="flex min-h-full flex-col bg-[#F8FAFC] text-[#1E293B] antialiased">
         <NextIntlClientProvider messages={messages}>
           <Header />
+          <PWAInstallBanner />
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {children}
           </main>
