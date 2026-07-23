@@ -35,11 +35,41 @@ function getMonthNameEn(month: number) {
   return names[month - 1];
 }
 
+const INITIAL_ACTIVE_TARGETS = [
+  {
+    id: 'm4',
+    name_tr: 'Deniz Levreği',
+    name_en: 'European Seabass',
+    water_type: 'Tuzlu Su',
+    short_info_tr: 'Kıyı kayalıklarının ve nehir ağızlarının usta yırtıcısı.',
+    short_info_en: 'Master predator of coastal breakers and river estuaries.',
+    image_url: 'https://images.unsplash.com/photo-1534043464124-3be32fe000c9?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    id: 'm5',
+    name_tr: 'Çupra (Çipura)',
+    name_en: 'Gilt-head Bream',
+    water_type: 'Tuzlu Su',
+    short_info_tr: 'Sert çene yapısı ile kabuklu deniz canlılarını kıran tür.',
+    short_info_en: 'Marine fish with powerful jaws adapted for crushing shellfish.',
+    image_url: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    id: 'm3',
+    name_tr: 'Aynalı Sazan',
+    name_en: 'Mirror Carp',
+    water_type: 'Tatlı Su',
+    short_info_tr: 'Göl ve barajların dip bölgesinde beslenen iriyarı sazan türü.',
+    short_info_en: 'Specimen freshwater species feeding along lake bottoms.',
+    image_url: 'https://images.unsplash.com/photo-1516683769144-c733e561b642?auto=format&fit=crop&w=800&q=80'
+  }
+];
+
 export default function ActiveTargets() {
   const locale = useLocale();
   const isTr = locale === 'tr';
-  const [fishes, setFishes] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [fishes, setFishes] = useState<any[]>(INITIAL_ACTIVE_TARGETS);
+  const [loading, setLoading] = useState(false);
   
   const currentMonth = new Date().getMonth() + 1;
   const seasonTr = getCurrentSeason();
@@ -48,10 +78,8 @@ export default function ActiveTargets() {
 
   useEffect(() => {
     const fetchActiveFishes = async () => {
-      setLoading(true);
       const supabase = createClient();
       
-      // We want to fetch fishes where active_seasons contains our current season
       const { data, error } = await supabase
         .from('fishes')
         .select('*')
@@ -59,7 +87,7 @@ export default function ActiveTargets() {
         .ilike('active_seasons', `%${seasonTr}%`)
         .limit(6);
         
-      if (data) {
+      if (!error && data && data.length > 0) {
         setFishes(data);
       }
       setLoading(false);
@@ -67,14 +95,6 @@ export default function ActiveTargets() {
 
     fetchActiveFishes();
   }, [seasonTr]);
-
-  if (loading) {
-    return (
-      <div className="py-12 flex justify-center items-center">
-        <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-      </div>
-    );
-  }
 
   if (fishes.length === 0) return null;
 
@@ -106,7 +126,13 @@ export default function ActiveTargets() {
               <div className="aspect-video bg-slate-100 relative overflow-hidden flex items-center justify-center">
                 {fish.image_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={fish.image_url} alt={fish.name_tr} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
+                  <img
+                    src={fish.image_url}
+                    alt={fish.name_tr}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400 font-bold text-xs sm:text-lg text-center p-2">
                     {isTr ? 'Görsel Yok' : 'No Image'}
