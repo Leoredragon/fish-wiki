@@ -55,9 +55,30 @@ export default function AdminWikiClient() {
         .order('created_at', { ascending: false });
 
       if (!error && data && data.length > 0) {
-        const supabaseIds = new Set(data.map((item: any) => item.id));
-        const remainingInitial = INITIAL_WIKI_ARTICLES.filter((item: any) => !supabaseIds.has(item.id));
-        setArticles([...data, ...remainingInitial]);
+        // Auto-cleanup duplicate rows by title_tr in database if any exist
+        const seen = new Set<string>();
+        const idsToDelete: string[] = [];
+        const uniqueSupabaseData: any[] = [];
+
+        for (const item of data) {
+          const key = (item.title_tr || '').trim().toLowerCase();
+          if (seen.has(key)) {
+            if (item.id) idsToDelete.push(item.id);
+          } else {
+            seen.add(key);
+            uniqueSupabaseData.push(item);
+          }
+        }
+
+        if (idsToDelete.length > 0) {
+          supabase.from('wiki_articles').delete().in('id', idsToDelete).then(() => {});
+        }
+
+        const supabaseTitles = new Set(uniqueSupabaseData.map((item: any) => (item.title_tr || '').trim().toLowerCase()));
+        const remainingInitial = INITIAL_WIKI_ARTICLES.filter(
+          (item: any) => !supabaseTitles.has((item.title_tr || '').trim().toLowerCase())
+        );
+        setArticles([...uniqueSupabaseData, ...remainingInitial]);
       } else {
         setArticles(INITIAL_WIKI_ARTICLES);
       }
@@ -162,8 +183,19 @@ export default function AdminWikiClient() {
 
     const isValidUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
+    // Check if an article with the same title_tr already exists in loaded articles
+    const existingArticle = articles.find(
+      (a) => (a.title_tr || '').trim().toLowerCase() === titleTr.trim().toLowerCase()
+    );
+
+    const targetId = editingId && isValidUUID(editingId)
+      ? editingId
+      : existingArticle && isValidUUID(existingArticle.id)
+      ? existingArticle.id
+      : null;
+
     try {
-      const recordToSave = editingId && isValidUUID(editingId) ? { id: editingId, ...payload } : payload;
+      const recordToSave = targetId ? { id: targetId, ...payload } : payload;
       const { error } = await supabase
         .from('wiki_articles')
         .upsert([recordToSave]);
@@ -172,14 +204,14 @@ export default function AdminWikiClient() {
         throw error;
       }
 
-      setNotification({ type: 'success', message: 'Wiki rehber içeriği ve görseli başarıyla veritabanına kaydedildi.' });
+      setNotification({ type: 'success', message: 'Wiki rehber içeriği ve görseli başarıyla güncellendi.' });
       resetForm();
       await loadArticles();
     } catch (err: any) {
       console.error('Wiki Save Error:', err);
       setNotification({
         type: 'error',
-        message: err.message || 'Veri kaydedilirken bir hata oluştu. Lütfen Supabase veritabanı tablosunun kurulu olduğundan emin olun.'
+        message: err.message || 'Veri kaydedilirken bir hata oluştu.'
       });
     } finally {
       setSaving(false);

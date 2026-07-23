@@ -419,9 +419,19 @@ export default function WikiClient() {
           .order('created_at', { ascending: false });
 
         if (!error && data && data.length > 0) {
-          const supabaseIds = new Set(data.map((item: any) => item.id));
-          const remainingInitial = INITIAL_WIKI_ARTICLES.filter((item: any) => !supabaseIds.has(item.id));
-          setArticles([...data, ...remainingInitial]);
+          const supabaseTitles = new Set(data.map((item: any) => (item.title_tr || '').trim().toLowerCase()));
+          const remainingInitial = INITIAL_WIKI_ARTICLES.filter(
+            (item: any) => !supabaseTitles.has((item.title_tr || '').trim().toLowerCase())
+          );
+          const merged = [...data, ...remainingInitial];
+          const seen = new Set<string>();
+          const uniqueArticles = merged.filter((item: any) => {
+            const key = (item.title_tr || '').trim().toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          setArticles(uniqueArticles);
         }
       } catch {
         // use fallback initial articles
