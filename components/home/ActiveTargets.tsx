@@ -90,7 +90,7 @@ export default function ActiveTargets() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
         {fishes.map((fish, index) => (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -100,29 +100,29 @@ export default function ActiveTargets() {
           >
             <Link 
               href={`/fish/${fish.id}`}
-              className="block group bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              className="block h-full group bg-white rounded-2xl sm:rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
             >
-              <div className="aspect-video bg-slate-100 relative overflow-hidden">
+              <div className="aspect-square sm:aspect-video bg-slate-100 relative overflow-hidden">
                 {fish.image_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={fish.image_url} alt={fish.name_tr} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400 font-bold text-lg">
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400 font-bold text-xs sm:text-lg text-center p-2">
                     {isTr ? 'Görsel Yok' : 'No Image'}
                   </div>
                 )}
-                <div className="absolute top-3 left-3 bg-[#0F172A] text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">
+                <div className="hidden sm:block absolute top-3 left-3 bg-[#0F172A] text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">
                   {isTr ? fish.water_type : (fish.water_type === 'Tuzlu Su' ? 'Saltwater' : 'Freshwater')}
                 </div>
               </div>
-              <div className="p-5">
-                <h3 className="font-extrabold text-[#0F172A] text-lg group-hover:text-emerald-600 transition-colors">
+              <div className="p-2 sm:p-5 flex flex-col justify-between">
+                <h3 className="font-extrabold text-[#0F172A] text-[11px] sm:text-lg group-hover:text-emerald-600 transition-colors leading-tight line-clamp-1 sm:line-clamp-none text-center sm:text-left">
                   {isTr ? fish.name_tr : fish.name_en}
                 </h3>
-                <p className="text-slate-500 text-sm mt-1 line-clamp-2 leading-relaxed">
+                <p className="hidden sm:block text-slate-500 text-sm mt-1 line-clamp-2 leading-relaxed">
                   {isTr ? fish.short_info_tr : fish.short_info_en}
                 </p>
-                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-emerald-600 font-semibold text-xs tracking-wide uppercase">
+                <div className="hidden sm:flex mt-4 pt-4 border-t border-slate-100 items-center justify-between text-emerald-600 font-semibold text-xs tracking-wide uppercase">
                   <span>{isTr ? 'Detayları Gör' : 'View Details'}</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </div>
