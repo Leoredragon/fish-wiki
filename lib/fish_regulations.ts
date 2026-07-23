@@ -20,7 +20,6 @@ export const FISH_REGULATIONS: Record<string, number> = {
   'alabalık': 20,
   'abant alası': 20,
   'dere alabalığı': 20,
-  'akya': 30,
   'lahos': 45,
   'grida': 45,
   'orfoz': 45,
