@@ -15,13 +15,30 @@ export default function LoginClient() {
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pre-fill email if remembered
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('oltapp_remembered_email');
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    // Save or clear remembered email
+    if (rememberMe) {
+      localStorage.setItem('oltapp_remembered_email', email);
+    } else {
+      localStorage.removeItem('oltapp_remembered_email');
+    }
 
     const supabase = createClient();
     const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -134,6 +151,21 @@ export default function LoginClient() {
                 className="appearance-none rounded-2xl block w-full pl-11 px-4 py-3.5 border border-slate-200 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-medium"
                 placeholder={isTr ? 'Şifre' : 'Password'}
               />
+            </div>
+
+            {/* Beni Hatırla Checkbox */}
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center space-x-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 text-emerald-600 rounded-md border-slate-300 focus:ring-emerald-500 accent-emerald-600 cursor-pointer"
+                />
+                <span className="text-xs font-semibold text-slate-600">
+                  {isTr ? 'Beni Hatırla' : 'Remember Me'}
+                </span>
+              </label>
             </div>
           </div>
 
