@@ -82,7 +82,6 @@ export default function ActiveTargets() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-extrabold text-[#0F172A] flex items-center space-x-2">
-            <Target className="w-6 h-6 text-red-500" />
             <span>{isTr ? `${monthName} Ayı Aktif Hedefleri` : `Active Targets in ${monthName}`}</span>
           </h2>
           <p className="text-slate-500 font-medium text-sm mt-1">
@@ -103,7 +102,7 @@ export default function ActiveTargets() {
               href={`/fish/${fish.id}`}
               className="block group bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
             >
-              <div className="aspect-[4/3] bg-slate-100 relative overflow-hidden">
+              <div className="aspect-video bg-slate-100 relative overflow-hidden">
                 {fish.image_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={fish.image_url} alt={fish.name_tr} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />

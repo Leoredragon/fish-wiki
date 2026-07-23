@@ -24,11 +24,6 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
       <div className="absolute top-0 right-0 -mt-12 -mr-12 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative z-10 max-w-3xl space-y-3">
-        <div className="inline-flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-3.5 py-1 rounded-full text-xs font-semibold">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>{isTr ? 'Mobil Uyumlu Deniz & Tatlı Su Kılavuzu' : 'Mobile-First Angling Encyclopedia'}</span>
-        </div>
-
         <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
           {isTr ? 'Türkiye’nin Kapsamlı Balık Rehberi' : 'Comprehensive Oltapp Guide'}
         </h1>
@@ -48,12 +43,12 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
             type="text"
             placeholder={
               isTr
-                ? "Balık adı (Örn: Kefal, Levrek, Lüfer) veya bilimsel adı yazın..."
-                : "Search species (e.g. Seabass, Chub, Trout)..."
+                ? "Balık ara (Örn: Levrek, Çupra)..."
+                : "Search species (e.g. Seabass)..."
             }
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent transition-all shadow-xl"
+            className="w-full pl-11 pr-4 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-sm text-left text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent transition-all shadow-xl"
           />
           {searchTerm && (
             <button

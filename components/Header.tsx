@@ -145,9 +145,6 @@ export default function Header() {
               );
             })}
           </nav>
-          <div className="absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-[#0F172A] via-[#0F172A]/80 to-transparent pointer-events-none flex items-center justify-end pr-1.5">
-            <ChevronRight className="w-4 h-4 text-emerald-400 animate-pulse" />
-          </div>
         </div>
       </div>
     </header>

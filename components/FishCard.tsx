@@ -66,7 +66,7 @@ export default function FishCard({ fish }: FishCardProps) {
 
       <Link href={`/fish/${targetId}`} className="flex-1 flex flex-col">
         {/* Image Header Container */}
-        <div className="relative h-48 sm:h-52 w-full bg-slate-900 overflow-hidden">
+        <div className="relative aspect-[16/9] w-full bg-slate-900 overflow-hidden flex items-center justify-center">
           <Image
             src={displayImage}
             alt={name || 'Fish species'}

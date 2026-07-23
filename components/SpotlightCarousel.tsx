@@ -8,16 +8,16 @@ import { ArrowRight, Mountain, Waves } from 'lucide-react';
 import { Fish } from '@/lib/supabase';
 import { RICH_MOCK_FISHES } from './FishGrid';
 
-export default function SpotlightCarousel() {
+export default function SpotlightCarousel({ fishes }: { fishes: Fish[] }) {
   const locale = useLocale();
   const isTr = locale === 'tr';
 
-  const spotlightFishes: Fish[] = [
-    RICH_MOCK_FISHES[0], // Abant Alası
-    RICH_MOCK_FISHES[3], // Deniz Levreği
-    RICH_MOCK_FISHES[5], // Lüfer
-    RICH_MOCK_FISHES[2]  // Aynalı Sazan
-  ];
+  // Use up to 5 fishes for spotlight, either the ones with images, or just top ones.
+  // Filter for fishes that have images to make the spotlight look good, if possible.
+  const fishesWithImages = fishes.filter(f => f.image_url);
+  const spotlightFishes = fishesWithImages.length >= 4 
+    ? fishesWithImages.slice(0, 5) 
+    : fishes.slice(0, 5);
 
   return (
     <div className="space-y-3 py-2">
@@ -48,8 +48,8 @@ export default function SpotlightCarousel() {
               whileTap={{ scale: 0.98 }}
               className="snap-start shrink-0 w-[280px] sm:w-[320px] bg-slate-900 rounded-3xl overflow-hidden shadow-lg border border-slate-800 relative group flex flex-col justify-between"
             >
-              <Link href={`/fish/${targetId}`} className="block h-full">
-                <div className="relative h-44 w-full">
+              <Link href={`/fish/${targetId}`} className="block h-full flex flex-col">
+                <div className="relative w-full aspect-[16/9] bg-slate-800/30 flex items-center justify-center">
                   <Image
                     src={fish.image_url || 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?auto=format&fit=crop&w=800&q=80'}
                     alt={name}
