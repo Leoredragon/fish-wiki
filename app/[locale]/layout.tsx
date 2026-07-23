@@ -8,13 +8,17 @@ import Footer from '@/components/Footer';
 import { Metadata, Viewport } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Oltapp - Balık Türleri & Avcılık Rehberi',
-  description: 'Türkiye ve dünya sularındaki balık türleri, yasal boy limitleri, av yasakları, taktikler ve solunar tahmin rehberi.',
+  title: 'Oltapp - Dijital Balıkçılık & Livar',
+  description: 'Türkiye Amatör Balıkçılık Topluluğu, Meralar, Solunar Tahmini ve Dijital Livar.',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/icon.svg',
+    apple: '/icon.svg'
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'FishWiki'
+    title: 'Oltapp'
   }
 };
 

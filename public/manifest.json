@@ -1,16 +1,37 @@
 {
-  "name": "Oltapp - Balık Türleri & Avcılık Rehberi",
-  "short_name": "FishWiki",
-  "description": "Marine & Freshwater species encyclopedia, seasons, size limits and angling guide",
-  "start_url": "/",
+  "name": "Oltapp - Dijital Balıkçılık & Livar",
+  "short_name": "Oltapp",
+  "description": "Türkiye Amatör Balıkçılık Topluluğu, Meralar, Solunar Tahmini ve Dijital Livar",
+  "start_url": "/tr",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#F8FAFC",
+  "orientation": "portrait",
+  "background_color": "#0F172A",
   "theme_color": "#0F172A",
+  "categories": ["sports", "social", "weather"],
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "/icon.svg",
+      "sizes": "512x512 192x192 128x128 96x96",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Topluluk Akışı",
+      "url": "/tr/community",
+      "description": "Son tutulan balıkları ve paylaşımları gör"
+    },
+    {
+      "name": "Mera Haritası",
+      "url": "/tr/map",
+      "description": "Balık meralarını incele ve yeni mera ekle"
+    },
+    {
+      "name": "Hava & Solunar",
+      "url": "/tr/weather",
+      "description": "Balık iştah skorunu ve 5 günlük tahmini gör"
     }
   ]
 }
