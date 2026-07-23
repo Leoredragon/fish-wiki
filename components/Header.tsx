@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
 import { useTranslations, useLocale } from 'next-intl';
 import LanguageSwitcher from './LanguageSwitcher';
-import { Shield, Fish, Calendar, CloudSun, MapPin, Compass, Users, ChevronRight, LogIn, User, LogOut } from 'lucide-react';
+import { Shield, Fish, Calendar, CloudSun, MapPin, Compass, Users, ChevronRight, LogIn, User, LogOut, BookOpen } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 import { User as SupabaseUser } from '@supabase/supabase-js';
@@ -44,6 +44,7 @@ export default function Header() {
 
   const navItems = [
     { href: '/', label: t('navHome'), icon: Compass },
+    { href: '/wiki', label: isTr ? 'Wiki Rehber' : 'Wiki Guide', icon: BookOpen },
     { href: '/community', label: isTr ? 'Topluluk' : 'Community', icon: Users },
     { href: '/calendar', label: t('navCalendar'), icon: Calendar },
     { href: '/weather', label: t('navWeather'), icon: CloudSun },

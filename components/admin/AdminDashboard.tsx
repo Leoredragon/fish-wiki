@@ -1,25 +1,26 @@
 'use client';
 
 import { useState } from 'react';
-import { Users, Fish, MapPin } from 'lucide-react';
+import { Users, Fish, MapPin, BookOpen } from 'lucide-react';
 import { useLocale } from 'next-intl';
 import AdminUsersClient from './AdminUsersClient';
 import AdminFishClient from './AdminFishClient';
 import AdminSpotsClient from './AdminSpotsClient';
+import AdminWikiClient from './AdminWikiClient';
 
 export default function AdminDashboard() {
   const locale = useLocale();
   const isTr = locale === 'tr';
 
-  const [activeTab, setActiveTab] = useState<'users' | 'fishes' | 'spots'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'fishes' | 'spots' | 'wiki'>('users');
 
   return (
     <div className="space-y-6">
       {/* Top Admin Sub-Navigation Tabs */}
-      <div className="bg-white p-2.5 rounded-3xl border border-slate-200 shadow-sm max-w-3xl mx-auto flex space-x-2">
+      <div className="bg-white p-2.5 rounded-3xl border border-slate-200 shadow-sm max-w-4xl mx-auto flex flex-wrap sm:flex-nowrap gap-2">
         <button
           onClick={() => setActiveTab('users')}
-          className={`flex-1 flex items-center justify-center space-x-2 py-3 px-3 sm:px-4 rounded-2xl font-extrabold text-xs sm:text-sm transition-all ${
+          className={`flex-1 flex items-center justify-center space-x-2 py-3 px-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all min-w-[120px] ${
             activeTab === 'users'
               ? 'bg-[#0F172A] text-white shadow-md'
               : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
@@ -31,7 +32,7 @@ export default function AdminDashboard() {
 
         <button
           onClick={() => setActiveTab('fishes')}
-          className={`flex-1 flex items-center justify-center space-x-2 py-3 px-3 sm:px-4 rounded-2xl font-extrabold text-xs sm:text-sm transition-all ${
+          className={`flex-1 flex items-center justify-center space-x-2 py-3 px-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all min-w-[120px] ${
             activeTab === 'fishes'
               ? 'bg-[#0F172A] text-white shadow-md'
               : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
@@ -43,14 +44,26 @@ export default function AdminDashboard() {
 
         <button
           onClick={() => setActiveTab('spots')}
-          className={`flex-1 flex items-center justify-center space-x-2 py-3 px-3 sm:px-4 rounded-2xl font-extrabold text-xs sm:text-sm transition-all ${
+          className={`flex-1 flex items-center justify-center space-x-2 py-3 px-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all min-w-[120px] ${
             activeTab === 'spots'
               ? 'bg-[#0F172A] text-white shadow-md'
               : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
           }`}
         >
           <MapPin className="w-4 h-4 text-amber-400" />
-          <span>{isTr ? '📍 Mera Yönetimi' : '📍 Spots Manager'}</span>
+          <span>{isTr ? '📍 Meralar' : '📍 Spots'}</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('wiki')}
+          className={`flex-1 flex items-center justify-center space-x-2 py-3 px-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all min-w-[120px] ${
+            activeTab === 'wiki'
+              ? 'bg-[#0F172A] text-white shadow-md'
+              : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <BookOpen className="w-4 h-4 text-purple-400" />
+          <span>{isTr ? '📚 Wiki Rehberi' : '📚 Wiki Admin'}</span>
         </button>
       </div>
 
@@ -58,6 +71,7 @@ export default function AdminDashboard() {
       {activeTab === 'users' && <AdminUsersClient />}
       {activeTab === 'fishes' && <AdminFishClient />}
       {activeTab === 'spots' && <AdminSpotsClient />}
+      {activeTab === 'wiki' && <AdminWikiClient />}
     </div>
   );
 }
