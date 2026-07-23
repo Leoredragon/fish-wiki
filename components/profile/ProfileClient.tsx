@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import TackleBox from './TackleBox';
 import CatchCardExport from '../community/CatchCardExport';
+import { getLegalMinSize } from '@/lib/fish_regulations';
 
 export default function ProfileClient({ user, profile, initialCatches }: { user: Record<string, any>; profile: Record<string, any>; initialCatches: Record<string, any>[] }) {
   const locale = useLocale();
@@ -259,6 +260,73 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
               </div>
 
             </div>
+
+            {/* Advanced Livar Analytics Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+              {/* Location & Species Breakdown */}
+              <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                <h3 className="text-base font-extrabold text-[#0F172A] flex items-center space-x-2 border-b border-slate-100 pb-3">
+                  <span className="text-lg">📊</span>
+                  <span>{isTr ? 'En Çok Av Yapılan Meralar' : 'Top Fishing Spots'}</span>
+                </h3>
+                {initialCatches.length === 0 ? (
+                  <p className="text-xs text-slate-400 font-medium">Veri yok</p>
+                ) : (
+                  <div className="space-y-3">
+                    {Object.entries(
+                      initialCatches.reduce((acc: Record<string, number>, log) => {
+                        const spot = log.location_note || 'Genel Mera';
+                        acc[spot] = (acc[spot] || 0) + 1;
+                        return acc;
+                      }, {})
+                    )
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 4)
+                    .map(([spotName, count]) => {
+                      const percentage = Math.round((count / initialCatches.length) * 100);
+                      return (
+                        <div key={spotName} className="space-y-1">
+                          <div className="flex justify-between text-xs font-bold text-slate-700">
+                            <span>{spotName}</span>
+                            <span className="text-emerald-600">{count} av ({percentage}%)</span>
+                          </div>
+                          <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                            <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${percentage}%` }}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Luckiest Set & Gear Efficiency */}
+              <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                <h3 className="text-base font-extrabold text-[#0F172A] flex items-center space-x-2 border-b border-slate-100 pb-3">
+                  <span className="text-lg">🎣</span>
+                  <span>{isTr ? 'En Verimli Ekipman Seti' : 'Most Efficient Gear Set'}</span>
+                </h3>
+                {userTackleSets.length === 0 ? (
+                  <p className="text-xs text-slate-400 font-medium">Henüz kayıtlı setiniz bulunmuyor.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {userTackleSets.slice(0, 3).map((set, idx) => (
+                      <div key={set.id} className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${idx === 0 ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                            #{idx + 1}
+                          </div>
+                          <div>
+                            <h4 className="font-extrabold text-sm text-[#0F172A]">{set.name}</h4>
+                            <span className="text-[10px] text-emerald-600 font-bold uppercase">En Verimli Kombinasyon</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </motion.div>
         )}
 
@@ -298,6 +366,20 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
                   <input type="number" step="0.1" value={length} onChange={e=>setLength(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 font-medium" />
                 </div>
               </div>
+
+              {/* Legal Size Limit Warning check */}
+              {length && lureUsed && (() => {
+                const minSize = getLegalMinSize(lureUsed);
+                if (minSize && parseFloat(length) < minSize) {
+                  return (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-xs font-bold flex items-center space-x-2">
+                      <span className="text-base">⚠️</span>
+                      <span>{lureUsed} için yasal avlanma alt sınırı min. <strong>{minSize} cm</strong>&apos;dir (Sirküler No: 5/2). Sürdürülebilir balıkçılık için lütfen küçük balıkları suya iade edelim!</span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Mera / Konum' : 'Location'}</label>

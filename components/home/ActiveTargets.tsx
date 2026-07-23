@@ -6,6 +6,7 @@ import { Target, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { createClient } from '@/lib/supabase/client';
 import { motion } from 'framer-motion';
+import { getLegalMinSize } from '@/lib/fish_regulations';
 
 function getCurrentSeason() {
   const month = new Date().getMonth() + 1; // 1 to 12
@@ -114,6 +115,17 @@ export default function ActiveTargets() {
                 <div className="hidden sm:block absolute top-3 left-3 bg-[#0F172A] text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">
                   {isTr ? fish.water_type : (fish.water_type === 'Tuzlu Su' ? 'Saltwater' : 'Freshwater')}
                 </div>
+                {(() => {
+                  const minSize = getLegalMinSize(fish.name_tr);
+                  if (minSize) {
+                    return (
+                      <div className="absolute top-3 right-3 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">
+                        Min {minSize} cm
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
               <div className="p-2 sm:p-5 flex flex-col justify-between">
                 <h3 className="font-extrabold text-[#0F172A] text-[11px] sm:text-lg group-hover:text-emerald-600 transition-colors leading-tight line-clamp-1 sm:line-clamp-none text-center sm:text-left">
