@@ -619,53 +619,63 @@ export default function WikiClient() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Header Banner */}
-      <div className="relative rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-10 shadow-2xl overflow-hidden">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        
+      {/* Hero Header Banner (Matching Homepage Layout & Search) */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0F172A] rounded-3xl p-6 sm:p-10 text-white shadow-xl border border-slate-800 space-y-6">
+        {/* Background glow */}
+        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
+
         <div className="relative z-10 max-w-3xl space-y-3">
           <div className="inline-flex items-center space-x-2 bg-emerald-500/20 text-emerald-400 px-3.5 py-1.5 rounded-full text-xs font-extrabold border border-emerald-500/30">
             <BookOpen className="w-4 h-4" />
             <span>{isTr ? 'Oltapp Balıkçılık Akademisi' : 'Oltapp Angling Academy'}</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white">
+          <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight text-white">
             {isTr ? 'Balıkçılık Wiki & Ekipman Rehberi' : 'Angling Wiki & Equipment Guide'}
           </h1>
 
-          <p className="text-sm sm:text-base text-slate-300 font-medium leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal max-w-2xl">
             {isTr
-              ? 'Balıkçılık stilleri, makine/kamış seçimleri, düğüm teknikleri, sahte yem aksiyonları ve rig montajlarına dair aradığınız tüm profesyonel bilgiler.'
-              : 'Complete expert guide on fishing styles, tackle choices, lure actions, knots, and rig setups.'}
+              ? 'Balıkçılık stilleri, makine ve kamış seçimleri, düğüm teknikleri, sahte yem aksiyonları ve rig montajlarına dair aradığınız tüm profesyonel bilgiler.'
+              : 'Explore fishing styles, rod & reel choices, knot techniques, lure actions, and rig setups.'}
           </p>
         </div>
-      </div>
 
-      {/* Filter & Search Bar */}
-      <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center">
-          {/* Search Input */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+        {/* Integrated Hero Search Input (Exact Homepage Style) */}
+        <div className="relative z-10 max-w-2xl pt-2">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={isTr ? 'Wiki rehberlerinde ara (Örn: LRF, Kamış, Surfcast, FG Knot, Sazan...)' : 'Search wiki guides...'}
-              className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 text-sm font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all"
+              placeholder={isTr ? 'Wiki rehberlerinde ara (Örn: LRF, Spin Kamış, Surfcast, FG Knot, Sazan...)' : 'Search wiki guides...'}
+              className="w-full pl-11 pr-10 py-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent transition-all shadow-xl"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                <X className="w-4 h-4" />
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold bg-white/20 text-white px-2 py-1 rounded-lg hover:bg-white/30"
+              >
+                {isTr ? 'Temizle' : 'Clear'}
               </button>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Filter & Category Selector Bar */}
+      <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+            {isTr ? 'Kategoriler & Su Tipi' : 'Categories & Water Type'}
+          </span>
 
           {/* Water Type Filter Selector */}
-          <div className="flex items-center space-x-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200 text-xs font-bold shrink-0">
+          <div className="flex items-center space-x-1.5 bg-slate-50 p-1 rounded-2xl border border-slate-200 text-xs font-bold shrink-0">
             <button
               onClick={() => setSelectedWaterType('all')}
-              className={`px-3 py-2 rounded-xl transition-all ${
+              className={`px-3 py-1.5 rounded-xl transition-all ${
                 selectedWaterType === 'all' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -673,7 +683,7 @@ export default function WikiClient() {
             </button>
             <button
               onClick={() => setSelectedWaterType('Tuzlu Su')}
-              className={`px-3 py-2 rounded-xl transition-all ${
+              className={`px-3 py-1.5 rounded-xl transition-all ${
                 selectedWaterType === 'Tuzlu Su' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -681,7 +691,7 @@ export default function WikiClient() {
             </button>
             <button
               onClick={() => setSelectedWaterType('Tatlı Su')}
-              className={`px-3 py-2 rounded-xl transition-all ${
+              className={`px-3 py-1.5 rounded-xl transition-all ${
                 selectedWaterType === 'Tatlı Su' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -731,7 +741,7 @@ export default function WikiClient() {
         )}
       </div>
 
-      {/* Grid of Articles */}
+      {/* Grid of Articles (Mobile 2-Column Responsive Layout) */}
       {filteredArticles.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200 text-slate-500 space-y-3">
           <BookOpen className="w-12 h-12 text-slate-300 mx-auto" />
@@ -749,19 +759,19 @@ export default function WikiClient() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-6">
           {filteredArticles.map((article, idx) => (
             <motion.div
               key={article.id || idx}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.04 }}
+              transition={{ delay: idx * 0.03 }}
               onClick={() => setActiveArticle(article)}
-              className="group bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
+              className="group bg-white rounded-2xl sm:rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
             >
-              <div className="space-y-4">
+              <div className="space-y-2 sm:space-y-4">
                 {/* Cover Image & Badges */}
-                <div className="relative aspect-video bg-slate-100 overflow-hidden">
+                <div className="relative aspect-[4/3] sm:aspect-video bg-slate-100 overflow-hidden">
                   {article.image_url ? (
                     <img
                       src={article.image_url}
@@ -770,40 +780,40 @@ export default function WikiClient() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-400">
-                      <BookOpen className="w-10 h-10 opacity-40" />
+                      <BookOpen className="w-8 h-8 opacity-40" />
                     </div>
                   )}
 
-                  <div className="absolute top-3 left-3 flex items-center space-x-2">
-                    <span className="bg-[#0F172A]/90 backdrop-blur-md text-white text-[11px] font-extrabold px-2.5 py-1 rounded-xl shadow-sm">
+                  <div className="absolute top-1.5 sm:top-3 left-1.5 sm:left-3 flex items-center space-x-1 sm:space-x-2">
+                    <span className="bg-[#0F172A]/90 backdrop-blur-md text-white text-[9px] sm:text-[11px] font-extrabold px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg sm:rounded-xl shadow-sm">
                       {article.water_type || 'Tüm Sular'}
                     </span>
                   </div>
 
                   {article.difficulty_level && (
-                    <div className="absolute top-3 right-3 bg-emerald-500/90 backdrop-blur-md text-white text-[11px] font-extrabold px-2.5 py-1 rounded-xl shadow-sm">
+                    <div className="absolute top-1.5 sm:top-3 right-1.5 sm:right-3 bg-emerald-500/90 backdrop-blur-md text-white text-[9px] sm:text-[11px] font-extrabold px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg sm:rounded-xl shadow-sm">
                       {article.difficulty_level}
                     </div>
                   )}
                 </div>
 
                 {/* Content Info */}
-                <div className="px-6 space-y-2">
-                  <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">
+                <div className="px-3 sm:px-6 space-y-1 sm:space-y-2">
+                  <span className="text-[9px] sm:text-[11px] font-bold text-emerald-600 uppercase tracking-wider block">
                     {getCategoryLabel(article.category)}
                   </span>
-                  <h3 className="font-extrabold text-[#0F172A] text-lg group-hover:text-emerald-600 transition-colors line-clamp-1">
+                  <h3 className="font-extrabold text-[#0F172A] text-xs sm:text-lg group-hover:text-emerald-600 transition-colors line-clamp-1 leading-snug">
                     {isTr ? article.title_tr : article.title_en}
                   </h3>
-                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed font-medium">
+                  <p className="text-[10px] sm:text-xs text-slate-500 line-clamp-2 leading-relaxed font-medium">
                     {isTr ? article.short_desc_tr : article.short_desc_en}
                   </p>
                 </div>
               </div>
 
-              <div className="p-6 pt-4 mt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-emerald-600 group-hover:text-emerald-700">
-                <span>{isTr ? 'Rehberi İncele' : 'Read Article'}</span>
-                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <div className="p-3 sm:p-6 pt-2 sm:pt-4 mt-1 sm:mt-2 border-t border-slate-100 flex items-center justify-between text-[10px] sm:text-xs font-bold text-emerald-600 group-hover:text-emerald-700">
+                <span>{isTr ? 'İncele' : 'Read'}</span>
+                <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </motion.div>
           ))}
