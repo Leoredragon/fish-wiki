@@ -27,7 +27,7 @@ export default function AdminDashboard() {
           }`}
         >
           <Users className="w-4 h-4 text-emerald-400" />
-          <span>{isTr ? '👥 Kullanıcılar' : '👥 Users'}</span>
+          <span>{isTr ? 'Kullanıcılar' : 'Users'}</span>
         </button>
 
         <button
@@ -39,7 +39,7 @@ export default function AdminDashboard() {
           }`}
         >
           <Fish className="w-4 h-4 text-cyan-400" />
-          <span>{isTr ? '🐟 Balık & Markalar' : '🐟 Fish & Brands'}</span>
+          <span>{isTr ? 'Balık & Markalar' : 'Fish & Brands'}</span>
         </button>
 
         <button
@@ -51,7 +51,7 @@ export default function AdminDashboard() {
           }`}
         >
           <MapPin className="w-4 h-4 text-amber-400" />
-          <span>{isTr ? '📍 Meralar' : '📍 Spots'}</span>
+          <span>{isTr ? 'Meralar' : 'Spots'}</span>
         </button>
 
         <button
@@ -63,7 +63,7 @@ export default function AdminDashboard() {
           }`}
         >
           <BookOpen className="w-4 h-4 text-purple-400" />
-          <span>{isTr ? '📚 Wiki Rehberi' : '📚 Wiki Admin'}</span>
+          <span>{isTr ? 'Wiki Rehberi' : 'Wiki Admin'}</span>
         </button>
       </div>
 

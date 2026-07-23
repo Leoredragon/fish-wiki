@@ -272,12 +272,12 @@ export default function AdminWikiClient() {
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               >
-                <option value="disciplines">🎣 Stiller & Disiplinler (Spin, LRF, Surfcast vb.)</option>
-                <option value="tackles">🌀 Kamış & Makine</option>
-                <option value="lines">🧵 Misinalar & Liderler (İp, FC vb.)</option>
-                <option value="lures">🐟 Sahte Yem Çeşitleri (Popper, Minnow, Silikon vb.)</option>
-                <option value="rigs">🪝 Rig & Montajlar (Texas Rig, Drop Shot vb.)</option>
-                <option value="accessories">🧰 Aksesuarlar & İğne Türleri</option>
+                <option value="disciplines">Stiller & Disiplinler (Spin, LRF, Surfcast vb.)</option>
+                <option value="tackles">Kamış & Makine</option>
+                <option value="lines">Misinalar & Liderler (İp, FC vb.)</option>
+                <option value="lures">Sahte Yem Çeşitleri (Popper, Minnow, Silikon vb.)</option>
+                <option value="rigs">Rig & Montajlar (Texas Rig, Drop Shot vb.)</option>
+                <option value="accessories">Aksesuarlar & İğne Türleri</option>
               </select>
             </div>
 
