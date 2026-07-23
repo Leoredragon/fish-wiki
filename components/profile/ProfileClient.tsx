@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useLocale } from 'next-intl';
 import { motion } from 'framer-motion';
-import { Plus, MapPin, Scale, Ruler, Camera, BarChart3, Package, BookOpen, User, Settings, ShieldCheck, Key, Upload, UserCheck, Loader2, Edit, Trash2 } from 'lucide-react';
+import { Plus, MapPin, Scale, Ruler, Camera, BarChart3, Package, BookOpen, User, Settings, ShieldCheck, Key, Upload, UserCheck, Loader2, Edit, Trash2, Star } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import TackleBox from './TackleBox';
@@ -16,9 +16,10 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
   const isTr = locale === 'tr';
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<'stats' | 'log' | 'tackle' | 'settings'>('log');
+  const [activeTab, setActiveTab] = useState<'stats' | 'log' | 'tackle' | 'settings' | 'favorites'>('log');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [favoriteSpots, setFavoriteSpots] = useState<any[]>([]);
   
   // Profile Settings State
   const [fullName, setFullName] = useState(profile?.full_name || '');
@@ -61,7 +62,25 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
       const { data } = await supabase.from('tackle_sets').select('id, name').eq('user_id', user.id);
       if (data) setUserTackleSets(data);
     };
+
+    const fetchFavoriteSpots = async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from('favorite_spots')
+          .select(`
+            id,
+            fishing_spots (*)
+          `)
+          .eq('user_id', user.id);
+        if (data) {
+          setFavoriteSpots(data.map((d: any) => d.fishing_spots).filter(Boolean));
+        }
+      } catch {}
+    };
+
     fetchTackleSets();
+    fetchFavoriteSpots();
   }, [user.id]);
 
   const handleAddCatch = async (e: React.FormEvent) => {
@@ -413,6 +432,16 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
         >
           <Settings className="w-4 h-4" />
           <span>{isTr ? 'Profil Ayarları' : 'Settings'}</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('favorites')}
+          className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
+            activeTab === 'favorites' ? 'bg-white text-[#0F172A] shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+          }`}
+        >
+          <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
+          <span>{isTr ? 'Favori Meralarım' : 'Favorite Spots'}</span>
         </button>
       </div>
 
@@ -769,6 +798,54 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
                 </div>
               </form>
             </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'favorites' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-[#0F172A] flex items-center space-x-2">
+                <Star className="w-5 h-5 text-amber-500 fill-amber-400" />
+                <span>{isTr ? 'Favori Meralarım' : 'Favorite Spots'}</span>
+              </h2>
+              <button
+                onClick={() => router.push('/map')}
+                className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-xl text-xs font-bold transition-all"
+              >
+                {isTr ? 'Haritada Tümünü Gör' : 'View All on Map'}
+              </button>
+            </div>
+
+            {favoriteSpots.length === 0 ? (
+              <div className="text-center py-16 bg-slate-50 rounded-3xl border border-dashed border-slate-200 text-slate-500 space-y-3">
+                <p className="font-bold text-sm">{isTr ? 'Henüz favori mera eklemediniz.' : 'No favorite spots saved yet.'}</p>
+                <p className="text-xs max-w-sm mx-auto">{isTr ? 'Haritadaki meraları inceleyin ve yıldız butonuna basarak favorilerinize kaydedin.' : 'Browse spots on map and click star icon to save here.'}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {favoriteSpots.map(spot => (
+                  <div key={spot.id} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">📍 Mera</span>
+                        <span className="text-[11px] font-semibold text-slate-400">Oluşturan: {spot.creator_name || 'Balıkçı'}</span>
+                      </div>
+                      <h3 className="text-lg font-extrabold text-[#0F172A]">{spot.title}</h3>
+                      <p className="text-xs text-slate-600 line-clamp-2">{spot.description}</p>
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-100 flex justify-end">
+                      <button
+                        onClick={() => router.push('/map')}
+                        className="bg-[#0F172A] hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all"
+                      >
+                        {isTr ? 'Haritada Git' : 'Go to Map'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
       </div>

@@ -212,3 +212,42 @@ CREATE POLICY "Users update own storage" ON storage.objects FOR UPDATE USING (bu
 
 DROP POLICY IF EXISTS "Users delete own storage" ON storage.objects;
 CREATE POLICY "Users delete own storage" ON storage.objects FOR DELETE USING (bucket_id = 'user_uploads');
+
+
+-- 7. BİLDİRİMLER VE FAVORİ MERALAR (notifications & favorite_spots)
+CREATE TABLE IF NOT EXISTS public.notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    actor_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    actor_name TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('like', 'comment')),
+    catch_id UUID REFERENCES public.catch_logs(id) ON DELETE CASCADE,
+    read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users view own notifications" ON public.notifications;
+CREATE POLICY "Users view own notifications" ON public.notifications FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users insert notifications" ON public.notifications;
+CREATE POLICY "Users insert notifications" ON public.notifications FOR INSERT WITH CHECK (auth.uid() = actor_id);
+DROP POLICY IF EXISTS "Users update own notifications" ON public.notifications;
+CREATE POLICY "Users update own notifications" ON public.notifications FOR UPDATE USING (auth.uid() = user_id);
+
+
+CREATE TABLE IF NOT EXISTS public.favorite_spots (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    spot_id UUID NOT NULL REFERENCES public.fishing_spots(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(user_id, spot_id)
+);
+
+ALTER TABLE public.favorite_spots ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users view favorite spots" ON public.favorite_spots;
+CREATE POLICY "Users view favorite spots" ON public.favorite_spots FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users insert favorite spots" ON public.favorite_spots;
+CREATE POLICY "Users insert favorite spots" ON public.favorite_spots FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users delete favorite spots" ON public.favorite_spots;
+CREATE POLICY "Users delete favorite spots" ON public.favorite_spots FOR DELETE USING (auth.uid() = user_id);
+

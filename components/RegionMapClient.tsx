@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocale } from 'next-intl';
-import { MapPin, Compass, Anchor, Sparkles, Loader2, Plus, AlertCircle, X, Camera, User, Calendar, ArrowRight } from 'lucide-react';
+import { MapPin, Compass, Anchor, Sparkles, Loader2, Plus, AlertCircle, X, Camera, User, Calendar, ArrowRight, Star } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -98,7 +98,7 @@ const REGIONS: Region[] = [
     popularSpeciesEn: ['Abant Trout', 'Mirror Carp', 'Chub'],
     recommendedGearTr: 'Fly-Fishing, Boilie Sazan Montajı, LRF Micro Kaşık',
     recommendedGearEn: 'Fly-Fishing, Hair Rigs with Boilies, Micro Lures',
-    pinCoordinates: { lat: 40.6083, lng: 31.2833 }
+    pinCoordinates: { lat: 40.6053, lng: 31.2811 }
   }
 ];
 
@@ -113,6 +113,7 @@ export default function RegionMapClient() {
   // User Session & Spots
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [fishingSpots, setFishingSpots] = useState<FishingSpot[]>([]);
+  const [favoriteSpotIds, setFavoriteSpotIds] = useState<string[]>([]);
 
   // Modals & Interactivity State
   const [selectedSpot, setSelectedSpot] = useState<FishingSpot | null>(null); // Detail Modal
@@ -133,11 +134,38 @@ export default function RegionMapClient() {
     // 1. Get Session User
     supabase.auth.getUser().then(({ data: { user } }) => {
       setCurrentUser(user);
+      if (user) fetchFavoriteSpotIds(user.id);
     });
 
     // 2. Fetch User Fishing Spots
     fetchFishingSpots();
   }, []);
+
+  const fetchFavoriteSpotIds = async (userId: string) => {
+    try {
+      const { data } = await supabase
+        .from('favorite_spots')
+        .select('spot_id')
+        .eq('user_id', userId);
+      if (data) setFavoriteSpotIds(data.map(f => f.spot_id));
+    } catch {}
+  };
+
+  const toggleFavoriteSpot = async (spotId: string) => {
+    if (!currentUser) {
+      setIsGuestModalOpen(true);
+      return;
+    }
+
+    const isFav = favoriteSpotIds.includes(spotId);
+    if (isFav) {
+      setFavoriteSpotIds(prev => prev.filter(id => id !== spotId));
+      await supabase.from('favorite_spots').delete().eq('user_id', currentUser.id).eq('spot_id', spotId);
+    } else {
+      setFavoriteSpotIds(prev => [...prev, spotId]);
+      await supabase.from('favorite_spots').insert({ user_id: currentUser.id, spot_id: spotId });
+    }
+  };
 
   const fetchFishingSpots = async () => {
     const { data } = await supabase
@@ -502,6 +530,25 @@ export default function RegionMapClient() {
                 <div className="text-[11px] font-semibold text-slate-400 flex items-center space-x-1">
                   <MapPin className="w-3.5 h-3.5 text-emerald-500" />
                   <span>Koordinat: {selectedSpot.lat.toFixed(4)}, {selectedSpot.lng.toFixed(4)}</span>
+                </div>
+
+                {/* Favorite Toggle Button */}
+                <div className="pt-2 border-t border-slate-100">
+                  <button
+                    onClick={() => toggleFavoriteSpot(selectedSpot.id)}
+                    className={`w-full py-3 px-4 rounded-2xl font-bold text-xs flex items-center justify-center space-x-2 border transition-all ${
+                      favoriteSpotIds.includes(selectedSpot.id)
+                        ? 'bg-amber-50 text-amber-700 border-amber-300 shadow-xs'
+                        : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
+                    }`}
+                  >
+                    <Star className={`w-4 h-4 ${favoriteSpotIds.includes(selectedSpot.id) ? 'fill-amber-400 text-amber-500' : ''}`} />
+                    <span>
+                      {favoriteSpotIds.includes(selectedSpot.id) 
+                        ? (isTr ? 'Favorilerimde Kayıtlı ⭐' : 'Saved in Favorites') 
+                        : (isTr ? 'Favorilerime Ekle ⭐' : 'Add to Favorites')}
+                    </span>
+                  </button>
                 </div>
               </div>
             </motion.div>

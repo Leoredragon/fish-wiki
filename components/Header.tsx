@@ -9,6 +9,8 @@ import { createClient } from '@/lib/supabase/client';
 
 import { User as SupabaseUser } from '@supabase/supabase-js';
 
+import NotificationCenter from './NotificationCenter';
+
 export default function Header() {
   const t = useTranslations('Header');
   const locale = useLocale();
@@ -92,6 +94,8 @@ export default function Header() {
           {/* Right controls */}
           <div className="flex items-center space-x-2 sm:space-x-3">
             <LanguageSwitcher />
+
+            {sessionUser && <NotificationCenter userId={sessionUser.id} />}
 
             {sessionUser ? (
               <div className="flex items-center space-x-2">

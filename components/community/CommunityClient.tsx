@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocale } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Scale, Ruler, Heart, MessageSquare, Send, Users, Sparkles, Loader2, ChevronDown, Package, User, X, ShieldCheck, Anchor, Crosshair } from 'lucide-react';
+import { MapPin, Scale, Ruler, Heart, MessageSquare, Send, Users, Loader2, ChevronDown, Package, User, Trophy, Search, Flame, Filter, Medal, Sparkles } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import CatchCardExport from './CatchCardExport';
 import { useRouter } from 'next/navigation';
@@ -17,6 +17,9 @@ export default function CommunityClient({ catches }: { catches: Record<string, a
 
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [visibleCount, setVisibleCount] = useState<number>(10);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'trophy' | 'liked'>('all');
+
   const [selectedAuthorModal, setSelectedAuthorModal] = useState<{
     profile: Record<string, any>;
     tackleSet?: Record<string, any> | null;
@@ -29,6 +32,34 @@ export default function CommunityClient({ catches }: { catches: Record<string, a
     });
   }, []);
 
+  // Leaderboard Top 3 Trophy Catches (Sorted by weight or length)
+  const topTrophies = useMemo(() => {
+    return [...catches]
+      .filter(c => c.weight || c.length)
+      .sort((a, b) => (b.weight || 0) - (a.weight || 0))
+      .slice(0, 3);
+  }, [catches]);
+
+  // Filtered & Searched Catches
+  const filteredCatches = useMemo(() => {
+    return catches.filter(c => {
+      // Filter tab check
+      if (activeFilter === 'trophy' && (!c.weight || c.weight < 1.5)) return false;
+      
+      // Search query check
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const locationMatch = c.location_note?.toLowerCase().includes(q);
+        const lureMatch = c.lure_used?.toLowerCase().includes(q);
+        const usernameMatch = c.profiles?.username?.toLowerCase().includes(q);
+        const nameMatch = c.profiles?.full_name?.toLowerCase().includes(q);
+        return locationMatch || lureMatch || usernameMatch || nameMatch;
+      }
+
+      return true;
+    });
+  }, [catches, activeFilter, searchQuery]);
+
   const handleOpenAuthorModal = (profileData: any, tackleSetData: any, userId: string) => {
     const userCatches = catches.filter(c => c.user_id === userId);
     setSelectedAuthorModal({
@@ -38,7 +69,7 @@ export default function CommunityClient({ catches }: { catches: Record<string, a
     });
   };
 
-  const displayedCatches = catches.slice(0, visibleCount);
+  const displayedCatches = filteredCatches.slice(0, visibleCount);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-16 pt-8">
@@ -57,11 +88,108 @@ export default function CommunityClient({ catches }: { catches: Record<string, a
         </p>
       </div>
 
+      {/* 🏆 LEADERBOARD / TROPHY SHOWCASE BANNER */}
+      {topTrophies.length > 0 && (
+        <div className="bg-gradient-to-br from-[#0F172A] via-slate-900 to-slate-800 text-white rounded-3xl p-6 shadow-xl border border-slate-700/80 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
+            <div className="flex items-center space-x-2">
+              <div className="p-2 bg-amber-500/20 text-amber-400 rounded-xl border border-amber-500/30">
+                <Trophy className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="font-extrabold text-base tracking-wide text-white">
+                  {isTr ? 'Ayın En Büyük Trofe Avları 🏆' : 'Trophy Leaderboard'}
+                </h2>
+                <p className="text-[11px] text-slate-400 font-medium">
+                  {isTr ? 'Topluluğun en ağır ve büyüleyici yakalamaları' : 'Top catches recorded by the community'}
+                </p>
+              </div>
+            </div>
+            <span className="bg-amber-400/10 text-amber-300 border border-amber-400/30 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider hidden sm:inline-block">
+              Liderlik Tablosu
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {topTrophies.map((trophy, idx) => (
+              <div
+                key={trophy.id}
+                onClick={() => handleOpenAuthorModal(trophy.profiles, trophy.tackle_sets, trophy.user_id)}
+                className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 rounded-2xl p-3 flex items-center space-x-3 cursor-pointer transition-all hover:scale-[1.02]"
+              >
+                <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-slate-600">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={trophy.image_url} alt="Trophy" className="w-full h-full object-cover" />
+                  <div className={`absolute top-0 left-0 text-[10px] font-black px-1.5 py-0.5 rounded-br-lg ${
+                    idx === 0 ? 'bg-amber-400 text-slate-900' : idx === 1 ? 'bg-slate-300 text-slate-900' : 'bg-amber-700 text-white'
+                  }`}>
+                    #{idx + 1}
+                  </div>
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-1 text-xs font-bold text-white truncate">
+                    <span>{trophy.profiles?.username || 'Balıkçı'}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-xs font-black text-emerald-400 mt-0.5">
+                    {trophy.weight && <span>{trophy.weight} kg</span>}
+                    {trophy.length && <span className="text-slate-400 font-semibold text-[10px]">{trophy.length} cm</span>}
+                  </div>
+                  <span className="text-[10px] text-slate-400 truncate block">
+                    📍 {trophy.location_note || 'Mera'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 🔍 SEARCH BAR & FILTER CHIPS */}
+      <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={isTr ? 'Mera adı, balıkçı veya kullanılan yem ara... (Örn: Boğaz, Spin)' : 'Search by spot, angler, or lure...'}
+            className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-2.5 text-xs font-bold text-slate-400 hover:text-slate-600">✕</button>
+          )}
+        </div>
+
+        <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pt-1">
+          <button
+            onClick={() => setActiveFilter('all')}
+            className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+              activeFilter === 'all' ? 'bg-[#0F172A] text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            <Flame className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{isTr ? 'Tüm Avlar' : 'All Catches'}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveFilter('trophy')}
+            className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+              activeFilter === 'trophy' ? 'bg-[#0F172A] text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            <Trophy className="w-3.5 h-3.5 text-amber-400" />
+            <span>{isTr ? 'Trofe Avlar (>1.5kg)' : 'Trophy Catches'}</span>
+          </button>
+        </div>
+      </div>
+
       {/* Catches Feed */}
       <div className="space-y-8">
-        {catches.length === 0 ? (
-          <div className="text-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-200 text-slate-500">
-            {isTr ? 'Henüz paylaşım yapılmamış. İlk paylaşan sen ol!' : 'No catches shared yet. Be the first!'}
+        {filteredCatches.length === 0 ? (
+          <div className="text-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-200 text-slate-500 space-y-2">
+            <p className="font-bold text-slate-700">{isTr ? 'Aradığınız kriterlere uygun av bulunamadı.' : 'No catches match your search.'}</p>
+            <p className="text-xs">{isTr ? 'Arama terimini veya filtreyi değiştirmeyi deneyin.' : 'Try changing your search filters.'}</p>
           </div>
         ) : (
           displayedCatches.map((log) => (
@@ -78,13 +206,13 @@ export default function CommunityClient({ catches }: { catches: Record<string, a
       </div>
 
       {/* Load More Button */}
-      {visibleCount < catches.length && (
+      {visibleCount < filteredCatches.length && (
         <div className="text-center pt-4">
           <button
             onClick={() => setVisibleCount(prev => prev + 10)}
             className="inline-flex items-center space-x-2 bg-white hover:bg-slate-50 border border-slate-200 shadow-md text-[#0F172A] font-extrabold px-7 py-3.5 rounded-2xl transition-all hover:scale-105 active:scale-95 text-sm"
           >
-            <span>{isTr ? `Daha Fazla Av Göster (${catches.length - visibleCount} Av Kaldı)` : 'Load More Catches'}</span>
+            <span>{isTr ? `Daha Fazla Av Göster (${filteredCatches.length - visibleCount} Av Kaldı)` : 'Load More Catches'}</span>
             <ChevronDown className="w-4 h-4 text-emerald-500" />
           </button>
         </div>
@@ -300,6 +428,21 @@ function CatchPostItem({
       await supabase
         .from('catch_likes')
         .insert({ catch_id: log.id, user_id: currentUser.id });
+
+      // Trigger Notification
+      if (log.user_id && log.user_id !== currentUser.id) {
+        const actorName = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Üyesi';
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: log.user_id,
+            actor_id: currentUser.id,
+            actor_name: actorName,
+            type: 'like',
+            catch_id: log.id
+          })
+          .catch(() => {});
+      }
     }
     setLikeLoading(false);
   };
@@ -326,6 +469,20 @@ function CatchPostItem({
     if (!error && data) {
       setComments(prev => [...prev, data]);
       setNewComment('');
+
+      // Trigger Notification
+      if (log.user_id && log.user_id !== currentUser.id) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: log.user_id,
+            actor_id: currentUser.id,
+            actor_name: username,
+            type: 'comment',
+            catch_id: log.id
+          })
+          .catch(() => {});
+      }
     }
     setCommenting(false);
   };
@@ -489,4 +646,3 @@ function CatchPostItem({
     </motion.div>
   );
 }
-
