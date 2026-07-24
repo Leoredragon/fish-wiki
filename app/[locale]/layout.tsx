@@ -6,6 +6,7 @@ import '../globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import { Metadata, Viewport } from 'next';
 
 export const metadata: Metadata = {
@@ -27,7 +28,8 @@ export const viewport: Viewport = {
   themeColor: '#0F172A',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1
+  maximumScale: 5,
+  viewportFit: 'cover'
 };
 
 export function generateStaticParams() {
@@ -57,9 +59,10 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           <Header />
           <PWAInstallBanner />
-          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
             {children}
           </main>
+          <MobileBottomNav />
           <Footer />
         </NextIntlClientProvider>
       </body>
