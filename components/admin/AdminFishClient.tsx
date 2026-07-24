@@ -152,23 +152,18 @@ export default function AdminFishClient() {
     setUploadingImage(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+      const fileName = `fishes/${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('fish-images')
+        .from('user_uploads')
         .upload(fileName, file, { cacheControl: '3600', upsert: true });
 
       if (uploadError) {
-        // Fallback to base64 DataURL if storage upload fails or bucket is not writable
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setFormData(prev => ({ ...prev, image_url: reader.result as string }));
-          setUploadingImage(false);
-        };
-        reader.readAsDataURL(file);
+        setNotification({ type: 'error', message: 'Fotoğraf yüklenemedi: ' + uploadError.message });
+        setUploadingImage(false);
       } else {
         const { data: publicUrlData } = supabase.storage
-          .from('fish-images')
+          .from('user_uploads')
           .getPublicUrl(fileName);
 
         if (publicUrlData?.publicUrl) {
@@ -176,13 +171,9 @@ export default function AdminFishClient() {
         }
         setUploadingImage(false);
       }
-    } catch {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, image_url: reader.result as string }));
-        setUploadingImage(false);
-      };
-      reader.readAsDataURL(file);
+    } catch (err: any) {
+      setNotification({ type: 'error', message: 'Beklenmeyen hata: ' + (err.message || 'Bilinmiyor') });
+      setUploadingImage(false);
     }
   };
 

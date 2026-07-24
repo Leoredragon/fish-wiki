@@ -98,13 +98,8 @@ export default function AdminSpotsClient() {
         .upload(fileName, file, { cacheControl: '3600', upsert: true });
 
       if (uploadError) {
-        // Fallback FileReader
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setImageUrl(reader.result as string);
-          setUploadingImage(false);
-        };
-        reader.readAsDataURL(file);
+        setNotification({ type: 'error', message: 'Fotoğraf yüklenemedi: ' + uploadError.message });
+        setUploadingImage(false);
       } else {
         const { data: publicUrlData } = supabase.storage
           .from('user_uploads')
@@ -115,7 +110,8 @@ export default function AdminSpotsClient() {
         }
         setUploadingImage(false);
       }
-    } catch {
+    } catch (err: any) {
+      setNotification({ type: 'error', message: 'Beklenmeyen hata: ' + (err.message || 'Bilinmiyor') });
       setUploadingImage(false);
     }
   };
