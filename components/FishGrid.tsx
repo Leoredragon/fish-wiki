@@ -157,8 +157,8 @@ export default function FishGrid({ selectedCategory, onSelectCategory, searchTer
   const isTr = locale === 'tr';
   const { favorites } = useFavorites();
 
-  const [fishes, setFishes] = useState<Fish[]>(RICH_MOCK_FISHES);
-  const [loading, setLoading] = useState(false);
+  const [fishes, setFishes] = useState<Fish[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isSubscribed = true;
@@ -172,13 +172,16 @@ export default function FishGrid({ selectedCategory, onSelectCategory, searchTer
           .order(orderColumn, { ascending: true });
 
         if (isSubscribed) {
-          if (!error && data && data.length > 0) {
+          if (error || !data || data.length === 0) {
+            setFishes(RICH_MOCK_FISHES);
+          } else {
             setFishes(data);
           }
           setLoading(false);
         }
       } catch {
         if (isSubscribed) {
+          setFishes(RICH_MOCK_FISHES);
           setLoading(false);
         }
       }

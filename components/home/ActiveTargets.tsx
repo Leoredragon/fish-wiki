@@ -35,41 +35,11 @@ function getMonthNameEn(month: number) {
   return names[month - 1];
 }
 
-const INITIAL_ACTIVE_TARGETS = [
-  {
-    id: 'm4',
-    name_tr: 'Deniz Levreği',
-    name_en: 'European Seabass',
-    water_type: 'Tuzlu Su',
-    short_info_tr: 'Kıyı kayalıklarının ve nehir ağızlarının usta yırtıcısı.',
-    short_info_en: 'Master predator of coastal breakers and river estuaries.',
-    image_url: 'https://images.unsplash.com/photo-1534043464124-3be32fe000c9?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: 'm5',
-    name_tr: 'Çupra (Çipura)',
-    name_en: 'Gilt-head Bream',
-    water_type: 'Tuzlu Su',
-    short_info_tr: 'Sert çene yapısı ile kabuklu deniz canlılarını kıran tür.',
-    short_info_en: 'Marine fish with powerful jaws adapted for crushing shellfish.',
-    image_url: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: 'm3',
-    name_tr: 'Aynalı Sazan',
-    name_en: 'Mirror Carp',
-    water_type: 'Tatlı Su',
-    short_info_tr: 'Göl ve barajların dip bölgesinde beslenen iriyarı sazan türü.',
-    short_info_en: 'Specimen freshwater species feeding along lake bottoms.',
-    image_url: 'https://images.unsplash.com/photo-1516683769144-c733e561b642?auto=format&fit=crop&w=800&q=80'
-  }
-];
-
 export default function ActiveTargets() {
   const locale = useLocale();
   const isTr = locale === 'tr';
-  const [fishes, setFishes] = useState<any[]>(INITIAL_ACTIVE_TARGETS);
-  const [loading, setLoading] = useState(false);
+  const [fishes, setFishes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const currentMonth = new Date().getMonth() + 1;
   const seasonTr = getCurrentSeason();
@@ -78,6 +48,7 @@ export default function ActiveTargets() {
 
   useEffect(() => {
     const fetchActiveFishes = async () => {
+      setLoading(true);
       const supabase = createClient();
       
       const { data, error } = await supabase
@@ -96,7 +67,7 @@ export default function ActiveTargets() {
     fetchActiveFishes();
   }, [seasonTr]);
 
-  if (fishes.length === 0) return null;
+  if (loading || fishes.length === 0) return null;
 
   return (
     <div className="my-16">
