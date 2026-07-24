@@ -67,13 +67,14 @@ export default function FishCard({ fish }: FishCardProps) {
       <Link href={`/fish/${targetId}`} className="flex-1 flex flex-col">
         {/* Image Header Container */}
         <div className="relative aspect-[16/9] w-full bg-slate-900 overflow-hidden flex items-center justify-center">
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src={displayImage}
             alt={name || 'Fish species'}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90 group-hover:opacity-100"
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90 group-hover:opacity-100"
             onError={() => setImageError(true)}
-            unoptimized
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
 
