@@ -153,13 +153,13 @@ export default function AdminFishClient() {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-      const filePath = `fish-images/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('fish-images')
-        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+        .upload(fileName, file, { cacheControl: '3600', upsert: true });
 
       if (uploadError) {
+        // Fallback to base64 DataURL if storage upload fails or bucket is not writable
         const reader = new FileReader();
         reader.onloadend = () => {
           setFormData(prev => ({ ...prev, image_url: reader.result as string }));
@@ -169,7 +169,7 @@ export default function AdminFishClient() {
       } else {
         const { data: publicUrlData } = supabase.storage
           .from('fish-images')
-          .getPublicUrl(filePath);
+          .getPublicUrl(fileName);
 
         if (publicUrlData?.publicUrl) {
           setFormData(prev => ({ ...prev, image_url: publicUrlData.publicUrl }));
@@ -177,7 +177,12 @@ export default function AdminFishClient() {
         setUploadingImage(false);
       }
     } catch {
-      setUploadingImage(false);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, image_url: reader.result as string }));
+        setUploadingImage(false);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
