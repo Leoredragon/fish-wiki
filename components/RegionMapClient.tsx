@@ -459,7 +459,7 @@ export default function RegionMapClient() {
       </AnimatePresence>
 
       {/* FLOATING ACTION BUTTON (+ Mera Ekle) */}
-      <div className="fixed bottom-6 right-6 z-40">
+      <div className="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-40">
         <button
           onClick={handleAddSpotClick}
           className="bg-[#0F172A] hover:bg-slate-800 text-white font-extrabold px-5 py-3.5 rounded-full shadow-2xl flex items-center space-x-2 border border-emerald-500/50 transition-all transform hover:scale-105 active:scale-95"

@@ -200,7 +200,7 @@ export default function WeatherSolunarClient() {
       </motion.section>
 
       {/* Spot Dropdown Selector & Sorting Mode */}
-      <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-4 max-w-2xl mx-auto -mt-12 relative z-20">
+      <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-4 max-w-2xl mx-auto relative z-20">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Navigation className="w-5 h-5 text-emerald-600" />
