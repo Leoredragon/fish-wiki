@@ -127,30 +127,6 @@ export default function Header() {
 
           </div>
         </div>
-
-        {/* Mobile Navigation Sub-bar */}
-        <div className="relative lg:hidden border-t border-slate-800/60 overflow-hidden">
-          <nav className="flex overflow-x-auto py-2.5 px-1 scrollbar-none space-x-1 text-xs pr-10">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                    isActive
-                      ? 'bg-slate-800 text-emerald-400 border border-slate-700 shadow-sm'
-                      : 'text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
       </div>
     </header>
   );
