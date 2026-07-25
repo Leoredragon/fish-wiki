@@ -6,7 +6,7 @@
 -- 1. FORUM KONULARI (community_forum_posts)
 CREATE TABLE IF NOT EXISTS public.community_forum_posts (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   title TEXT NOT NULL,
   content TEXT NOT NULL,
   category TEXT DEFAULT 'Genel' NOT NULL,
@@ -29,7 +29,7 @@ CREATE POLICY "Users delete own forum post" ON public.community_forum_posts FOR 
 CREATE TABLE IF NOT EXISTS public.community_forum_replies (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   post_id UUID REFERENCES public.community_forum_posts(id) ON DELETE CASCADE NOT NULL,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   content TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -44,7 +44,7 @@ CREATE POLICY "Users insert own forum reply" ON public.community_forum_replies F
 -- 3. 2. EL EKİPMAN PAZARI (community_marketplace_items)
 CREATE TABLE IF NOT EXISTS public.community_marketplace_items (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   title TEXT NOT NULL,
   description TEXT NOT NULL,
   price NUMERIC NOT NULL,
@@ -74,7 +74,7 @@ CREATE POLICY "Users delete own marketplace item" ON public.community_marketplac
 -- 4. FAYDALI BİLGİLER VE TÜYOLAR (community_tips)
 CREATE TABLE IF NOT EXISTS public.community_tips (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   title TEXT NOT NULL,
   category TEXT DEFAULT 'Genel Tüyolar' NOT NULL,
   content TEXT NOT NULL,
