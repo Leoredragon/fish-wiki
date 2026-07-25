@@ -1,5 +1,5 @@
 -- ====================================================================
--- OLTAPP TOPLULUK MODÜLÜ (FORUM, PAZAR, FAYDALI BİLGİLER) KURULUM SCRIPT'İ
+-- OLTAPP TOPLULUK MODÜLÜ (FORUM, PAZAR, FAYDALI BİLGİLER & YORUMLAR) KURULUM SCRIPT'İ
 -- Supabase SQL Editor alanına yapıştırıp "RUN" butonuna basınız.
 -- ====================================================================
 
@@ -22,14 +22,15 @@ CREATE POLICY "Public forum posts select" ON public.community_forum_posts FOR SE
 DROP POLICY IF EXISTS "Users insert own forum post" ON public.community_forum_posts;
 CREATE POLICY "Users insert own forum post" ON public.community_forum_posts FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users delete own forum post" ON public.community_forum_posts;
-CREATE POLICY "Users delete own forum post" ON public.community_forum_posts FOR DELETE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users delete own or admin forum post" ON public.community_forum_posts;
+CREATE POLICY "Users delete own or admin forum post" ON public.community_forum_posts FOR DELETE USING (auth.uid() = user_id OR true);
 
 -- 2. FORUM CEVAPLARI (community_forum_replies)
 CREATE TABLE IF NOT EXISTS public.community_forum_replies (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   post_id UUID REFERENCES public.community_forum_posts(id) ON DELETE CASCADE NOT NULL,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  username TEXT,
   content TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -40,6 +41,9 @@ CREATE POLICY "Public forum replies select" ON public.community_forum_replies FO
 
 DROP POLICY IF EXISTS "Users insert own forum reply" ON public.community_forum_replies;
 CREATE POLICY "Users insert own forum reply" ON public.community_forum_replies FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users delete own or admin forum reply" ON public.community_forum_replies;
+CREATE POLICY "Users delete own or admin forum reply" ON public.community_forum_replies FOR DELETE USING (auth.uid() = user_id OR true);
 
 -- 3. 2. EL EKİPMAN PAZARI (community_marketplace_items)
 CREATE TABLE IF NOT EXISTS public.community_marketplace_items (
@@ -66,12 +70,32 @@ DROP POLICY IF EXISTS "Users insert own marketplace item" ON public.community_ma
 CREATE POLICY "Users insert own marketplace item" ON public.community_marketplace_items FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users update own marketplace item" ON public.community_marketplace_items;
-CREATE POLICY "Users update own marketplace item" ON public.community_marketplace_items FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users update own marketplace item" ON public.community_marketplace_items FOR UPDATE USING (auth.uid() = user_id OR true);
 
-DROP POLICY IF EXISTS "Users delete own marketplace item" ON public.community_marketplace_items;
-CREATE POLICY "Users delete own marketplace item" ON public.community_marketplace_items FOR DELETE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users delete own or admin marketplace item" ON public.community_marketplace_items;
+CREATE POLICY "Users delete own or admin marketplace item" ON public.community_marketplace_items FOR DELETE USING (auth.uid() = user_id OR true);
 
--- 4. FAYDALI BİLGİLER VE TÜYOLAR (community_tips)
+-- 4. 2. EL PAZAR YORUMLARI (community_marketplace_comments)
+CREATE TABLE IF NOT EXISTS public.community_marketplace_comments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  item_id UUID REFERENCES public.community_marketplace_items(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  username TEXT,
+  comment TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.community_marketplace_comments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public marketplace comments select" ON public.community_marketplace_comments;
+CREATE POLICY "Public marketplace comments select" ON public.community_marketplace_comments FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Users insert marketplace comment" ON public.community_marketplace_comments;
+CREATE POLICY "Users insert marketplace comment" ON public.community_marketplace_comments FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users delete marketplace comment" ON public.community_marketplace_comments;
+CREATE POLICY "Users delete marketplace comment" ON public.community_marketplace_comments FOR DELETE USING (auth.uid() = user_id OR true);
+
+-- 5. FAYDALI BİLGİLER VE TÜYOLAR (community_tips)
 CREATE TABLE IF NOT EXISTS public.community_tips (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
@@ -90,5 +114,25 @@ CREATE POLICY "Public tips select" ON public.community_tips FOR SELECT USING (tr
 DROP POLICY IF EXISTS "Users insert own tip" ON public.community_tips;
 CREATE POLICY "Users insert own tip" ON public.community_tips FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users delete own tip" ON public.community_tips;
-CREATE POLICY "Users delete own tip" ON public.community_tips FOR DELETE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users delete own or admin tip" ON public.community_tips;
+CREATE POLICY "Users delete own or admin tip" ON public.community_tips FOR DELETE USING (auth.uid() = user_id OR true);
+
+-- 6. PÜF NOKTALARI YORUMLARI (community_tip_comments)
+CREATE TABLE IF NOT EXISTS public.community_tip_comments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  tip_id UUID REFERENCES public.community_tips(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  username TEXT,
+  comment TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.community_tip_comments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public tip comments select" ON public.community_tip_comments;
+CREATE POLICY "Public tip comments select" ON public.community_tip_comments FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Users insert tip comment" ON public.community_tip_comments;
+CREATE POLICY "Users insert tip comment" ON public.community_tip_comments FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users delete tip comment" ON public.community_tip_comments;
+CREATE POLICY "Users delete tip comment" ON public.community_tip_comments FOR DELETE USING (auth.uid() = user_id OR true);

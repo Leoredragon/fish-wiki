@@ -22,20 +22,19 @@ import {
   Plus,
   ShoppingBag,
   BookOpen,
-  Tag,
-  CheckCircle,
-  ThumbsUp,
-  Image as ImageIcon,
   X,
-  Share2,
-  Filter,
-  Layers,
-  Sparkles
+  Trash2,
+  ShieldCheck,
+  CheckCircle,
+  MessageCircle,
+  PhoneCall
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import CatchCardExport from './CatchCardExport';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+
+const ADMIN_EMAIL = 'mail@mail.com';
 
 interface CommunityClientProps {
   catches: Record<string, any>[];
@@ -57,6 +56,7 @@ export default function CommunityClient({
 
   const [activeTab, setActiveTab] = useState<'feed' | 'forum' | 'market' | 'tips'>('feed');
   const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const isAdmin = currentUser?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
   // Tab 1: Feed States
   const [visibleCount, setVisibleCount] = useState<number>(10);
@@ -77,7 +77,7 @@ export default function CommunityClient({
   const [forumCatInput, setForumCatInput] = useState('Soru-Cevap');
   const [forumImageFile, setForumImageFile] = useState<File | null>(null);
   const [forumSubmitting, setForumSubmitting] = useState(false);
-  const [selectedForumPost, setSelectedForumPost] = useState<any | null>(null);
+  const [activeForumRepliesPostId, setActiveForumRepliesPostId] = useState<string | null>(null);
 
   // Tab 3: Marketplace States
   const [marketItems, setMarketItems] = useState<any[]>(initialMarketplaceItems);
@@ -92,7 +92,6 @@ export default function CommunityClient({
   const [itemContact, setItemContact] = useState('');
   const [marketImageFile, setMarketImageFile] = useState<File | null>(null);
   const [marketSubmitting, setMarketSubmitting] = useState(false);
-  const [selectedMarketItem, setSelectedMarketItem] = useState<any | null>(null);
 
   // Tab 4: Tips States
   const [tips, setTips] = useState<any[]>(initialCommunityTips);
@@ -181,6 +180,17 @@ export default function CommunityClient({
     }
   };
 
+  // Forum Post Delete Handler (Admin or Owner)
+  const handleDeleteForumPost = async (postId: string) => {
+    if (!confirm(isTr ? 'Bu forum konusunu silmek istediğinize emin misiniz?' : 'Delete this topic?')) return;
+    try {
+      const { error } = await supabase.from('community_forum_posts').delete().eq('id', postId);
+      if (!error) {
+        setForumPosts((prev) => prev.filter((p) => p.id !== postId));
+      }
+    } catch {}
+  };
+
   // Marketplace Add Handler
   const handleAddMarketItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -233,6 +243,17 @@ export default function CommunityClient({
     }
   };
 
+  // Marketplace Delete Handler (Admin or Owner)
+  const handleDeleteMarketItem = async (itemId: string) => {
+    if (!confirm(isTr ? 'Bu ilanı silmek istediğinize emin misiniz?' : 'Delete this item?')) return;
+    try {
+      const { error } = await supabase.from('community_marketplace_items').delete().eq('id', itemId);
+      if (!error) {
+        setMarketItems((prev) => prev.filter((i) => i.id !== itemId));
+      }
+    } catch {}
+  };
+
   // Tip Add Handler
   const handleAddTip = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -278,6 +299,17 @@ export default function CommunityClient({
     }
   };
 
+  // Tip Delete Handler (Admin or Owner)
+  const handleDeleteTip = async (tipId: string) => {
+    if (!confirm(isTr ? 'Bu püf noktasını silmek istediğinize emin misiniz?' : 'Delete this tip?')) return;
+    try {
+      const { error } = await supabase.from('community_tips').delete().eq('id', tipId);
+      if (!error) {
+        setTips((prev) => prev.filter((t) => t.id !== tipId));
+      }
+    } catch {}
+  };
+
   const handleOpenAuthorModal = (profileData: any, tackleSetData: any, userId: string) => {
     const userCatches = catches.filter((c) => c.user_id === userId);
     setSelectedAuthorModal({
@@ -294,9 +326,17 @@ export default function CommunityClient({
         <div className="inline-flex items-center justify-center p-3 bg-emerald-50 border border-emerald-200 rounded-full mb-1 shadow-xs">
           <Users className="w-6 h-6 text-emerald-600" />
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0F172A] tracking-tight">
-          {isTr ? 'Oltapp Balıkçılık Topluluğu' : 'Oltapp Angling Community'}
-        </h1>
+        <div className="flex items-center justify-center space-x-2">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0F172A] tracking-tight">
+            {isTr ? 'Oltapp Balıkçılık Topluluğu' : 'Oltapp Angling Community'}
+          </h1>
+          {isAdmin && (
+            <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md flex items-center space-x-1 shadow-sm">
+              <ShieldCheck className="w-3 h-3" />
+              <span>ADMIN</span>
+            </span>
+          )}
+        </div>
         <p className="text-slate-500 font-medium max-w-xl mx-auto text-xs sm:text-sm leading-relaxed">
           {isTr
             ? 'Amatör balıkçıların av akışı, soru-cevap forumu, 2. el ekipman pazarı ve pratik bilgi paylaşım platformu.'
@@ -436,7 +476,7 @@ export default function CommunityClient({
               <button
                 onClick={() => setActiveFilter('all')}
                 className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                  activeFilter === 'all' ? 'bg-[#0F172A] text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  activeFilter === 'all' ? 'bg-[#0F172A] text-[#10B981] shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 <Flame className="w-3.5 h-3.5 text-emerald-400" />
@@ -467,6 +507,7 @@ export default function CommunityClient({
                   key={log.id}
                   log={log}
                   currentUser={currentUser}
+                  isAdmin={isAdmin}
                   isTr={isTr}
                   onRequireAuth={() => router.push('/login')}
                   onOpenAuthor={() => handleOpenAuthorModal(log.profiles, log.tackle_sets, log.user_id)}
@@ -505,7 +546,7 @@ export default function CommunityClient({
               className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-sm"
             >
               <Plus className="w-4 h-4" />
-              <span>{isTr ? 'Yeni Konu Aç' : 'New Topic'}</span>
+              <span>{isTr ? 'Yeni Soru / Konu Aç' : 'New Topic'}</span>
             </button>
           </div>
 
@@ -529,45 +570,22 @@ export default function CommunityClient({
             {forumPosts.filter((p) => forumCategory === 'all' || p.category === forumCategory).length === 0 ? (
               <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200 text-slate-400 space-y-2">
                 <MessageSquare className="w-10 h-10 text-slate-300 mx-auto" />
-                <p className="font-bold text-slate-600">{isTr ? 'Henüz bu kategoride konu açılmamış.' : 'No forum topics yet.'}</p>
-                <p className="text-xs">{isTr ? 'İlk konuyu açan siz olun!' : 'Be the first to start a conversation!'}</p>
+                <p className="font-bold text-slate-600">{isTr ? 'Henüz bu kategoride soru açılmamış.' : 'No topics yet.'}</p>
+                <p className="text-xs">{isTr ? 'İlk soruyu siz sorun!' : 'Be the first to ask a question!'}</p>
               </div>
             ) : (
               forumPosts
                 .filter((p) => forumCategory === 'all' || p.category === forumCategory)
                 .map((post) => (
-                  <div key={post.id} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3 hover:border-slate-300 transition-all">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2.5">
-                        <div className="w-8 h-8 rounded-full bg-[#0F172A] text-emerald-400 flex items-center justify-center text-xs font-black overflow-hidden shrink-0">
-                          {post.profiles?.avatar_url ? (
-                            <Image src={post.profiles.avatar_url} alt="Avatar" width={32} height={32} className="object-cover" />
-                          ) : (
-                            (post.profiles?.username || 'U').charAt(0).toUpperCase()
-                          )}
-                        </div>
-                        <div>
-                          <div className="text-xs font-extrabold text-[#0F172A]">{post.profiles?.username || 'Balıkçı'}</div>
-                          <div className="text-[10px] text-slate-400">{new Date(post.created_at).toLocaleDateString()}</div>
-                        </div>
-                      </div>
-
-                      <span className="bg-slate-100 text-slate-700 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-slate-200">
-                        {post.category}
-                      </span>
-                    </div>
-
-                    <div className="space-y-1">
-                      <h3 className="text-sm font-extrabold text-[#0F172A] leading-snug">{post.title}</h3>
-                      <p className="text-xs text-slate-600 leading-relaxed font-medium line-clamp-3">{post.content}</p>
-                    </div>
-
-                    {post.image_url && (
-                      <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 max-h-56">
-                        <Image src={post.image_url} alt="Forum attachment" fill sizes="100vw" className="object-cover" />
-                      </div>
-                    )}
-                  </div>
+                  <ForumPostItem
+                    key={post.id}
+                    post={post}
+                    currentUser={currentUser}
+                    isAdmin={isAdmin}
+                    isTr={isTr}
+                    onDelete={() => handleDeleteForumPost(post.id)}
+                    onRequireAuth={() => router.push('/login')}
+                  />
                 ))
             )}
           </div>
@@ -609,49 +627,26 @@ export default function CommunityClient({
             ))}
           </div>
 
-          {/* Marketplace Grid */}
+          {/* Marketplace List */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {marketItems.filter((i) => marketCategory === 'all' || i.item_type === marketCategory).length === 0 ? (
               <div className="col-span-full text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200 text-slate-400 space-y-2">
                 <ShoppingBag className="w-10 h-10 text-slate-300 mx-auto" />
                 <p className="font-bold text-slate-600">{isTr ? 'Henüz bu kategoride ilan bulunmuyor.' : 'No marketplace items yet.'}</p>
-                <p className="text-xs">{isTr ? 'Kullanmadığınız ekipmanı ilana koyun.' : 'List your unused fishing gear!'}</p>
               </div>
             ) : (
               marketItems
                 .filter((i) => marketCategory === 'all' || i.item_type === marketCategory)
                 .map((item) => (
-                  <div key={item.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-all">
-                    <div>
-                      {item.image_url ? (
-                        <div className="relative aspect-[4/3] bg-slate-100 w-full overflow-hidden">
-                          <Image src={item.image_url} alt={item.title} fill sizes="50vw" className="object-cover" />
-                          <div className="absolute top-3 right-3 bg-[#0F172A] text-emerald-400 font-black text-xs px-3 py-1 rounded-xl shadow-md">
-                            {item.price} {item.currency || 'TL'}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-500">{item.item_type}</span>
-                          <span className="text-sm font-black text-emerald-600">{item.price} TL</span>
-                        </div>
-                      )}
-
-                      <div className="p-4 space-y-2">
-                        <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
-                          <span>{item.condition}</span>
-                          {item.city && <span>📍 {item.city}</span>}
-                        </div>
-                        <h3 className="font-extrabold text-sm text-[#0F172A] leading-snug">{item.title}</h3>
-                        <p className="text-xs text-slate-600 font-medium line-clamp-2 leading-relaxed">{item.description}</p>
-                      </div>
-                    </div>
-
-                    <div className="p-4 pt-0 flex items-center justify-between text-xs font-semibold text-slate-500 border-t border-slate-100 mt-2">
-                      <span className="font-bold text-[#0F172A]">@{item.profiles?.username || 'Satıcı'}</span>
-                      {item.contact_info && <span className="text-emerald-600 font-bold">{item.contact_info}</span>}
-                    </div>
-                  </div>
+                  <MarketplaceItemCard
+                    key={item.id}
+                    item={item}
+                    currentUser={currentUser}
+                    isAdmin={isAdmin}
+                    isTr={isTr}
+                    onDelete={() => handleDeleteMarketItem(item.id)}
+                    onRequireAuth={() => router.push('/login')}
+                  />
                 ))
             )}
           </div>
@@ -693,35 +688,26 @@ export default function CommunityClient({
             ))}
           </div>
 
-          {/* Tips Grid */}
+          {/* Tips List */}
           <div className="space-y-4">
             {tips.filter((t) => tipsCategory === 'all' || t.category === tipsCategory).length === 0 ? (
               <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200 text-slate-400 space-y-2">
                 <BookOpen className="w-10 h-10 text-slate-300 mx-auto" />
                 <p className="font-bold text-slate-600">{isTr ? 'Henüz bu kategoride püf noktası paylaşılmamış.' : 'No tips shared yet.'}</p>
-                <p className="text-xs">{isTr ? 'Bildiğiniz pratik bilgileri toplulukla paylaşın!' : 'Share your angling secrets with the community!'}</p>
               </div>
             ) : (
               tips
                 .filter((t) => tipsCategory === 'all' || t.category === tipsCategory)
                 .map((tip) => (
-                  <div key={tip.id} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-emerald-200">
-                        {tip.category}
-                      </span>
-                      <span className="text-[11px] text-slate-400 font-medium">@{tip.profiles?.username || 'Balıkçı'}</span>
-                    </div>
-
-                    <h3 className="font-extrabold text-base text-[#0F172A] leading-snug">{tip.title}</h3>
-                    <p className="text-xs text-slate-600 font-medium leading-relaxed whitespace-pre-line">{tip.content}</p>
-
-                    {tip.image_url && (
-                      <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 max-h-60">
-                        <Image src={tip.image_url} alt={tip.title} fill sizes="100vw" className="object-cover" />
-                      </div>
-                    )}
-                  </div>
+                  <TipCardItem
+                    key={tip.id}
+                    tip={tip}
+                    currentUser={currentUser}
+                    isAdmin={isAdmin}
+                    isTr={isTr}
+                    onDelete={() => handleDeleteTip(tip.id)}
+                    onRequireAuth={() => router.push('/login')}
+                  />
                 ))
             )}
           </div>
@@ -738,7 +724,7 @@ export default function CommunityClient({
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 border border-slate-100 shadow-2xl">
               <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                <h3 className="font-extrabold text-base text-[#0F172A]">{isTr ? 'Yeni Forum Konusu Aç' : 'Create Forum Topic'}</h3>
+                <h3 className="font-extrabold text-base text-[#0F172A]">{isTr ? 'Yeni Soru / Konu Aç' : 'Create Forum Topic'}</h3>
                 <button onClick={() => setIsForumModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
               </div>
 
@@ -754,7 +740,7 @@ export default function CommunityClient({
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Konu Başlığı' : 'Topic Title'}</label>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Konu / Soru Başlığı' : 'Topic Title'}</label>
                   <input type="text" value={forumTitle} onChange={(e) => setForumTitle(e.target.value)} placeholder={isTr ? 'Örn: LRF için hangi sahte yemi önerirsiniz?' : 'Enter title...'} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500" required />
                 </div>
 
@@ -949,15 +935,22 @@ export default function CommunityClient({
   );
 }
 
+// =========================================================================
+// SUB-COMPONENTS FOR TAB 1, 2, 3, 4 WITH REPLIES & ADMIN PERMISSIONS
+// =========================================================================
+
+// CATCH POST ITEM (FEED TAB)
 function CatchPostItem({
   log,
   currentUser,
+  isAdmin,
   isTr,
   onRequireAuth,
   onOpenAuthor
 }: {
   log: Record<string, any>;
   currentUser: any;
+  isAdmin: boolean;
   isTr: boolean;
   onRequireAuth: () => void;
   onOpenAuthor: () => void;
@@ -1032,6 +1025,12 @@ function CatchPostItem({
       setNewComment('');
     }
     setCommenting(false);
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('Yorumu silmek istiyor musunuz?')) return;
+    await supabase.from('catch_comments').delete().eq('id', commentId);
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
   };
 
   return (
@@ -1135,12 +1134,19 @@ function CatchPostItem({
 
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                 {comments.map((c) => (
-                  <div key={c.id} className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs space-y-1">
-                    <div className="flex justify-between items-center">
-                      <span className="font-extrabold text-[#0F172A]">{c.username}</span>
-                      <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleDateString()}</span>
+                  <div key={c.id} className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs flex justify-between items-start">
+                    <div className="space-y-1 flex-1">
+                      <div className="flex justify-between items-center">
+                        <span className="font-extrabold text-[#0F172A]">{c.username}</span>
+                        <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <p className="text-slate-600 font-medium">{c.comment}</p>
                     </div>
-                    <p className="text-slate-600 font-medium">{c.comment}</p>
+                    {(isAdmin || currentUser?.id === c.user_id) && (
+                      <button onClick={() => handleDeleteComment(c.id)} className="text-slate-400 hover:text-rose-600 ml-2">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1149,5 +1155,494 @@ function CatchPostItem({
         </AnimatePresence>
       </div>
     </motion.div>
+  );
+}
+
+// FORUM POST ITEM WITH REPLIES (SORU & FORUM TAB)
+function ForumPostItem({
+  post,
+  currentUser,
+  isAdmin,
+  isTr,
+  onDelete,
+  onRequireAuth
+}: {
+  post: Record<string, any>;
+  currentUser: any;
+  isAdmin: boolean;
+  isTr: boolean;
+  onDelete: () => void;
+  onRequireAuth: () => void;
+}) {
+  const supabase = createClient();
+  const [replies, setReplies] = useState<any[]>([]);
+  const [showReplies, setShowReplies] = useState(false);
+  const [newReply, setNewReply] = useState('');
+  const [submittingReply, setSubmittingReply] = useState(false);
+
+  useEffect(() => {
+    fetchReplies();
+  }, [post.id]);
+
+  const fetchReplies = async () => {
+    try {
+      const { data } = await supabase
+        .from('community_forum_replies')
+        .select(`*, profiles(username, full_name, avatar_url)`)
+        .eq('post_id', post.id)
+        .order('created_at', { ascending: true });
+      if (data) setReplies(data);
+    } catch {}
+  };
+
+  const handleAddReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return onRequireAuth();
+    if (!newReply.trim()) return;
+
+    setSubmittingReply(true);
+    try {
+      const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Balıkçısı';
+      const { data, error } = await supabase
+        .from('community_forum_replies')
+        .insert({
+          post_id: post.id,
+          user_id: currentUser.id,
+          username,
+          content: newReply.trim()
+        })
+        .select(`*, profiles(username, full_name, avatar_url)`)
+        .single();
+
+      if (!error && data) {
+        setReplies((prev) => [...prev, data]);
+        setNewReply('');
+      }
+    } catch {} finally {
+      setSubmittingReply(false);
+    }
+  };
+
+  const handleDeleteReply = async (replyId: string) => {
+    if (!confirm('Yanıtı silmek istiyor musunuz?')) return;
+    await supabase.from('community_forum_replies').delete().eq('id', replyId);
+    setReplies((prev) => prev.filter((r) => r.id !== replyId));
+  };
+
+  const isPostOwner = currentUser?.id === post.user_id;
+
+  return (
+    <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4 hover:border-slate-300 transition-all">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2.5">
+          <div className="w-9 h-9 rounded-full bg-[#0F172A] text-emerald-400 flex items-center justify-center text-xs font-black overflow-hidden shrink-0 relative">
+            {post.profiles?.avatar_url ? (
+              <Image src={post.profiles.avatar_url} alt="Avatar" fill sizes="36px" className="object-cover" />
+            ) : (
+              (post.profiles?.full_name || post.profiles?.username || 'U').charAt(0).toUpperCase()
+            )}
+          </div>
+          <div>
+            <div className="text-xs font-extrabold text-[#0F172A] flex items-center space-x-1.5">
+              <span>{post.profiles?.full_name || post.profiles?.username || 'Balıkçı'}</span>
+            </div>
+            <div className="text-[10px] text-slate-400">{new Date(post.created_at).toLocaleDateString()}</div>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <span className="bg-slate-100 text-slate-700 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-slate-200">
+            {post.category}
+          </span>
+          {(isAdmin || isPostOwner) && (
+            <button onClick={onDelete} className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors" title="Sil (Admin/Sahip)">
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <h3 className="text-sm font-extrabold text-[#0F172A] leading-snug">{post.title}</h3>
+        <p className="text-xs text-slate-600 leading-relaxed font-medium whitespace-pre-line">{post.content}</p>
+      </div>
+
+      {post.image_url && (
+        <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 max-h-60">
+          <Image src={post.image_url} alt="Forum attachment" fill sizes="100vw" className="object-cover" />
+        </div>
+      )}
+
+      {/* Reply Toggle & Bar */}
+      <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+        <button
+          onClick={() => setShowReplies(!showReplies)}
+          className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition-all border border-slate-200"
+        >
+          <MessageSquare className="w-4 h-4 text-emerald-600" />
+          <span>{isTr ? `Yanıtlar (${replies.length})` : `Replies (${replies.length})`}</span>
+        </button>
+      </div>
+
+      {/* Reply Section */}
+      <AnimatePresence>
+        {showReplies && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-3 space-y-3 overflow-hidden">
+            <form onSubmit={handleAddReply} className="flex items-center space-x-2">
+              <input
+                type="text"
+                value={newReply}
+                onChange={(e) => setNewReply(e.target.value)}
+                placeholder={currentUser ? 'Cevabınızı veya görüşünüzü yazın...' : 'Cevap vermek için giriş yapın...'}
+                disabled={!currentUser}
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-emerald-500 disabled:opacity-60"
+              />
+              <button
+                type="submit"
+                disabled={submittingReply || !newReply.trim()}
+                className="bg-[#0F172A] hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center space-x-1"
+              >
+                {submittingReply ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5 text-emerald-400" />}
+                <span>{isTr ? 'Cevapla' : 'Reply'}</span>
+              </button>
+            </form>
+
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              {replies.length === 0 ? (
+                <p className="text-[11px] text-slate-400 italic">Henüz cevap yazılmamış. İlk cevabı siz verin!</p>
+              ) : (
+                replies.map((reply) => (
+                  <div key={reply.id} className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs space-y-1">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-1.5 font-extrabold text-[#0F172A]">
+                        <span>{reply.username || reply.profiles?.username || 'Balıkçı'}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-[10px] text-slate-400">{new Date(reply.created_at).toLocaleDateString()}</span>
+                        {(isAdmin || currentUser?.id === reply.user_id) && (
+                          <button onClick={() => handleDeleteReply(reply.id)} className="text-slate-400 hover:text-rose-600">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-slate-600 font-medium whitespace-pre-line">{reply.content}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// MARKETPLACE ITEM CARD WITH COMMENTS/QUESTIONS (EKİPMAN PAZARI TAB)
+function MarketplaceItemCard({
+  item,
+  currentUser,
+  isAdmin,
+  isTr,
+  onDelete,
+  onRequireAuth
+}: {
+  item: Record<string, any>;
+  currentUser: any;
+  isAdmin: boolean;
+  isTr: boolean;
+  onDelete: () => void;
+  onRequireAuth: () => void;
+}) {
+  const supabase = createClient();
+  const [comments, setComments] = useState<any[]>([]);
+  const [showComments, setShowComments] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
+
+  useEffect(() => {
+    fetchComments();
+  }, [item.id]);
+
+  const fetchComments = async () => {
+    try {
+      const { data } = await supabase.from('community_marketplace_comments').select('*').eq('item_id', item.id).order('created_at', { ascending: true });
+      if (data) setComments(data);
+    } catch {}
+  };
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return onRequireAuth();
+    if (!newComment.trim()) return;
+
+    setSubmittingComment(true);
+    try {
+      const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Balıkçısı';
+      const { data, error } = await supabase
+        .from('community_marketplace_comments')
+        .insert({
+          item_id: item.id,
+          user_id: currentUser.id,
+          username,
+          comment: newComment.trim()
+        })
+        .select()
+        .single();
+
+      if (!error && data) {
+        setComments((prev) => [...prev, data]);
+        setNewComment('');
+      }
+    } catch {} finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('Yorumu silmek istiyor musunuz?')) return;
+    await supabase.from('community_marketplace_comments').delete().eq('id', commentId);
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
+  };
+
+  const isOwner = currentUser?.id === item.user_id;
+
+  return (
+    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-all">
+      <div>
+        {item.image_url ? (
+          <div className="relative aspect-[4/3] bg-slate-100 w-full overflow-hidden">
+            <Image src={item.image_url} alt={item.title} fill sizes="50vw" className="object-cover" />
+            <div className="absolute top-3 right-3 bg-[#0F172A] text-emerald-400 font-black text-xs px-3 py-1 rounded-xl shadow-md">
+              {item.price} {item.currency || 'TL'}
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500">{item.item_type}</span>
+            <span className="text-sm font-black text-emerald-600">{item.price} TL</span>
+          </div>
+        )}
+
+        <div className="p-4 space-y-2">
+          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
+            <span>{item.condition}</span>
+            <div className="flex items-center space-x-2">
+              {item.city && <span>📍 {item.city}</span>}
+              {(isAdmin || isOwner) && (
+                <button onClick={onDelete} className="text-slate-400 hover:text-rose-600 p-1" title="İlanı Sil (Admin/Sahip)">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+          <h3 className="font-extrabold text-sm text-[#0F172A] leading-snug">{item.title}</h3>
+          <p className="text-xs text-slate-600 font-medium line-clamp-3 leading-relaxed">{item.description}</p>
+        </div>
+      </div>
+
+      <div className="p-4 pt-0 space-y-3 border-t border-slate-100 mt-2">
+        <div className="flex items-center justify-between text-xs font-semibold text-slate-500 pt-2">
+          <span className="font-bold text-[#0F172A]">@{item.profiles?.username || 'Satıcı'}</span>
+          {item.contact_info && (
+            <span className="text-emerald-600 font-bold flex items-center space-x-1">
+              <PhoneCall className="w-3 h-3" />
+              <span>{item.contact_info}</span>
+            </span>
+          )}
+        </div>
+
+        {/* Comment/Question Toggle Button */}
+        <button
+          onClick={() => setShowComments(!showComments)}
+          className="w-full py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition-all border border-slate-200 flex items-center justify-center space-x-1"
+        >
+          <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+          <span>{isTr ? `Soru & Yorumlar (${comments.length})` : `Questions (${comments.length})`}</span>
+        </button>
+
+        {/* Comments Drawer */}
+        <AnimatePresence>
+          {showComments && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-2 space-y-2 overflow-hidden">
+              <form onSubmit={handleAddComment} className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder={currentUser ? 'Satıcıya soru sor veya yorum yap...' : 'Giriş yapın...'}
+                  disabled={!currentUser}
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none focus:border-emerald-500 disabled:opacity-60"
+                />
+                <button type="submit" disabled={submittingComment || !newComment.trim()} className="bg-[#0F172A] hover:bg-slate-800 text-white p-1.5 rounded-xl disabled:opacity-50">
+                  {submittingComment ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5 text-emerald-400" />}
+                </button>
+              </form>
+
+              <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                {comments.map((c) => (
+                  <div key={c.id} className="bg-slate-50 p-2 rounded-xl border border-slate-100 text-xs flex justify-between items-start">
+                    <div className="space-y-0.5 flex-1">
+                      <span className="font-extrabold text-[#0F172A]">{c.username}</span>
+                      <p className="text-slate-600 font-medium">{c.comment}</p>
+                    </div>
+                    {(isAdmin || currentUser?.id === c.user_id) && (
+                      <button onClick={() => handleDeleteComment(c.id)} className="text-slate-400 hover:text-rose-600 ml-1">
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+// TIP CARD ITEM WITH COMMENTS (FAYDALI BİLGİLER TAB)
+function TipCardItem({
+  tip,
+  currentUser,
+  isAdmin,
+  isTr,
+  onDelete,
+  onRequireAuth
+}: {
+  tip: Record<string, any>;
+  currentUser: any;
+  isAdmin: boolean;
+  isTr: boolean;
+  onDelete: () => void;
+  onRequireAuth: () => void;
+}) {
+  const supabase = createClient();
+  const [comments, setComments] = useState<any[]>([]);
+  const [showComments, setShowComments] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
+
+  useEffect(() => {
+    fetchComments();
+  }, [tip.id]);
+
+  const fetchComments = async () => {
+    try {
+      const { data } = await supabase.from('community_tip_comments').select('*').eq('tip_id', tip.id).order('created_at', { ascending: true });
+      if (data) setComments(data);
+    } catch {}
+  };
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return onRequireAuth();
+    if (!newComment.trim()) return;
+
+    setSubmittingComment(true);
+    try {
+      const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Balıkçısı';
+      const { data, error } = await supabase
+        .from('community_tip_comments')
+        .insert({
+          tip_id: tip.id,
+          user_id: currentUser.id,
+          username,
+          comment: newComment.trim()
+        })
+        .select()
+        .single();
+
+      if (!error && data) {
+        setComments((prev) => [...prev, data]);
+        setNewComment('');
+      }
+    } catch {} finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('Yorumu silmek istiyor musunuz?')) return;
+    await supabase.from('community_tip_comments').delete().eq('id', commentId);
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
+  };
+
+  const isOwner = currentUser?.id === tip.user_id;
+
+  return (
+    <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-emerald-200">
+          {tip.category}
+        </span>
+        <div className="flex items-center space-x-2">
+          <span className="text-[11px] text-slate-400 font-medium">@{tip.profiles?.username || 'Balıkçı'}</span>
+          {(isAdmin || isOwner) && (
+            <button onClick={onDelete} className="p-1 text-slate-400 hover:text-rose-600 transition-colors" title="Püf Noktasını Sil (Admin/Sahip)">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <h3 className="font-extrabold text-base text-[#0F172A] leading-snug">{tip.title}</h3>
+      <p className="text-xs text-slate-600 font-medium leading-relaxed whitespace-pre-line">{tip.content}</p>
+
+      {tip.image_url && (
+        <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 max-h-60">
+          <Image src={tip.image_url} alt={tip.title} fill sizes="100vw" className="object-cover" />
+        </div>
+      )}
+
+      {/* Tip Comment Section Toggle */}
+      <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+        <button
+          onClick={() => setShowComments(!showComments)}
+          className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition-all border border-slate-200"
+        >
+          <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+          <span>{isTr ? `Yorumlar (${comments.length})` : `Comments (${comments.length})`}</span>
+        </button>
+      </div>
+
+      {/* Comments Drawer */}
+      <AnimatePresence>
+        {showComments && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-2 space-y-2 overflow-hidden">
+            <form onSubmit={handleAddComment} className="flex items-center space-x-2">
+              <input
+                type="text"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder={currentUser ? 'Yorum yazın veya tecrübenizi ekleyin...' : 'Giriş yapın...'}
+                disabled={!currentUser}
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-emerald-500 disabled:opacity-60"
+              />
+              <button type="submit" disabled={submittingComment || !newComment.trim()} className="bg-[#0F172A] hover:bg-slate-800 text-white p-2 rounded-xl disabled:opacity-50">
+                {submittingComment ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5 text-emerald-400" />}
+              </button>
+            </form>
+
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {comments.map((c) => (
+                <div key={c.id} className="bg-slate-50 p-2.5 rounded-2xl border border-slate-100 text-xs flex justify-between items-start">
+                  <div className="space-y-0.5 flex-1">
+                    <span className="font-extrabold text-[#0F172A]">{c.username}</span>
+                    <p className="text-slate-600 font-medium">{c.comment}</p>
+                  </div>
+                  {(isAdmin || currentUser?.id === c.user_id) && (
+                    <button onClick={() => handleDeleteComment(c.id)} className="text-slate-400 hover:text-rose-600 ml-1">
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
