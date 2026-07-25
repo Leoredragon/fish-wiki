@@ -157,8 +157,8 @@ export default function FishGrid({ selectedCategory, onSelectCategory, searchTer
   const isTr = locale === 'tr';
   const { favorites } = useFavorites();
 
-  const [fishes, setFishes] = useState<Fish[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [fishes, setFishes] = useState<Fish[]>(RICH_MOCK_FISHES);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let isSubscribed = true;

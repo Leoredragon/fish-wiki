@@ -21,10 +21,16 @@ export default function MobileBottomNav() {
     <div
       className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0F172A] border-t border-slate-800/90 shadow-2xl px-2 py-2.5 pb-safe"
       style={{
-        transform: 'translate3d(0, 0, 0)',
-        WebkitTransform: 'translate3d(0, 0, 0)',
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        transform: 'translateZ(0)',
+        WebkitTransform: 'translateZ(0)',
         WebkitBackfaceVisibility: 'hidden',
-        backfaceVisibility: 'hidden'
+        backfaceVisibility: 'hidden',
+        touchAction: 'none',
+        willChange: 'transform'
       }}
     >
       <div className="flex items-center justify-around">
@@ -35,9 +41,9 @@ export default function MobileBottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all ${
+              className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-colors ${
                 isActive
-                  ? 'text-emerald-400 bg-emerald-500/10 font-bold scale-105'
+                  ? 'text-emerald-400 bg-emerald-500/10 font-bold'
                   : 'text-slate-400 hover:text-slate-200 font-medium'
               }`}
             >
