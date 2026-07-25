@@ -25,7 +25,6 @@ import {
   X,
   Trash2,
   ShieldCheck,
-  CheckCircle,
   MessageCircle,
   PhoneCall
 } from 'lucide-react';
@@ -77,7 +76,6 @@ export default function CommunityClient({
   const [forumCatInput, setForumCatInput] = useState('Soru-Cevap');
   const [forumImageFile, setForumImageFile] = useState<File | null>(null);
   const [forumSubmitting, setForumSubmitting] = useState(false);
-  const [activeForumRepliesPostId, setActiveForumRepliesPostId] = useState<string | null>(null);
 
   // Tab 3: Marketplace States
   const [marketItems, setMarketItems] = useState<any[]>(initialMarketplaceItems);
@@ -166,15 +164,18 @@ export default function CommunityClient({
         .select(`*, profiles(username, full_name, avatar_url, city)`)
         .single();
 
-      if (!error && data) {
+      if (error) {
+        console.error('Forum post error:', error);
+        alert(isTr ? `Konu eklenemedi: ${error.message}\n\nLütfen Supabase panelinizde 'supabase_community_v2_setup.sql' dosyasını çalıştırdığınızdan emin olun.` : `Error: ${error.message}`);
+      } else if (data) {
         setForumPosts((prev) => [data, ...prev]);
         setIsForumModalOpen(false);
         setForumTitle('');
         setForumContent('');
         setForumImageFile(null);
       }
-    } catch {
-      // fallback
+    } catch (err: any) {
+      alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
     } finally {
       setForumSubmitting(false);
     }
@@ -226,7 +227,10 @@ export default function CommunityClient({
         .select(`*, profiles(username, full_name, avatar_url, city)`)
         .single();
 
-      if (!error && data) {
+      if (error) {
+        console.error('Market item error:', error);
+        alert(isTr ? `İlan eklenemedi: ${error.message}\n\nLütfen Supabase panelinizde 'supabase_community_v2_setup.sql' dosyasını çalıştırdığınızdan emin olun.` : `Error: ${error.message}`);
+      } else if (data) {
         setMarketItems((prev) => [data, ...prev]);
         setIsMarketModalOpen(false);
         setItemTitle('');
@@ -236,8 +240,8 @@ export default function CommunityClient({
         setItemContact('');
         setMarketImageFile(null);
       }
-    } catch {
-      // fallback
+    } catch (err: any) {
+      alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
     } finally {
       setMarketSubmitting(false);
     }
@@ -285,15 +289,18 @@ export default function CommunityClient({
         .select(`*, profiles(username, full_name, avatar_url, city)`)
         .single();
 
-      if (!error && data) {
+      if (error) {
+        console.error('Tip error:', error);
+        alert(isTr ? `Tüyo eklenemedi: ${error.message}\n\nLütfen Supabase panelinizde 'supabase_community_v2_setup.sql' dosyasını çalıştırdığınızdan emin olun.` : `Error: ${error.message}`);
+      } else if (data) {
         setTips((prev) => [data, ...prev]);
         setIsTipModalOpen(false);
         setTipTitle('');
         setTipContent('');
         setTipImageFile(null);
       }
-    } catch {
-      // fallback
+    } catch (err: any) {
+      alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
     } finally {
       setTipSubmitting(false);
     }
@@ -1188,7 +1195,7 @@ function ForumPostItem({
     try {
       const { data } = await supabase
         .from('community_forum_replies')
-        .select(`*, profiles(username, full_name, avatar_url)`)
+        .select('*')
         .eq('post_id', post.id)
         .order('created_at', { ascending: true });
       if (data) setReplies(data);
@@ -1203,22 +1210,31 @@ function ForumPostItem({
     setSubmittingReply(true);
     try {
       const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Balıkçısı';
+      const payload = {
+        post_id: post.id,
+        user_id: currentUser.id,
+        username,
+        content: newReply.trim()
+      };
+
       const { data, error } = await supabase
         .from('community_forum_replies')
-        .insert({
-          post_id: post.id,
-          user_id: currentUser.id,
-          username,
-          content: newReply.trim()
-        })
-        .select(`*, profiles(username, full_name, avatar_url)`)
+        .insert(payload)
+        .select('*')
         .single();
 
-      if (!error && data) {
+      if (error) {
+        console.error('Reply error:', error);
+        alert(isTr 
+          ? `Yanıt gönderilemedi: ${error.message}\n\nLütfen Supabase SQL Editor'da 'supabase_community_v2_setup.sql' dosyasını çalıştırdığınızdan emin olun.` 
+          : `Failed to reply: ${error.message}`);
+      } else if (data) {
         setReplies((prev) => [...prev, data]);
         setNewReply('');
       }
-    } catch {} finally {
+    } catch (err: any) {
+      alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
+    } finally {
       setSubmittingReply(false);
     }
   };
@@ -1280,7 +1296,7 @@ function ForumPostItem({
           className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold transition-all border border-slate-200"
         >
           <MessageSquare className="w-4 h-4 text-emerald-600" />
-          <span>{isTr ? `Yanıtlar (${replies.length})` : `Replies (${replies.length})`}</span>
+          <span>{isTr ? `Cevapla & Yanıtlar (${replies.length})` : `Reply (${replies.length})`}</span>
         </button>
       </div>
 
@@ -1303,7 +1319,7 @@ function ForumPostItem({
                 className="bg-[#0F172A] hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center space-x-1"
               >
                 {submittingReply ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5 text-emerald-400" />}
-                <span>{isTr ? 'Cevapla' : 'Reply'}</span>
+                <span>{isTr ? 'Gönder' : 'Post'}</span>
               </button>
             </form>
 
@@ -1379,22 +1395,31 @@ function MarketplaceItemCard({
     setSubmittingComment(true);
     try {
       const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Balıkçısı';
+      const payload = {
+        item_id: item.id,
+        user_id: currentUser.id,
+        username,
+        comment: newComment.trim()
+      };
+
       const { data, error } = await supabase
         .from('community_marketplace_comments')
-        .insert({
-          item_id: item.id,
-          user_id: currentUser.id,
-          username,
-          comment: newComment.trim()
-        })
-        .select()
+        .insert(payload)
+        .select('*')
         .single();
 
-      if (!error && data) {
+      if (error) {
+        console.error('Market comment error:', error);
+        alert(isTr 
+          ? `Yorum eklenemedi: ${error.message}\n\nLütfen Supabase SQL Editor'da 'supabase_community_v2_setup.sql' dosyasını çalıştırdığınızdan emin olun.` 
+          : `Failed to post comment: ${error.message}`);
+      } else if (data) {
         setComments((prev) => [...prev, data]);
         setNewComment('');
       }
-    } catch {} finally {
+    } catch (err: any) {
+      alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
+    } finally {
       setSubmittingComment(false);
     }
   };
@@ -1543,22 +1568,31 @@ function TipCardItem({
     setSubmittingComment(true);
     try {
       const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Balıkçısı';
+      const payload = {
+        tip_id: tip.id,
+        user_id: currentUser.id,
+        username,
+        comment: newComment.trim()
+      };
+
       const { data, error } = await supabase
         .from('community_tip_comments')
-        .insert({
-          tip_id: tip.id,
-          user_id: currentUser.id,
-          username,
-          comment: newComment.trim()
-        })
-        .select()
+        .insert(payload)
+        .select('*')
         .single();
 
-      if (!error && data) {
+      if (error) {
+        console.error('Tip comment error:', error);
+        alert(isTr 
+          ? `Yorum eklenemedi: ${error.message}\n\nLütfen Supabase SQL Editor'da 'supabase_community_v2_setup.sql' dosyasını çalıştırdığınızdan emin olun.` 
+          : `Failed to post comment: ${error.message}`);
+      } else if (data) {
         setComments((prev) => [...prev, data]);
         setNewComment('');
       }
-    } catch {} finally {
+    } catch (err: any) {
+      alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
+    } finally {
       setSubmittingComment(false);
     }
   };
