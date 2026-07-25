@@ -18,7 +18,15 @@ export default function MobileBottomNav() {
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0F172A] border-t border-slate-800/90 shadow-2xl px-2 py-3 pb-safe transition-colors">
+    <div
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0F172A] border-t border-slate-800/90 shadow-2xl px-2 py-2.5 pb-safe"
+      style={{
+        transform: 'translate3d(0, 0, 0)',
+        WebkitTransform: 'translate3d(0, 0, 0)',
+        WebkitBackfaceVisibility: 'hidden',
+        backfaceVisibility: 'hidden'
+      }}
+    >
       <div className="flex items-center justify-around">
         {navItems.map((item) => {
           const Icon = item.icon;
