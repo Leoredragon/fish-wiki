@@ -11,7 +11,7 @@ export async function generateMetadata({ params: { locale } }: { params: { local
 export default async function CommunityPage({ params: { locale } }: { params: { locale: string } }) {
   const supabase = await createClient();
 
-  // Fetch all catch logs with user profiles and tackle set details
+  // 1. Fetch catch logs
   const { data: catches } = await supabase
     .from('catch_logs')
     .select(`
@@ -21,5 +21,42 @@ export default async function CommunityPage({ params: { locale } }: { params: { 
     `)
     .order('created_at', { ascending: false });
 
-  return <CommunityClient catches={catches || []} />;
+  // 2. Fetch forum posts (safe)
+  let forumPosts: any[] = [];
+  try {
+    const { data } = await supabase
+      .from('community_forum_posts')
+      .select(`*, profiles(username, full_name, avatar_url, city)`)
+      .order('created_at', { ascending: false });
+    if (data) forumPosts = data;
+  } catch {}
+
+  // 3. Fetch marketplace items (safe)
+  let marketplaceItems: any[] = [];
+  try {
+    const { data } = await supabase
+      .from('community_marketplace_items')
+      .select(`*, profiles(username, full_name, avatar_url, city)`)
+      .order('created_at', { ascending: false });
+    if (data) marketplaceItems = data;
+  } catch {}
+
+  // 4. Fetch community tips (safe)
+  let communityTips: any[] = [];
+  try {
+    const { data } = await supabase
+      .from('community_tips')
+      .select(`*, profiles(username, full_name, avatar_url, city)`)
+      .order('created_at', { ascending: false });
+    if (data) communityTips = data;
+  } catch {}
+
+  return (
+    <CommunityClient
+      catches={catches || []}
+      initialForumPosts={forumPosts}
+      initialMarketplaceItems={marketplaceItems}
+      initialCommunityTips={communityTips}
+    />
+  );
 }

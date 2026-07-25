@@ -4,27 +4,105 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLocale } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Scale, Ruler, Heart, MessageSquare, Send, Users, Loader2, ChevronDown, Package, User, Trophy, Search, Flame, Filter, Medal, Sparkles } from 'lucide-react';
+import {
+  MapPin,
+  Scale,
+  Ruler,
+  Heart,
+  MessageSquare,
+  Send,
+  Users,
+  Loader2,
+  ChevronDown,
+  Package,
+  User,
+  Trophy,
+  Search,
+  Flame,
+  Plus,
+  ShoppingBag,
+  BookOpen,
+  Tag,
+  CheckCircle,
+  ThumbsUp,
+  Image as ImageIcon,
+  X,
+  Share2,
+  Filter,
+  Layers,
+  Sparkles
+} from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import CatchCardExport from './CatchCardExport';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
-export default function CommunityClient({ catches }: { catches: Record<string, any>[] }) {
+interface CommunityClientProps {
+  catches: Record<string, any>[];
+  initialForumPosts?: Record<string, any>[];
+  initialMarketplaceItems?: Record<string, any>[];
+  initialCommunityTips?: Record<string, any>[];
+}
+
+export default function CommunityClient({
+  catches = [],
+  initialForumPosts = [],
+  initialMarketplaceItems = [],
+  initialCommunityTips = []
+}: CommunityClientProps) {
   const locale = useLocale();
   const isTr = locale === 'tr';
   const supabase = createClient();
   const router = useRouter();
 
+  const [activeTab, setActiveTab] = useState<'feed' | 'forum' | 'market' | 'tips'>('feed');
   const [currentUser, setCurrentUser] = useState<any | null>(null);
+
+  // Tab 1: Feed States
   const [visibleCount, setVisibleCount] = useState<number>(10);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'trophy' | 'liked'>('all');
-
+  const [activeFilter, setActiveFilter] = useState<'all' | 'trophy'>('all');
   const [selectedAuthorModal, setSelectedAuthorModal] = useState<{
     profile: Record<string, any>;
     tackleSet?: Record<string, any> | null;
     userCatches: Record<string, any>[];
   } | null>(null);
+
+  // Tab 2: Forum States
+  const [forumPosts, setForumPosts] = useState<any[]>(initialForumPosts);
+  const [forumCategory, setForumCategory] = useState<string>('all');
+  const [isForumModalOpen, setIsForumModalOpen] = useState(false);
+  const [forumTitle, setForumTitle] = useState('');
+  const [forumContent, setForumContent] = useState('');
+  const [forumCatInput, setForumCatInput] = useState('Soru-Cevap');
+  const [forumImageFile, setForumImageFile] = useState<File | null>(null);
+  const [forumSubmitting, setForumSubmitting] = useState(false);
+  const [selectedForumPost, setSelectedForumPost] = useState<any | null>(null);
+
+  // Tab 3: Marketplace States
+  const [marketItems, setMarketItems] = useState<any[]>(initialMarketplaceItems);
+  const [marketCategory, setMarketCategory] = useState<string>('all');
+  const [isMarketModalOpen, setIsMarketModalOpen] = useState(false);
+  const [itemTitle, setItemTitle] = useState('');
+  const [itemDesc, setItemDesc] = useState('');
+  const [itemPrice, setItemPrice] = useState('');
+  const [itemType, setItemType] = useState('Kamış');
+  const [itemCondition, setItemCondition] = useState('Az Kullanılmış');
+  const [itemCity, setItemCity] = useState('');
+  const [itemContact, setItemContact] = useState('');
+  const [marketImageFile, setMarketImageFile] = useState<File | null>(null);
+  const [marketSubmitting, setMarketSubmitting] = useState(false);
+  const [selectedMarketItem, setSelectedMarketItem] = useState<any | null>(null);
+
+  // Tab 4: Tips States
+  const [tips, setTips] = useState<any[]>(initialCommunityTips);
+  const [tipsCategory, setTipsCategory] = useState<string>('all');
+  const [isTipModalOpen, setIsTipModalOpen] = useState(false);
+  const [tipTitle, setTipTitle] = useState('');
+  const [tipCategoryInput, setTipCategoryInput] = useState('Düğüm & Bağlantı');
+  const [tipContent, setTipContent] = useState('');
+  const [tipImageFile, setTipImageFile] = useState<File | null>(null);
+  const [tipSubmitting, setTipSubmitting] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -32,21 +110,18 @@ export default function CommunityClient({ catches }: { catches: Record<string, a
     });
   }, []);
 
-  // Leaderboard Top 3 Trophy Catches (Sorted by weight or length)
+  // Leaderboard Top 3 Trophies
   const topTrophies = useMemo(() => {
     return [...catches]
-      .filter(c => c.weight || c.length)
+      .filter((c) => c.weight || c.length)
       .sort((a, b) => (b.weight || 0) - (a.weight || 0))
       .slice(0, 3);
   }, [catches]);
 
-  // Filtered & Searched Catches
+  // Filtered Catches
   const filteredCatches = useMemo(() => {
-    return catches.filter(c => {
-      // Filter tab check
+    return catches.filter((c) => {
       if (activeFilter === 'trophy' && (!c.weight || c.weight < 1.5)) return false;
-      
-      // Search query check
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const locationMatch = c.location_note?.toLowerCase().includes(q);
@@ -55,13 +130,156 @@ export default function CommunityClient({ catches }: { catches: Record<string, a
         const nameMatch = c.profiles?.full_name?.toLowerCase().includes(q);
         return locationMatch || lureMatch || usernameMatch || nameMatch;
       }
-
       return true;
     });
   }, [catches, activeFilter, searchQuery]);
 
+  const displayedCatches = filteredCatches.slice(0, visibleCount);
+
+  // Forum Add Handler
+  const handleAddForumPost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return router.push('/login');
+    if (!forumTitle.trim() || !forumContent.trim()) return;
+
+    setForumSubmitting(true);
+    try {
+      let imageUrl = null;
+      if (forumImageFile) {
+        const fileExt = forumImageFile.name.split('.').pop();
+        const filePath = `forum/${currentUser.id}_${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from('user_uploads').upload(filePath, forumImageFile);
+        if (!uploadError) {
+          const { data } = supabase.storage.from('user_uploads').getPublicUrl(filePath);
+          imageUrl = data?.publicUrl || null;
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('community_forum_posts')
+        .insert({
+          user_id: currentUser.id,
+          title: forumTitle.trim(),
+          content: forumContent.trim(),
+          category: forumCatInput,
+          image_url: imageUrl
+        })
+        .select(`*, profiles(username, full_name, avatar_url, city)`)
+        .single();
+
+      if (!error && data) {
+        setForumPosts((prev) => [data, ...prev]);
+        setIsForumModalOpen(false);
+        setForumTitle('');
+        setForumContent('');
+        setForumImageFile(null);
+      }
+    } catch {
+      // fallback
+    } finally {
+      setForumSubmitting(false);
+    }
+  };
+
+  // Marketplace Add Handler
+  const handleAddMarketItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return router.push('/login');
+    if (!itemTitle.trim() || !itemDesc.trim() || !itemPrice) return;
+
+    setMarketSubmitting(true);
+    try {
+      let imageUrl = null;
+      if (marketImageFile) {
+        const fileExt = marketImageFile.name.split('.').pop();
+        const filePath = `market/${currentUser.id}_${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from('user_uploads').upload(filePath, marketImageFile);
+        if (!uploadError) {
+          const { data } = supabase.storage.from('user_uploads').getPublicUrl(filePath);
+          imageUrl = data?.publicUrl || null;
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('community_marketplace_items')
+        .insert({
+          user_id: currentUser.id,
+          title: itemTitle.trim(),
+          description: itemDesc.trim(),
+          price: parseFloat(itemPrice),
+          item_type: itemType,
+          condition: itemCondition,
+          city: itemCity.trim() || null,
+          contact_info: itemContact.trim() || null,
+          image_url: imageUrl
+        })
+        .select(`*, profiles(username, full_name, avatar_url, city)`)
+        .single();
+
+      if (!error && data) {
+        setMarketItems((prev) => [data, ...prev]);
+        setIsMarketModalOpen(false);
+        setItemTitle('');
+        setItemDesc('');
+        setItemPrice('');
+        setItemCity('');
+        setItemContact('');
+        setMarketImageFile(null);
+      }
+    } catch {
+      // fallback
+    } finally {
+      setMarketSubmitting(false);
+    }
+  };
+
+  // Tip Add Handler
+  const handleAddTip = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return router.push('/login');
+    if (!tipTitle.trim() || !tipContent.trim()) return;
+
+    setTipSubmitting(true);
+    try {
+      let imageUrl = null;
+      if (tipImageFile) {
+        const fileExt = tipImageFile.name.split('.').pop();
+        const filePath = `tips/${currentUser.id}_${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from('user_uploads').upload(filePath, tipImageFile);
+        if (!uploadError) {
+          const { data } = supabase.storage.from('user_uploads').getPublicUrl(filePath);
+          imageUrl = data?.publicUrl || null;
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('community_tips')
+        .insert({
+          user_id: currentUser.id,
+          title: tipTitle.trim(),
+          category: tipCategoryInput,
+          content: tipContent.trim(),
+          image_url: imageUrl
+        })
+        .select(`*, profiles(username, full_name, avatar_url, city)`)
+        .single();
+
+      if (!error && data) {
+        setTips((prev) => [data, ...prev]);
+        setIsTipModalOpen(false);
+        setTipTitle('');
+        setTipContent('');
+        setTipImageFile(null);
+      }
+    } catch {
+      // fallback
+    } finally {
+      setTipSubmitting(false);
+    }
+  };
+
   const handleOpenAuthorModal = (profileData: any, tackleSetData: any, userId: string) => {
-    const userCatches = catches.filter(c => c.user_id === userId);
+    const userCatches = catches.filter((c) => c.user_id === userId);
     setSelectedAuthorModal({
       profile: profileData || { username: 'Oltapp Balıkçısı' },
       tackleSet: tackleSetData || null,
@@ -69,199 +287,645 @@ export default function CommunityClient({ catches }: { catches: Record<string, a
     });
   };
 
-  const displayedCatches = filteredCatches.slice(0, visibleCount);
-
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-16 pt-8">
-      {/* Header Banner */}
-      <div className="text-center space-y-3">
-        <div className="inline-flex items-center justify-center p-3.5 bg-emerald-50 border border-emerald-200 rounded-full mb-1 shadow-xs">
-          <Users className="w-8 h-8 text-emerald-600" />
+    <div className="max-w-5xl mx-auto space-y-6 pb-16 pt-6 px-4 sm:px-6">
+      {/* Header Title */}
+      <div className="text-center space-y-2">
+        <div className="inline-flex items-center justify-center p-3 bg-emerald-50 border border-emerald-200 rounded-full mb-1 shadow-xs">
+          <Users className="w-6 h-6 text-emerald-600" />
         </div>
-        <h1 className="text-3xl font-extrabold text-[#0F172A]">
-          {isTr ? 'Oltapp Balıkçılık Akışı' : 'Oltapp Catch Feed'}
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0F172A] tracking-tight">
+          {isTr ? 'Oltapp Balıkçılık Topluluğu' : 'Oltapp Angling Community'}
         </h1>
-        <p className="text-slate-500 font-medium max-w-xl mx-auto text-sm">
-          {isTr 
-            ? 'Türkiye’nin dört bir yanından amatör balıkçıların trofe avları, taktikleri ve ekipman deneyimleri.' 
-            : 'Catches, tactics, and gear reviews from amateur anglers nationwide.'}
+        <p className="text-slate-500 font-medium max-w-xl mx-auto text-xs sm:text-sm leading-relaxed">
+          {isTr
+            ? 'Amatör balıkçıların av akışı, soru-cevap forumu, 2. el ekipman pazarı ve pratik bilgi paylaşım platformu.'
+            : 'Angler feed, Q&A forum, tackle marketplace, and pro tips platform.'}
         </p>
       </div>
 
-      {/* 🏆 LEADERBOARD / TROPHY SHOWCASE BANNER */}
-      {topTrophies.length > 0 && (
-        <div className="bg-gradient-to-br from-[#0F172A] via-slate-900 to-slate-800 text-white rounded-3xl p-6 shadow-xl border border-slate-700/80 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
-            <div className="flex items-center space-x-2">
-              <div className="p-2 bg-amber-500/20 text-amber-400 rounded-xl border border-amber-500/30">
-                <Trophy className="w-5 h-5" />
+      {/* Modern Clean 4-Tab Navigation Bar */}
+      <div className="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-1 overflow-x-auto no-scrollbar">
+        <button
+          onClick={() => setActiveTab('feed')}
+          className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+            activeTab === 'feed' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <Flame className="w-4 h-4 text-emerald-400" />
+          <span>{isTr ? 'Av Akışı' : 'Catch Feed'}</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('forum')}
+          className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+            activeTab === 'forum' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4 text-emerald-400" />
+          <span>{isTr ? 'Soru & Forum' : 'Q&A Forum'}</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('market')}
+          className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+            activeTab === 'market' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <ShoppingBag className="w-4 h-4 text-emerald-400" />
+          <span>{isTr ? 'Ekipman Pazarı' : 'Marketplace'}</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('tips')}
+          className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+            activeTab === 'tips' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <BookOpen className="w-4 h-4 text-emerald-400" />
+          <span>{isTr ? 'Püf Noktaları' : 'Pro Tips'}</span>
+        </button>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* TAB 1: AV AKIŞI (CATCH FEED)                                             */}
+      {/* ========================================================================= */}
+      {activeTab === 'feed' && (
+        <div className="space-y-6">
+          {/* Leaderboard Trophy Showcase */}
+          {topTrophies.length > 0 && (
+            <div className="bg-gradient-to-br from-[#0F172A] via-slate-900 to-slate-800 text-white rounded-3xl p-5 shadow-xl border border-slate-700/80 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 bg-amber-500/20 text-amber-400 rounded-xl border border-amber-500/30">
+                    <Trophy className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-extrabold text-sm sm:text-base text-white">
+                      {isTr ? 'Ayın Trofe Avları' : 'Trophy Leaderboard'}
+                    </h2>
+                    <p className="text-[11px] text-slate-400 font-medium">
+                      {isTr ? 'En büyük yakalamalar' : 'Top community catches'}
+                    </p>
+                  </div>
+                </div>
+                <span className="bg-amber-400/10 text-amber-300 border border-amber-400/30 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider hidden sm:inline-block">
+                  {isTr ? 'Liderlik Tablosu' : 'Leaderboard'}
+                </span>
               </div>
-              <div>
-                <h2 className="font-extrabold text-base tracking-wide text-white">
-                  {isTr ? 'Ayın En Büyük Trofe Avları 🏆' : 'Trophy Leaderboard'}
-                </h2>
-                <p className="text-[11px] text-slate-400 font-medium">
-                  {isTr ? 'Topluluğun en ağır ve büyüleyici yakalamaları' : 'Top catches recorded by the community'}
-                </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {topTrophies.map((trophy, idx) => (
+                  <div
+                    key={trophy.id}
+                    onClick={() => handleOpenAuthorModal(trophy.profiles, trophy.tackle_sets, trophy.user_id)}
+                    className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 rounded-2xl p-3 flex items-center space-x-3 cursor-pointer transition-all hover:scale-[1.02]"
+                  >
+                    <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-slate-600">
+                      <Image src={trophy.image_url} alt="Trophy" fill sizes="56px" className="object-cover" />
+                      <div
+                        className={`absolute top-0 left-0 text-[10px] font-black px-1.5 py-0.5 rounded-br-lg ${
+                          idx === 0
+                            ? 'bg-amber-400 text-slate-900'
+                            : idx === 1
+                            ? 'bg-slate-300 text-slate-900'
+                            : 'bg-amber-700 text-white'
+                        }`}
+                      >
+                        #{idx + 1}
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-1 text-xs font-bold text-white truncate">
+                        <span>{trophy.profiles?.username || 'Balıkçı'}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-xs font-black text-emerald-400 mt-0.5">
+                        {trophy.weight && <span>{trophy.weight} kg</span>}
+                        {trophy.length && <span className="text-slate-400 font-semibold text-[10px]">{trophy.length} cm</span>}
+                      </div>
+                      <span className="text-[10px] text-slate-400 truncate block">
+                        {trophy.location_note || 'Mera'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-            <span className="bg-amber-400/10 text-amber-300 border border-amber-400/30 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider hidden sm:inline-block">
-              Liderlik Tablosu
-            </span>
-          </div>
+          )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {topTrophies.map((trophy, idx) => (
-              <div
-                key={trophy.id}
-                onClick={() => handleOpenAuthorModal(trophy.profiles, trophy.tackle_sets, trophy.user_id)}
-                className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 rounded-2xl p-3 flex items-center space-x-3 cursor-pointer transition-all hover:scale-[1.02]"
+          {/* Search & Filter Bar */}
+          <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={isTr ? 'Mera adı, balıkçı veya kullanılan yem ara...' : 'Search spot, angler, or lure...'}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-2.5 text-xs font-bold text-slate-400 hover:text-slate-600">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pt-1">
+              <button
+                onClick={() => setActiveFilter('all')}
+                className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                  activeFilter === 'all' ? 'bg-[#0F172A] text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
               >
-                <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-slate-600">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={trophy.image_url} alt="Trophy" className="w-full h-full object-cover" />
-                  <div className={`absolute top-0 left-0 text-[10px] font-black px-1.5 py-0.5 rounded-br-lg ${
-                    idx === 0 ? 'bg-amber-400 text-slate-900' : idx === 1 ? 'bg-slate-300 text-slate-900' : 'bg-amber-700 text-white'
-                  }`}>
-                    #{idx + 1}
-                  </div>
-                </div>
+                <Flame className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{isTr ? 'Tüm Avlar' : 'All Catches'}</span>
+              </button>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-1 text-xs font-bold text-white truncate">
-                    <span>{trophy.profiles?.username || 'Balıkçı'}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-xs font-black text-emerald-400 mt-0.5">
-                    {trophy.weight && <span>{trophy.weight} kg</span>}
-                    {trophy.length && <span className="text-slate-400 font-semibold text-[10px]">{trophy.length} cm</span>}
-                  </div>
-                  <span className="text-[10px] text-slate-400 truncate block">
-                    📍 {trophy.location_note || 'Mera'}
-                  </span>
-                </div>
-              </div>
-            ))}
+              <button
+                onClick={() => setActiveFilter('trophy')}
+                className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                  activeFilter === 'trophy' ? 'bg-[#0F172A] text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                <span>{isTr ? 'Trofe Avlar (>1.5kg)' : 'Trophy Catches'}</span>
+              </button>
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* 🔍 SEARCH BAR & FILTER CHIPS */}
-      <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={isTr ? 'Mera adı, balıkçı veya kullanılan yem ara... (Örn: Boğaz, Spin)' : 'Search by spot, angler, or lure...'}
-            className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-2.5 text-xs font-bold text-slate-400 hover:text-slate-600">✕</button>
+          {/* Catches List */}
+          <div className="space-y-6">
+            {filteredCatches.length === 0 ? (
+              <div className="text-center py-16 bg-slate-50 rounded-3xl border border-dashed border-slate-200 text-slate-500 space-y-2">
+                <p className="font-bold text-slate-700">{isTr ? 'Aradığınız kriterlere uygun av bulunamadı.' : 'No catches match search.'}</p>
+              </div>
+            ) : (
+              displayedCatches.map((log) => (
+                <CatchPostItem
+                  key={log.id}
+                  log={log}
+                  currentUser={currentUser}
+                  isTr={isTr}
+                  onRequireAuth={() => router.push('/login')}
+                  onOpenAuthor={() => handleOpenAuthorModal(log.profiles, log.tackle_sets, log.user_id)}
+                />
+              ))
+            )}
+          </div>
+
+          {visibleCount < filteredCatches.length && (
+            <div className="text-center pt-2">
+              <button
+                onClick={() => setVisibleCount((prev) => prev + 10)}
+                className="inline-flex items-center space-x-2 bg-white border border-slate-200 shadow-md text-[#0F172A] font-extrabold px-6 py-3 rounded-2xl transition-all hover:scale-105 active:scale-95 text-xs"
+              >
+                <span>{isTr ? 'Daha Fazla Av Göster' : 'Load More'}</span>
+                <ChevronDown className="w-4 h-4 text-emerald-500" />
+              </button>
+            </div>
           )}
         </div>
+      )}
 
-        <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pt-1">
-          <button
-            onClick={() => setActiveFilter('all')}
-            className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-              activeFilter === 'all' ? 'bg-[#0F172A] text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            <Flame className="w-3.5 h-3.5 text-emerald-400" />
-            <span>{isTr ? 'Tüm Avlar' : 'All Catches'}</span>
-          </button>
+      {/* ========================================================================= */}
+      {/* TAB 2: FORUM & SORU-CEVAP                                               */}
+      {/* ========================================================================= */}
+      {activeTab === 'forum' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="flex items-center space-x-2">
+              <MessageSquare className="w-5 h-5 text-emerald-600" />
+              <span className="font-extrabold text-sm text-[#0F172A]">{isTr ? 'Tartışmalar ve Sorular' : 'Forum Threads'}</span>
+            </div>
 
-          <button
-            onClick={() => setActiveFilter('trophy')}
-            className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-              activeFilter === 'trophy' ? 'bg-[#0F172A] text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            <Trophy className="w-3.5 h-3.5 text-amber-400" />
-            <span>{isTr ? 'Trofe Avlar (>1.5kg)' : 'Trophy Catches'}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Catches Feed */}
-      <div className="space-y-8">
-        {filteredCatches.length === 0 ? (
-          <div className="text-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-200 text-slate-500 space-y-2">
-            <p className="font-bold text-slate-700">{isTr ? 'Aradığınız kriterlere uygun av bulunamadı.' : 'No catches match your search.'}</p>
-            <p className="text-xs">{isTr ? 'Arama terimini veya filtreyi değiştirmeyi deneyin.' : 'Try changing your search filters.'}</p>
+            <button
+              onClick={() => (currentUser ? setIsForumModalOpen(true) : router.push('/login'))}
+              className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{isTr ? 'Yeni Konu Aç' : 'New Topic'}</span>
+            </button>
           </div>
-        ) : (
-          displayedCatches.map((log) => (
-            <CatchPostItem 
-              key={log.id} 
-              log={log} 
-              currentUser={currentUser} 
-              isTr={isTr} 
-              onRequireAuth={() => router.push('/login')}
-              onOpenAuthor={() => handleOpenAuthorModal(log.profiles, log.tackle_sets, log.user_id)}
-            />
-          ))
-        )}
-      </div>
 
-      {/* Load More Button */}
-      {visibleCount < filteredCatches.length && (
-        <div className="text-center pt-4">
-          <button
-            onClick={() => setVisibleCount(prev => prev + 10)}
-            className="inline-flex items-center space-x-2 bg-white hover:bg-slate-50 border border-slate-200 shadow-md text-[#0F172A] font-extrabold px-7 py-3.5 rounded-2xl transition-all hover:scale-105 active:scale-95 text-sm"
-          >
-            <span>{isTr ? `Daha Fazla Av Göster (${filteredCatches.length - visibleCount} Av Kaldı)` : 'Load More Catches'}</span>
-            <ChevronDown className="w-4 h-4 text-emerald-500" />
-          </button>
+          {/* Forum Category Filter Pills */}
+          <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1">
+            {['all', 'Soru-Cevap', 'Mera Bilgisi', 'Ekipman Tavsiyesi', 'Genel'].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setForumCategory(cat)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                  forumCategory === cat ? 'bg-[#0F172A] text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {cat === 'all' ? (isTr ? 'Tüm Konular' : 'All Topics') : cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Forum Posts List */}
+          <div className="space-y-4">
+            {forumPosts.filter((p) => forumCategory === 'all' || p.category === forumCategory).length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200 text-slate-400 space-y-2">
+                <MessageSquare className="w-10 h-10 text-slate-300 mx-auto" />
+                <p className="font-bold text-slate-600">{isTr ? 'Henüz bu kategoride konu açılmamış.' : 'No forum topics yet.'}</p>
+                <p className="text-xs">{isTr ? 'İlk konuyu açan siz olun!' : 'Be the first to start a conversation!'}</p>
+              </div>
+            ) : (
+              forumPosts
+                .filter((p) => forumCategory === 'all' || p.category === forumCategory)
+                .map((post) => (
+                  <div key={post.id} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3 hover:border-slate-300 transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2.5">
+                        <div className="w-8 h-8 rounded-full bg-[#0F172A] text-emerald-400 flex items-center justify-center text-xs font-black overflow-hidden shrink-0">
+                          {post.profiles?.avatar_url ? (
+                            <Image src={post.profiles.avatar_url} alt="Avatar" width={32} height={32} className="object-cover" />
+                          ) : (
+                            (post.profiles?.username || 'U').charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-xs font-extrabold text-[#0F172A]">{post.profiles?.username || 'Balıkçı'}</div>
+                          <div className="text-[10px] text-slate-400">{new Date(post.created_at).toLocaleDateString()}</div>
+                        </div>
+                      </div>
+
+                      <span className="bg-slate-100 text-slate-700 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-slate-200">
+                        {post.category}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-extrabold text-[#0F172A] leading-snug">{post.title}</h3>
+                      <p className="text-xs text-slate-600 leading-relaxed font-medium line-clamp-3">{post.content}</p>
+                    </div>
+
+                    {post.image_url && (
+                      <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 max-h-56">
+                        <Image src={post.image_url} alt="Forum attachment" fill sizes="100vw" className="object-cover" />
+                      </div>
+                    )}
+                  </div>
+                ))
+            )}
+          </div>
         </div>
       )}
 
-      {/* INSTAGRAM-STYLE ANGLER & GEAR DETAIL MODAL */}
+      {/* ========================================================================= */}
+      {/* TAB 3: EKİPMAN PAZARI (MARKETPLACE)                                      */}
+      {/* ========================================================================= */}
+      {activeTab === 'market' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="flex items-center space-x-2">
+              <ShoppingBag className="w-5 h-5 text-emerald-600" />
+              <span className="font-extrabold text-sm text-[#0F172A]">{isTr ? '2. El ve Sıfır İkinci El Pazarı' : 'Tackle Marketplace'}</span>
+            </div>
+
+            <button
+              onClick={() => (currentUser ? setIsMarketModalOpen(true) : router.push('/login'))}
+              className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{isTr ? 'İlan Ver' : 'Sell Gear'}</span>
+            </button>
+          </div>
+
+          {/* Market Category Pills */}
+          <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1">
+            {['all', 'Kamış', 'Makine', 'Sahte Yem', 'Misina/Aksesuar', 'Set'].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setMarketCategory(cat)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                  marketCategory === cat ? 'bg-[#0F172A] text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {cat === 'all' ? (isTr ? 'Tüm Ürünler' : 'All Gear') : cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Marketplace Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {marketItems.filter((i) => marketCategory === 'all' || i.item_type === marketCategory).length === 0 ? (
+              <div className="col-span-full text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200 text-slate-400 space-y-2">
+                <ShoppingBag className="w-10 h-10 text-slate-300 mx-auto" />
+                <p className="font-bold text-slate-600">{isTr ? 'Henüz bu kategoride ilan bulunmuyor.' : 'No marketplace items yet.'}</p>
+                <p className="text-xs">{isTr ? 'Kullanmadığınız ekipmanı ilana koyun.' : 'List your unused fishing gear!'}</p>
+              </div>
+            ) : (
+              marketItems
+                .filter((i) => marketCategory === 'all' || i.item_type === marketCategory)
+                .map((item) => (
+                  <div key={item.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-all">
+                    <div>
+                      {item.image_url ? (
+                        <div className="relative aspect-[4/3] bg-slate-100 w-full overflow-hidden">
+                          <Image src={item.image_url} alt={item.title} fill sizes="50vw" className="object-cover" />
+                          <div className="absolute top-3 right-3 bg-[#0F172A] text-emerald-400 font-black text-xs px-3 py-1 rounded-xl shadow-md">
+                            {item.price} {item.currency || 'TL'}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-500">{item.item_type}</span>
+                          <span className="text-sm font-black text-emerald-600">{item.price} TL</span>
+                        </div>
+                      )}
+
+                      <div className="p-4 space-y-2">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
+                          <span>{item.condition}</span>
+                          {item.city && <span>📍 {item.city}</span>}
+                        </div>
+                        <h3 className="font-extrabold text-sm text-[#0F172A] leading-snug">{item.title}</h3>
+                        <p className="text-xs text-slate-600 font-medium line-clamp-2 leading-relaxed">{item.description}</p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 pt-0 flex items-center justify-between text-xs font-semibold text-slate-500 border-t border-slate-100 mt-2">
+                      <span className="font-bold text-[#0F172A]">@{item.profiles?.username || 'Satıcı'}</span>
+                      {item.contact_info && <span className="text-emerald-600 font-bold">{item.contact_info}</span>}
+                    </div>
+                  </div>
+                ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 4: FAYDALI BİLGİLER & PÜF NOKTALARI                                  */}
+      {/* ========================================================================= */}
+      {activeTab === 'tips' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="flex items-center space-x-2">
+              <BookOpen className="w-5 h-5 text-emerald-600" />
+              <span className="font-extrabold text-sm text-[#0F172A]">{isTr ? 'Balıkçılık Tüyoları ve Püf Noktaları' : 'Pro Angling Tips'}</span>
+            </div>
+
+            <button
+              onClick={() => (currentUser ? setIsTipModalOpen(true) : router.push('/login'))}
+              className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{isTr ? 'Tüyo Paylaş' : 'Share Tip'}</span>
+            </button>
+          </div>
+
+          {/* Tips Category Filter Pills */}
+          <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1">
+            {['all', 'Düğüm & Bağlantı', 'Merada Av Taktikleri', 'Kamış & Makine Bakımı', 'Yem Aksiyonu'].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setTipsCategory(cat)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                  tipsCategory === cat ? 'bg-[#0F172A] text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {cat === 'all' ? (isTr ? 'Tüm Tüyolar' : 'All Tips') : cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Tips Grid */}
+          <div className="space-y-4">
+            {tips.filter((t) => tipsCategory === 'all' || t.category === tipsCategory).length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200 text-slate-400 space-y-2">
+                <BookOpen className="w-10 h-10 text-slate-300 mx-auto" />
+                <p className="font-bold text-slate-600">{isTr ? 'Henüz bu kategoride püf noktası paylaşılmamış.' : 'No tips shared yet.'}</p>
+                <p className="text-xs">{isTr ? 'Bildiğiniz pratik bilgileri toplulukla paylaşın!' : 'Share your angling secrets with the community!'}</p>
+              </div>
+            ) : (
+              tips
+                .filter((t) => tipsCategory === 'all' || t.category === tipsCategory)
+                .map((tip) => (
+                  <div key={tip.id} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-emerald-200">
+                        {tip.category}
+                      </span>
+                      <span className="text-[11px] text-slate-400 font-medium">@{tip.profiles?.username || 'Balıkçı'}</span>
+                    </div>
+
+                    <h3 className="font-extrabold text-base text-[#0F172A] leading-snug">{tip.title}</h3>
+                    <p className="text-xs text-slate-600 font-medium leading-relaxed whitespace-pre-line">{tip.content}</p>
+
+                    {tip.image_url && (
+                      <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 max-h-60">
+                        <Image src={tip.image_url} alt={tip.title} fill sizes="100vw" className="object-cover" />
+                      </div>
+                    )}
+                  </div>
+                ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODALS                                                                   */}
+      {/* ========================================================================= */}
+
+      {/* FORUM MODAL */}
+      <AnimatePresence>
+        {isForumModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 border border-slate-100 shadow-2xl">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 className="font-extrabold text-base text-[#0F172A]">{isTr ? 'Yeni Forum Konusu Aç' : 'Create Forum Topic'}</h3>
+                <button onClick={() => setIsForumModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleAddForumPost} className="space-y-4 text-xs font-medium">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Kategori' : 'Category'}</label>
+                  <select value={forumCatInput} onChange={(e) => setForumCatInput(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500">
+                    <option value="Soru-Cevap">Soru-Cevap</option>
+                    <option value="Mera Bilgisi">Mera Bilgisi</option>
+                    <option value="Ekipman Tavsiyesi">Ekipman Tavsiyesi</option>
+                    <option value="Genel">Genel</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Konu Başlığı' : 'Topic Title'}</label>
+                  <input type="text" value={forumTitle} onChange={(e) => setForumTitle(e.target.value)} placeholder={isTr ? 'Örn: LRF için hangi sahte yemi önerirsiniz?' : 'Enter title...'} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500" required />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Detay / Açıklama' : 'Content'}</label>
+                  <textarea rows={4} value={forumContent} onChange={(e) => setForumContent(e.target.value)} placeholder={isTr ? 'Sorunuzu veya düşüncelerinizi detaylandırın...' : 'Describe your topic...'} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500" required />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Fotoğraf (Opsiyonel)' : 'Photo (Optional)'}</label>
+                  <input type="file" accept="image/*" onChange={(e) => setForumImageFile(e.target.files?.[0] || null)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs" />
+                </div>
+
+                <div className="pt-2 flex justify-end space-x-2">
+                  <button type="button" onClick={() => setIsForumModalOpen(false)} className="px-4 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50">{isTr ? 'İptal' : 'Cancel'}</button>
+                  <button type="submit" disabled={forumSubmitting} className="px-5 py-2.5 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white font-bold shadow-sm">{forumSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (isTr ? 'Yayınla' : 'Post')}</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MARKET MODAL */}
+      <AnimatePresence>
+        {isMarketModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 border border-slate-100 shadow-2xl">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 className="font-extrabold text-base text-[#0F172A]">{isTr ? 'Ekipman İlanı Ekle' : 'List Gear for Sale'}</h3>
+                <button onClick={() => setIsMarketModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleAddMarketItem} className="space-y-3 text-xs font-medium max-h-[70vh] overflow-y-auto pr-1">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Tür' : 'Type'}</label>
+                    <select value={itemType} onChange={(e) => setItemType(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500">
+                      <option value="Kamış">Kamış</option>
+                      <option value="Makine">Makine</option>
+                      <option value="Sahte Yem">Sahte Yem</option>
+                      <option value="Misina/Aksesuar">Misina/Aksesuar</option>
+                      <option value="Set">Set</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Durumu' : 'Condition'}</label>
+                    <select value={itemCondition} onChange={(e) => setItemCondition(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500">
+                      <option value="Sıfır">Sıfır</option>
+                      <option value="Çok İyi">Çok İyi</option>
+                      <option value="Az Kullanılmış">Az Kullanılmış</option>
+                      <option value="Yıpranmış">Yıpranmış</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Ürün Adı / Başlık' : 'Title'}</label>
+                  <input type="text" value={itemTitle} onChange={(e) => setItemTitle(e.target.value)} placeholder={isTr ? 'Örn: Daiwa Ninja LT 3000 Spin Makine' : 'Enter gear title...'} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500" required />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Fiyat (TL)' : 'Price'}</label>
+                    <input type="number" value={itemPrice} onChange={(e) => setItemPrice(e.target.value)} placeholder="1500" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500" required />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Şehir' : 'City'}</label>
+                    <input type="text" value={itemCity} onChange={(e) => setItemCity(e.target.value)} placeholder="İstanbul" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'İletişim / Tel veya Instagram' : 'Contact Info'}</label>
+                  <input type="text" value={itemContact} onChange={(e) => setItemContact(e.target.value)} placeholder="05xx xxx xx xx / @username" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500" />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Açıklama' : 'Description'}</label>
+                  <textarea rows={3} value={itemDesc} onChange={(e) => setItemDesc(e.target.value)} placeholder={isTr ? 'Ürün durumu, kutusu, kullanım geçmişi...' : 'Describe item...'} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500" required />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Ürün Fotoğrafı' : 'Product Photo'}</label>
+                  <input type="file" accept="image/*" onChange={(e) => setMarketImageFile(e.target.files?.[0] || null)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs" />
+                </div>
+
+                <div className="pt-2 flex justify-end space-x-2">
+                  <button type="button" onClick={() => setIsMarketModalOpen(false)} className="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50">{isTr ? 'İptal' : 'Cancel'}</button>
+                  <button type="submit" disabled={marketSubmitting} className="px-5 py-2 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white font-bold shadow-sm">{marketSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (isTr ? 'İlanı Yayınla' : 'Publish')}</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* TIP MODAL */}
+      <AnimatePresence>
+        {isTipModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 border border-slate-100 shadow-2xl">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 className="font-extrabold text-base text-[#0F172A]">{isTr ? 'Püf Noktası / Tüyo Paylaş' : 'Share Pro Tip'}</h3>
+                <button onClick={() => setIsTipModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleAddTip} className="space-y-4 text-xs font-medium">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Kategori' : 'Category'}</label>
+                  <select value={tipCategoryInput} onChange={(e) => setTipCategoryInput(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500">
+                    <option value="Düğüm & Bağlantı">Düğüm & Bağlantı</option>
+                    <option value="Merada Av Taktikleri">Merada Av Taktikleri</option>
+                    <option value="Kamış & Makine Bakımı">Kamış & Makine Bakımı</option>
+                    <option value="Yem Aksiyonu">Yem Aksiyonu</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Başlık' : 'Title'}</label>
+                  <input type="text" value={tipTitle} onChange={(e) => setTipTitle(e.target.value)} placeholder={isTr ? 'Örn: Rüzgarlı Havada Spin Atarken Misina Kuş Yuvasını Önleme' : 'Tip title...'} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500" required />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Püf Noktası / İçerik' : 'Content'}</label>
+                  <textarea rows={4} value={tipContent} onChange={(e) => setTipContent(e.target.value)} placeholder={isTr ? 'Tecrübelerinizi ve önerinizi anlatın...' : 'Describe tip...'} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500" required />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Görsel (Opsiyonel)' : 'Photo (Optional)'}</label>
+                  <input type="file" accept="image/*" onChange={(e) => setTipImageFile(e.target.files?.[0] || null)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs" />
+                </div>
+
+                <div className="pt-2 flex justify-end space-x-2">
+                  <button type="button" onClick={() => setIsTipModalOpen(false)} className="px-4 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50">{isTr ? 'İptal' : 'Cancel'}</button>
+                  <button type="submit" disabled={tipSubmitting} className="px-5 py-2.5 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white font-bold shadow-sm">{tipSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (isTr ? 'Paylaş' : 'Share')}</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ANGLER AUTHOR MODAL (INSTAGRAM-STYLE) */}
       <AnimatePresence>
         {selectedAuthorModal && (
           <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ y: '100%', opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '100%', opacity: 0 }}
-              className="bg-white rounded-t-[32px] sm:rounded-[32px] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"
-            >
-              {/* Modal Header */}
+            <motion.div initial={{ y: '100%', opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: '100%', opacity: 0 }} className="bg-white rounded-t-[32px] sm:rounded-[32px] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
               <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
                 <div className="flex items-center space-x-2 text-[#0F172A] font-extrabold text-base">
                   <User className="w-5 h-5 text-emerald-600" />
                   <span>{isTr ? 'Balıkçı Profil Kartı' : 'Angler Profile'}</span>
                 </div>
-                <button 
-                  onClick={() => setSelectedAuthorModal(null)} 
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 transition-colors"
-                >
-                  ✕
+                <button onClick={() => setSelectedAuthorModal(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 font-bold hover:bg-slate-200 transition-colors">
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Modal Content Scroll */}
               <div className="p-6 overflow-y-auto space-y-6 flex-1">
-                {/* Profile Card Header */}
                 <div className="flex items-center space-x-4 bg-slate-50 p-4 rounded-3xl border border-slate-100">
-                  <div className="w-16 h-16 rounded-full overflow-hidden bg-[#0F172A] flex items-center justify-center text-emerald-400 font-black text-2xl shadow-md border border-slate-700 shrink-0">
+                  <div className="w-16 h-16 rounded-full overflow-hidden bg-[#0F172A] flex items-center justify-center text-emerald-400 font-black text-2xl shadow-md border border-slate-700 shrink-0 relative">
                     {selectedAuthorModal.profile?.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={selectedAuthorModal.profile.avatar_url} alt="User" className="w-full h-full object-cover" />
+                      <Image src={selectedAuthorModal.profile.avatar_url} alt="User" fill sizes="64px" className="object-cover" />
                     ) : (
                       (selectedAuthorModal.profile?.full_name || selectedAuthorModal.profile?.username)?.charAt(0).toUpperCase() || 'U'
                     )}
                   </div>
 
                   <div className="space-y-1">
-                    <h3 className="text-lg font-black text-[#0F172A]">
-                      {selectedAuthorModal.profile?.full_name || selectedAuthorModal.profile?.username || 'Oltapp Balıkçısı'}
-                    </h3>
-                    {selectedAuthorModal.profile?.username && (
-                      <p className="text-xs font-bold text-emerald-600">@{selectedAuthorModal.profile.username}</p>
-                    )}
+                    <h3 className="text-lg font-black text-[#0F172A]">{selectedAuthorModal.profile?.full_name || selectedAuthorModal.profile?.username || 'Oltapp Balıkçısı'}</h3>
+                    {selectedAuthorModal.profile?.username && <p className="text-xs font-bold text-emerald-600">@{selectedAuthorModal.profile.username}</p>}
                     {selectedAuthorModal.profile?.city && (
                       <p className="text-xs text-slate-500 font-semibold flex items-center">
                         <MapPin className="w-3.5 h-3.5 text-emerald-500 mr-1" />
@@ -271,80 +935,11 @@ export default function CommunityClient({ catches }: { catches: Record<string, a
                   </div>
                 </div>
 
-                {/* Bio */}
                 {selectedAuthorModal.profile?.bio && (
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-xs text-slate-700 font-medium leading-relaxed">
                     {selectedAuthorModal.profile.bio}
                   </div>
                 )}
-
-                {/* Equipment Breakdown Section (Kullanılan Ekipman Takımı) */}
-                {selectedAuthorModal.tackleSet ? (
-                  <div className="bg-[#0F172A] text-white p-5 rounded-3xl space-y-3 shadow-lg border border-slate-800">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                      <div className="flex items-center space-x-2 text-emerald-400 font-extrabold text-sm">
-                        <Package className="w-4 h-4" />
-                        <span>{isTr ? 'Kullanılan Ekipman Seti:' : 'Gear Set Used:'}</span>
-                      </div>
-                      <span className="text-xs font-bold text-slate-300">{selectedAuthorModal.tackleSet.name}</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                      {selectedAuthorModal.tackleSet.rod && (selectedAuthorModal.tackleSet.rod.brand || selectedAuthorModal.tackleSet.rod.model) && (
-                        <div className="bg-slate-800/80 p-3 rounded-xl space-y-0.5 border border-slate-700">
-                          <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">🎣 Kamış</span>
-                          <p className="font-bold text-slate-100">{selectedAuthorModal.tackleSet.rod.brand} {selectedAuthorModal.tackleSet.rod.model}</p>
-                          {selectedAuthorModal.tackleSet.rod.length && <p className="text-[10px] text-slate-400 font-medium">{selectedAuthorModal.tackleSet.rod.length}</p>}
-                        </div>
-                      )}
-
-                      {selectedAuthorModal.tackleSet.reel && (selectedAuthorModal.tackleSet.reel.brand || selectedAuthorModal.tackleSet.reel.model) && (
-                        <div className="bg-slate-800/80 p-3 rounded-xl space-y-0.5 border border-slate-700">
-                          <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">⚙️ Makine</span>
-                          <p className="font-bold text-slate-100">{selectedAuthorModal.tackleSet.reel.brand} {selectedAuthorModal.tackleSet.reel.model}</p>
-                          {selectedAuthorModal.tackleSet.reel.size && <p className="text-[10px] text-slate-400 font-medium">{selectedAuthorModal.tackleSet.reel.size}</p>}
-                        </div>
-                      )}
-
-                      {selectedAuthorModal.tackleSet.line && (selectedAuthorModal.tackleSet.line.brand || selectedAuthorModal.tackleSet.line.model) && (
-                        <div className="bg-slate-800/80 p-3 rounded-xl space-y-0.5 border border-slate-700">
-                          <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">🧵 Misina / İp</span>
-                          <p className="font-bold text-slate-100">{selectedAuthorModal.tackleSet.line.brand} {selectedAuthorModal.tackleSet.line.model}</p>
-                        </div>
-                      )}
-
-                      {selectedAuthorModal.tackleSet.lure && (selectedAuthorModal.tackleSet.lure.brand || selectedAuthorModal.tackleSet.lure.model) && (
-                        <div className="bg-slate-800/80 p-3 rounded-xl space-y-0.5 border border-slate-700">
-                          <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">🐟 Yem / Sahte</span>
-                          <p className="font-bold text-slate-100">{selectedAuthorModal.tackleSet.lure.brand} {selectedAuthorModal.tackleSet.lure.model}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-500 font-semibold text-center">
-                    {isTr ? 'Bu av için özel bir ekipman seti seçilmemiş.' : 'No specific gear set selected for this catch.'}
-                  </div>
-                )}
-
-                {/* Angler's Catch Gallery */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    {isTr ? `Bu Balıkçının Diğer Avları (${selectedAuthorModal.userCatches.length})` : `Angler's Other Catches`}
-                  </h4>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    {selectedAuthorModal.userCatches.map(c => (
-                      <div key={c.id} className="aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 relative group">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={c.image_url} alt="Catch" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                        <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1.5 text-white text-[9px] font-bold">
-                          {c.location_note || 'Mera'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
             </motion.div>
           </div>
@@ -354,16 +949,16 @@ export default function CommunityClient({ catches }: { catches: Record<string, a
   );
 }
 
-function CatchPostItem({ 
-  log, 
-  currentUser, 
-  isTr, 
+function CatchPostItem({
+  log,
+  currentUser,
+  isTr,
   onRequireAuth,
   onOpenAuthor
-}: { 
-  log: Record<string, any>; 
-  currentUser: any; 
-  isTr: boolean; 
+}: {
+  log: Record<string, any>;
+  currentUser: any;
+  isTr: boolean;
   onRequireAuth: () => void;
   onOpenAuthor: () => void;
 }) {
@@ -372,7 +967,6 @@ function CatchPostItem({
   const [isLiked, setIsLiked] = useState<boolean>(false);
   const [likeLoading, setLikeLoading] = useState<boolean>(false);
 
-  // Comments State
   const [comments, setComments] = useState<any[]>([]);
   const [showComments, setShowComments] = useState<boolean>(false);
   const [newComment, setNewComment] = useState('');
@@ -384,66 +978,33 @@ function CatchPostItem({
   }, [log.id, currentUser]);
 
   const fetchLikes = async () => {
-    const { data: likesData } = await supabase
-      .from('catch_likes')
-      .select('user_id')
-      .eq('catch_id', log.id);
-
+    const { data: likesData } = await supabase.from('catch_likes').select('user_id').eq('catch_id', log.id);
     if (likesData) {
       setLikes(likesData.length);
       if (currentUser) {
-        setIsLiked(likesData.some(l => l.user_id === currentUser.id));
+        setIsLiked(likesData.some((l) => l.user_id === currentUser.id));
       }
     }
   };
 
   const fetchComments = async () => {
-    const { data } = await supabase
-      .from('catch_comments')
-      .select('*')
-      .eq('catch_id', log.id)
-      .order('created_at', { ascending: true });
+    const { data } = await supabase.from('catch_comments').select('*').eq('catch_id', log.id).order('created_at', { ascending: true });
     if (data) setComments(data);
   };
 
   const handleToggleLike = async () => {
     if (!currentUser) return onRequireAuth();
     if (likeLoading) return;
-    
+
     setLikeLoading(true);
-
     if (isLiked) {
-      // Unlike
       setIsLiked(false);
-      setLikes(prev => Math.max(0, prev - 1));
-      await supabase
-        .from('catch_likes')
-        .delete()
-        .eq('catch_id', log.id)
-        .eq('user_id', currentUser.id);
+      setLikes((prev) => Math.max(0, prev - 1));
+      await supabase.from('catch_likes').delete().eq('catch_id', log.id).eq('user_id', currentUser.id);
     } else {
-      // Like
       setIsLiked(true);
-      setLikes(prev => prev + 1);
-      await supabase
-        .from('catch_likes')
-        .insert({ catch_id: log.id, user_id: currentUser.id });
-
-      // Trigger Notification
-      if (log.user_id && log.user_id !== currentUser.id) {
-        try {
-          const actorName = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Üyesi';
-          await supabase
-            .from('notifications')
-            .insert({
-              user_id: log.user_id,
-              actor_id: currentUser.id,
-              actor_name: actorName,
-              type: 'like',
-              catch_id: log.id
-            });
-        } catch {}
-      }
+      setLikes((prev) => prev + 1);
+      await supabase.from('catch_likes').insert({ catch_id: log.id, user_id: currentUser.id });
     }
     setLikeLoading(false);
   };
@@ -455,7 +1016,6 @@ function CatchPostItem({
 
     setCommenting(true);
     const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Üyesi';
-
     const { data, error } = await supabase
       .from('catch_comments')
       .insert({
@@ -468,54 +1028,30 @@ function CatchPostItem({
       .single();
 
     if (!error && data) {
-      setComments(prev => [...prev, data]);
+      setComments((prev) => [...prev, data]);
       setNewComment('');
-
-      // Trigger Notification
-      if (log.user_id && log.user_id !== currentUser.id) {
-        try {
-          await supabase
-            .from('notifications')
-            .insert({
-              user_id: log.user_id,
-              actor_id: currentUser.id,
-              actor_name: username,
-              type: 'comment',
-              catch_id: log.id
-            });
-        } catch {}
-      }
     }
     setCommenting(false);
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      className="bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-sm flex flex-col"
-    >
-      {/* Post Header */}
+    <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-sm flex flex-col">
+      {/* Header */}
       <div className="p-4 sm:p-5 flex items-center justify-between border-b border-slate-100 bg-white">
-        <button 
-          onClick={onOpenAuthor}
-          className="flex items-center space-x-3 text-left group transition-all cursor-pointer"
-        >
-          <div className="w-10 h-10 bg-[#0F172A] rounded-full overflow-hidden flex items-center justify-center text-emerald-400 font-bold border border-slate-700 group-hover:scale-105 transition-transform shrink-0">
+        <button onClick={onOpenAuthor} className="flex items-center space-x-3 text-left group transition-all cursor-pointer">
+          <div className="w-10 h-10 bg-[#0F172A] rounded-full overflow-hidden flex items-center justify-center text-emerald-400 font-bold border border-slate-700 group-hover:scale-105 transition-transform shrink-0 relative">
             {log.profiles?.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={log.profiles.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+              <Image src={log.profiles.avatar_url} alt="Avatar" fill sizes="40px" className="object-cover" />
             ) : (
               (log.profiles?.full_name || log.profiles?.username)?.charAt(0).toUpperCase() || 'U'
             )}
           </div>
           <div>
             <div className="font-extrabold text-[#0F172A] text-sm group-hover:text-emerald-600 transition-colors flex items-center space-x-1.5">
-              <span>{log.profiles?.full_name || log.profiles?.username || (isTr ? 'Oltapp Balıkçısı' : 'Angler')}</span>
+              <span>{log.profiles?.full_name || log.profiles?.username || 'Oltapp Balıkçısı'}</span>
               {log.tackle_sets && (
                 <span className="bg-emerald-50 text-emerald-700 text-[10px] px-1.5 py-0.5 rounded-md border border-emerald-200 font-bold">
-                  🎣 {log.tackle_sets.name}
+                  {log.tackle_sets.name}
                 </span>
               )}
             </div>
@@ -528,39 +1064,32 @@ function CatchPostItem({
         <CatchCardExport log={log} profileName={log.profiles?.username || 'Oltapp User'} />
       </div>
 
-      {/* Catch Photo */}
+      {/* Image */}
       <div className="aspect-[4/5] sm:aspect-video bg-slate-100 w-full relative">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={log.image_url} alt="Catch" className="w-full h-full object-cover" />
+        <Image src={log.image_url} alt="Catch" fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 50vw" className="object-cover" />
       </div>
 
-      {/* Action Bar (Tebrik Et & Yorumlar) */}
+      {/* Action Bar */}
       <div className="p-4 sm:p-5 space-y-4">
-        
-        {/* Location & Interactive Action Buttons */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-1.5 text-sm font-bold text-slate-700">
             <MapPin className="w-4 h-4 text-emerald-500 shrink-0" />
-            <span className="line-clamp-1">{log.location_note || (isTr ? 'Mera belirtilmedi' : 'Location not specified')}</span>
+            <span className="line-clamp-1">{log.location_note || 'Mera belirtilmedi'}</span>
           </div>
 
           <div className="flex items-center space-x-3">
-            {/* Like Button (Tebrik Et) */}
-            <button 
+            <button
               onClick={handleToggleLike}
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${
-                isLiked 
-                  ? 'bg-rose-50 text-rose-600 border-rose-200' 
-                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200'
+              className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-all ${
+                isLiked ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200'
               }`}
             >
               <Heart className={`w-4 h-4 ${isLiked ? 'fill-rose-500 text-rose-500' : ''}`} />
-              <span>{isLiked ? 'Tebrik Edildi' : 'Tebrik Et 👏'}</span>
+              <span>{isLiked ? 'Tebrik Edildi' : 'Tebrik Et'}</span>
               {likes > 0 && <span className="ml-1 bg-white px-1.5 py-0.5 rounded-md text-[10px] text-slate-800 border border-slate-200">{likes}</span>}
             </button>
 
-            {/* Comment Drawer Toggle */}
-            <button 
+            <button
               onClick={() => setShowComments(!showComments)}
               className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-full border border-slate-200 text-xs font-bold transition-all"
             >
@@ -570,7 +1099,6 @@ function CatchPostItem({
           </div>
         </div>
 
-        {/* Catch Specifications */}
         <div className="flex flex-wrap gap-2 text-xs font-semibold">
           {log.weight && (
             <div className="flex items-center space-x-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 font-bold">
@@ -586,64 +1114,39 @@ function CatchPostItem({
           )}
         </div>
 
-        {/* Tackle / Bait info */}
         {log.lure_used && (
           <div className="pt-2 border-t border-slate-100 text-xs">
-            <span className="text-slate-400 font-bold uppercase">{isTr ? 'Kullanılan Takım / Yem: ' : 'Tackle / Lure: '}</span>
+            <span className="text-slate-400 font-bold uppercase">{isTr ? 'Kullanılan Yem: ' : 'Lure: '}</span>
             <span className="text-slate-800 font-bold">{log.lure_used}</span>
           </div>
         )}
 
-        {/* COMMENTS SECTION DRAWER */}
+        {/* Comments Drawer */}
         <AnimatePresence>
           {showComments && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="pt-4 border-t border-slate-100 space-y-3 overflow-hidden"
-            >
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-4 border-t border-slate-100 space-y-3 overflow-hidden">
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Yorumlar ({comments.length})</h4>
-
-              {/* Comment Input */}
               <form onSubmit={handleAddComment} className="flex items-center space-x-2">
-                <input 
-                  type="text" 
-                  value={newComment}
-                  onChange={e => setNewComment(e.target.value)}
-                  placeholder={currentUser ? "Harika bir av! Yorum yaz..." : "Yorum yapmak için giriş yapın..."}
-                  disabled={!currentUser}
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-emerald-500 disabled:opacity-60"
-                />
-                <button
-                  type="submit"
-                  disabled={commenting || !newComment.trim()}
-                  className="bg-[#0F172A] hover:bg-slate-800 text-white p-2 rounded-xl transition-all disabled:opacity-50"
-                >
+                <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder={currentUser ? 'Yorum yaz...' : 'Yorum yapmak için giriş yapın...'} disabled={!currentUser} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-emerald-500 disabled:opacity-60" />
+                <button type="submit" disabled={commenting || !newComment.trim()} className="bg-[#0F172A] hover:bg-slate-800 text-white p-2 rounded-xl transition-all disabled:opacity-50">
                   {commenting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-emerald-400" />}
                 </button>
               </form>
 
-              {/* Comments List */}
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                {comments.length === 0 ? (
-                  <p className="text-[11px] text-slate-400 italic">İlk yorumu sen yaz!</p>
-                ) : (
-                  comments.map(c => (
-                    <div key={c.id} className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="font-extrabold text-[#0F172A]">{c.username}</span>
-                        <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleDateString()}</span>
-                      </div>
-                      <p className="text-slate-600 font-medium">{c.comment}</p>
+                {comments.map((c) => (
+                  <div key={c.id} className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="font-extrabold text-[#0F172A]">{c.username}</span>
+                      <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleDateString()}</span>
                     </div>
-                  ))
-                )}
+                    <p className="text-slate-600 font-medium">{c.comment}</p>
+                  </div>
+                ))}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-
       </div>
     </motion.div>
   );

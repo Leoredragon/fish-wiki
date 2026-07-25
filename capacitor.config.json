@@ -1,0 +1,27 @@
+{
+  "appId": "com.oltaapp.app",
+  "appName": "OltaApp",
+  "webDir": "public",
+  "server": {
+    "url": "https://www.oltaapp.com",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true,
+    "buildOptions": {
+      "keystorePath": "",
+      "keystorePassword": ""
+    }
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#0F172A",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "overlaysWebView": true,
+      "style": "DARK"
+    }
+  }
+}

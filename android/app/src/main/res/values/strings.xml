@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">OltaApp</string>
+    <string name="title_activity_main">OltaApp</string>
+    <string name="package_name">com.oltaapp.app</string>
+    <string name="custom_url_scheme">com.oltaapp.app</string>
+</resources>
