@@ -18,7 +18,7 @@ export default function MobileBottomNav() {
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0F172A]/95 backdrop-blur-xl border-t border-slate-800/90 shadow-2xl px-2 py-1.5 transition-all">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0F172A] border-t border-slate-800/90 shadow-2xl px-2 py-3 pb-safe transition-colors">
       <div className="flex items-center justify-around">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -33,8 +33,8 @@ export default function MobileBottomNav() {
                   : 'text-slate-400 hover:text-slate-200 font-medium'
               }`}
             >
-              <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5px]' : 'stroke-[1.75px]'}`} />
-              <span className="text-[10px] mt-0.5 tracking-tight whitespace-nowrap">{item.label}</span>
+              <Icon className={`w-6 h-6 ${isActive ? 'stroke-[2.5px]' : 'stroke-[1.75px]'}`} />
+              <span className="text-xs mt-1 tracking-tight whitespace-nowrap">{item.label}</span>
             </Link>
           );
         })}

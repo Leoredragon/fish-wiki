@@ -6,6 +6,7 @@ import { Target, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { createClient } from '@/lib/supabase/client';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { getLegalMinSize } from '@/lib/fish_regulations';
 
 function getCurrentSeason() {
@@ -96,13 +97,12 @@ export default function ActiveTargets() {
             >
               <div className="aspect-video bg-slate-100 relative overflow-hidden flex items-center justify-center">
                 {fish.image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={fish.image_url}
-                    alt={fish.name_tr}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                    alt={fish.name_tr || ''}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-contain group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400 font-bold text-xs sm:text-lg text-center p-2">

@@ -7,6 +7,8 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import AppSplashScreen from '@/components/AppSplashScreen';
+import CapacitorInit from '@/components/CapacitorInit';
 import { Metadata, Viewport } from 'next';
 
 export const metadata: Metadata = {
@@ -54,9 +56,11 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className="h-full scroll-smooth">
+    <html lang={locale} className="h-full">
       <body className="flex min-h-full flex-col bg-[#F8FAFC] text-[#1E293B] antialiased">
         <NextIntlClientProvider messages={messages}>
+          <CapacitorInit />
+          <AppSplashScreen />
           <Header />
           <PWAInstallBanner />
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">

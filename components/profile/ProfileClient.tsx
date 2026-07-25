@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { Plus, MapPin, Scale, Ruler, Camera, BarChart3, Package, BookOpen, User, Settings, ShieldCheck, Key, Upload, UserCheck, Loader2, Edit, Trash2, Star } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import TackleBox from './TackleBox';
 import CatchCardExport from '../community/CatchCardExport';
 import { getLegalMinSize } from '@/lib/fish_regulations';
@@ -351,8 +352,7 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
         <div className="relative group shrink-0">
           <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-[#0F172A] to-slate-800 flex items-center justify-center text-emerald-400 font-black text-3xl shadow-lg border-2 border-emerald-500/20">
             {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt={username || 'Profile'} className="w-full h-full object-cover" />
+              <Image src={avatarUrl} alt={username || 'Profile'} fill sizes="96px" className="object-cover" />
             ) : (
               (fullName || username || user?.email)?.charAt(0).toUpperCase() || 'U'
             )}
@@ -471,8 +471,7 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
                 {initialCatches.map((log: Record<string, any>) => (
                   <div key={log.id} className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm flex flex-col">
                     <div className="aspect-[4/3] bg-slate-100 relative group">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={log.image_url} alt="Catch" className="w-full h-full object-cover" />
+                      <Image src={log.image_url} alt="Catch" fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover" />
                     </div>
                     <div className="p-5 space-y-3">
                       <div className="flex justify-between items-start">

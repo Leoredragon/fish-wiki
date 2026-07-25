@@ -20,6 +20,7 @@ import {
   Filter
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import Image from 'next/image';
 
 export const INITIAL_WIKI_ARTICLES = [
   // ==========================================
@@ -482,51 +483,36 @@ Fujin Vibe 18g/24g, Savage Gear Fat Vib, Kendo Vib 70, Strike Pro Cyber Vibe.`,
   }
 ];
 
-export default function WikiClient() {
+export default function WikiClient({ initialArticles = [] }: { initialArticles?: any[] }) {
   const locale = useLocale();
   const isTr = locale === 'tr';
   const supabase = createClient();
 
-  const [articles, setArticles] = useState<any[]>(INITIAL_WIKI_ARTICLES);
-  const [loading, setLoading] = useState(true);
+  const [articles, setArticles] = useState<any[]>(() => {
+    if (initialArticles && initialArticles.length > 0) {
+      const supabaseTitles = new Set(initialArticles.map((item: any) => (item.title_tr || '').trim().toLowerCase()));
+      const remainingInitial = INITIAL_WIKI_ARTICLES.filter(
+        (item: any) => !supabaseTitles.has((item.title_tr || '').trim().toLowerCase())
+      );
+      const merged = [...initialArticles, ...remainingInitial];
+      const seen = new Set<string>();
+      return merged.filter((item: any) => {
+        const key = (item.title_tr || '').trim().toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+    return INITIAL_WIKI_ARTICLES;
+  });
+  const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all');
   const [selectedWaterType, setSelectedWaterType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeArticle, setActiveArticle] = useState<any | null>(null);
 
-  useEffect(() => {
-    async function fetchArticles() {
-      try {
-        const { data, error } = await supabase
-          .from('wiki_articles')
-          .select('*')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false });
-
-        if (!error && data && data.length > 0) {
-          const supabaseTitles = new Set(data.map((item: any) => (item.title_tr || '').trim().toLowerCase()));
-          const remainingInitial = INITIAL_WIKI_ARTICLES.filter(
-            (item: any) => !supabaseTitles.has((item.title_tr || '').trim().toLowerCase())
-          );
-          const merged = [...data, ...remainingInitial];
-          const seen = new Set<string>();
-          const uniqueArticles = merged.filter((item: any) => {
-            const key = (item.title_tr || '').trim().toLowerCase();
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-          });
-          setArticles(uniqueArticles);
-        }
-      } catch {
-        // use fallback initial articles
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchArticles();
-  }, []);
+  // Articles are fetched on the server now
 
   const categories = [
     { id: 'all', label_tr: 'Tüm Rehberler', label_en: 'All Guides' },
@@ -773,12 +759,12 @@ export default function WikiClient() {
                 {/* Cover Image & Badges */}
                 <div className="relative aspect-video bg-slate-900 overflow-hidden">
                   {article.image_url ? (
-                    <img
+                    <Image
                       src={article.image_url}
-                      alt={article.title_tr}
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      alt={article.title_tr || ''}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-400">
@@ -835,7 +821,7 @@ export default function WikiClient() {
               {/* Modal Cover Image */}
               <div className="relative h-56 sm:h-72 bg-slate-900 overflow-hidden">
                 {activeArticle.image_url && (
-                  <img src={activeArticle.image_url} alt="" className="w-full h-full object-cover" />
+                  <Image src={activeArticle.image_url} alt="" fill sizes="100vw" className="object-cover" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
 

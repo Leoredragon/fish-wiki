@@ -9,6 +9,16 @@ export async function generateMetadata({ params: { locale } }: { params: { local
   };
 }
 
-export default function WikiPage() {
-  return <WikiClient />;
+import { createClient } from '@/lib/supabase/server';
+
+export default async function WikiPage() {
+  const supabase = await createClient();
+  
+  const { data } = await supabase
+    .from('wiki_articles')
+    .select('*')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
+
+  return <WikiClient initialArticles={data || []} />;
 }

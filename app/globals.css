@@ -26,4 +26,38 @@ body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  overscroll-behavior-y: none;
+}
+
+/* Safe Area Insets for Mobile Status Bar & Notch */
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top, 0px), 8px);
+}
+
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+}
+
+/* Native App Overrides */
+.is-native-app body {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Allow text selection in inputs and textareas */
+.is-native-app input, 
+.is-native-app textarea {
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+.is-native-app .pt-safe {
+  padding-top: 0px !important;
+}
+
+.is-native-app .pb-safe {
+  padding-bottom: 0px !important;
 }

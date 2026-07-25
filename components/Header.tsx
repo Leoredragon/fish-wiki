@@ -52,9 +52,9 @@ export default function Header() {
   ];
 
   return (
-    <header className="bg-[#0F172A] text-white border-b border-slate-800/80 sticky top-0 z-50 shadow-md">
+    <header className="bg-[#0F172A] text-white border-b border-slate-800/80 sticky top-0 z-50 shadow-md pt-safe transition-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-16 min-h-[4rem] shrink-0">
           {/* Logo & Title */}
           <Link href="/" className="flex items-center space-x-3 group shrink-0">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
