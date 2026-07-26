@@ -714,13 +714,10 @@ export default function WikiClient({ initialArticles = [] }: { initialArticles?:
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-6">
           {filteredArticles.map((article, idx) => (
-            <motion.div
+            <div
               key={article.id || idx}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.03 }}
               onClick={() => setActiveArticle(article)}
-              className="group bg-white rounded-2xl sm:rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col justify-between"
+              className="group bg-white rounded-2xl sm:rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-200 cursor-pointer flex flex-col justify-between"
             >
               <div className="space-y-2 sm:space-y-4">
                 {/* Cover Image & Badges */}
@@ -731,7 +728,8 @@ export default function WikiClient({ initialArticles = [] }: { initialArticles?:
                       alt={article.title_tr || ''}
                       fill
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-400">
@@ -740,13 +738,13 @@ export default function WikiClient({ initialArticles = [] }: { initialArticles?:
                   )}
 
                   <div className="absolute top-1.5 sm:top-3 left-1.5 sm:left-3 flex items-center space-x-1 sm:space-x-2">
-                    <span className="bg-[#0F172A]/90 backdrop-blur-md text-white text-[9px] sm:text-[11px] font-extrabold px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg sm:rounded-xl shadow-sm">
+                    <span className="bg-[#0F172A]/95 text-white text-[9px] sm:text-[11px] font-extrabold px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg sm:rounded-xl shadow-sm">
                       {article.water_type || 'Tüm Sular'}
                     </span>
                   </div>
 
                   {article.difficulty_level && (
-                    <div className="absolute top-1.5 sm:top-3 right-1.5 sm:right-3 bg-emerald-500/90 backdrop-blur-md text-white text-[9px] sm:text-[11px] font-extrabold px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg sm:rounded-xl shadow-sm">
+                    <div className="absolute top-1.5 sm:top-3 right-1.5 sm:right-3 bg-emerald-600/95 text-white text-[9px] sm:text-[11px] font-extrabold px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg sm:rounded-xl shadow-sm">
                       {article.difficulty_level}
                     </div>
                   )}
@@ -770,7 +768,7 @@ export default function WikiClient({ initialArticles = [] }: { initialArticles?:
                 <span>{isTr ? 'İncele' : 'Read'}</span>
                 <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform" />
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       )}

@@ -18,13 +18,16 @@ export default function LoginClient() {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
 
-  // Auto-redirect if already logged in + Pre-fill email if remembered
+  // Auto-redirect instantly if already logged in + Pre-fill email if remembered
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        router.push(`/${locale}/community`);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        router.replace(`/${locale}/community`);
+      } else {
+        setCheckingSession(false);
       }
     });
 
@@ -72,6 +75,15 @@ export default function LoginClient() {
       },
     });
   };
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-3">
+        <div className="w-8 h-8 border-3 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+        <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">{isTr ? 'Oturum Kontrol Ediliyor...' : 'Checking Session...'}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
