@@ -19,14 +19,21 @@ export default function LoginClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Pre-fill email if remembered
+  // Auto-redirect if already logged in + Pre-fill email if remembered
   useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        router.push(`/${locale}/community`);
+      }
+    });
+
     const savedEmail = localStorage.getItem('oltapp_remembered_email');
     if (savedEmail) {
       setEmail(savedEmail);
       setRememberMe(true);
     }
-  }, []);
+  }, [locale, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
