@@ -252,21 +252,24 @@ export default function ProfileClient({
 
       const compressedFile = await compressImageToWebP(imageFile, 1200, 0.8);
       const fileName = `${user.id}_${Date.now()}.webp`;
+      let imageUrl = '';
       const { error: uploadError } = await supabase.storage
         .from('catch_photos')
         .upload(fileName, compressedFile, { contentType: 'image/webp', cacheControl: '31536000' });
 
-      if (uploadError) {
-        alert(isTr ? `Fotoğraf yüklenemedi: ${uploadError.message}` : `Photo upload failed: ${uploadError.message}`);
-        setLoading(false);
-        return;
+      if (!uploadError) {
+        const { data: publicUrlData } = supabase.storage
+          .from('catch_photos')
+          .getPublicUrl(fileName);
+        imageUrl = publicUrlData.publicUrl;
+      } else {
+        console.warn('Storage upload error, using base64 fallback:', uploadError);
+        imageUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(compressedFile);
+        });
       }
-
-      const { data: publicUrlData } = supabase.storage
-        .from('catch_photos')
-        .getPublicUrl(fileName);
-
-      const imageUrl = publicUrlData.publicUrl;
 
       const formattedTackleId = (tackleBoxId && tackleBoxId.trim() !== '') ? tackleBoxId : null;
 
