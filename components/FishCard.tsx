@@ -61,17 +61,16 @@ export default function FishCard({ fish }: FishCardProps) {
       </button>
 
       <Link href={`/fish/${targetId}`} className="flex-1 flex flex-col">
-        {/* Image Header Container */}
+        {/* Clean Unobscured Image Header */}
         <div className="relative aspect-[16/9] w-full bg-slate-900 overflow-hidden flex items-center justify-center">
           <Image
             src={displayImage}
             alt={name || 'Fish species'}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
             onError={() => setImageError(true)}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
 
           {/* Water Type Badge */}
           {fish.water_type && (
@@ -86,25 +85,18 @@ export default function FishCard({ fish }: FishCardProps) {
               <span>{fish.water_type}</span>
             </div>
           )}
-
-          {/* Species Name & Scientific Title */}
-          <div className="absolute bottom-3 left-4 right-4">
-            <h3 className="text-lg font-bold text-white tracking-tight leading-snug drop-shadow-md group-hover:text-emerald-300 transition-colors">
-              {name}
-            </h3>
-            {fish.scientific_name && (
-              <p className="text-xs font-medium italic text-emerald-300/90 tracking-wide mt-0.5">
-                {fish.scientific_name}
-              </p>
-            )}
-          </div>
         </div>
 
-        {/* Content Body */}
-        <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-4">
-          <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
-            {description || t('noDescription')}
-          </p>
+        {/* Content Body with Fish Name below image */}
+        <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
+          <div className="space-y-1">
+            <h3 className="text-base sm:text-lg font-extrabold text-[#0F172A] tracking-tight leading-snug group-hover:text-emerald-600 transition-colors">
+              {name}
+            </h3>
+            <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+              {description || t('noDescription')}
+            </p>
+          </div>
 
           {/* Gear Tags Pills */}
           {gearTags.length > 0 && (
