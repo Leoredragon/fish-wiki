@@ -28,6 +28,7 @@ import {
   MessageCircle,
   PhoneCall,
   Edit,
+  Camera,
   CheckCircle2
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -115,6 +116,79 @@ export default function CommunityClient({
   const [tipContent, setTipContent] = useState('');
   const [tipImageFile, setTipImageFile] = useState<File | null>(null);
   const [tipSubmitting, setTipSubmitting] = useState(false);
+
+  // 24h Stories State
+  const [stories, setStories] = useState<any[]>([
+    {
+      id: 'story-1',
+      user_id: 'sample-1',
+      image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
+      caption: 'Sarayburnu Boğaz avında günün bereketi! 🎣',
+      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      profiles: { username: 'Mucahit', full_name: 'Mücahit Cengiz', avatar_url: '' }
+    },
+    {
+      id: 'story-2',
+      user_id: 'sample-2',
+      image_url: 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?auto=format&fit=crop&w=800&q=80',
+      caption: 'LRF ile sabah suyu trofe lezzeti! 🔥',
+      created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+      profiles: { username: 'Kaptan_Ahmet', full_name: 'Ahmet Yılmaz', avatar_url: '' }
+    }
+  ]);
+  const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
+  const [isAddStoryModalOpen, setIsAddStoryModalOpen] = useState(false);
+  const [storyImageFile, setStoryImageFile] = useState<File | null>(null);
+  const [storyCaption, setStoryCaption] = useState('');
+  const [storySubmitting, setStorySubmitting] = useState(false);
+
+  const handleAddStory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return router.push('/login');
+    if (!storyImageFile) return alert(isTr ? 'Lütfen bir hikaye fotoğrafı seçin.' : 'Please select a photo.');
+
+    setStorySubmitting(true);
+    try {
+      const compressed = await compressImageToWebP(storyImageFile, 1200, 0.85);
+      const filePath = `stories/${currentUser.id}_${Date.now()}.webp`;
+      const { error: uploadError } = await supabase.storage.from('user_uploads').upload(filePath, compressed, { contentType: 'image/webp', cacheControl: '31536000' });
+
+      let imageUrl = null;
+      if (!uploadError) {
+        const { data } = supabase.storage.from('user_uploads').getPublicUrl(filePath);
+        imageUrl = data?.publicUrl || null;
+      }
+
+      const newStory = {
+        id: `story-${Date.now()}`,
+        user_id: currentUser.id,
+        image_url: imageUrl || 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
+        caption: storyCaption.trim() || undefined,
+        created_at: new Date().toISOString(),
+        profiles: {
+          username: currentUser.user_metadata?.username,
+          full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Balıkçı',
+          avatar_url: currentUser.user_metadata?.avatar_url
+        }
+      };
+
+      setStories((prev) => [newStory, ...prev]);
+      setIsAddStoryModalOpen(false);
+      setStoryImageFile(null);
+      setStoryCaption('');
+      alert(isTr ? '🎉 Hikayeniz paylaşıldı (24 saat yayında kalacaktır)' : 'Story shared successfully!');
+    } catch (err: any) {
+      alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
+    } finally {
+      setStorySubmitting(false);
+    }
+  };
+
+  const handleDeleteStory = (storyId: string) => {
+    if (!confirm(isTr ? 'Bu hikayeyi silmek istediğinize emin misiniz?' : 'Delete this story?')) return;
+    setStories((prev) => prev.filter((s) => s.id !== storyId));
+    setActiveStoryIndex(null);
+  };
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -505,44 +579,90 @@ export default function CommunityClient({
       {/* TAB 1: AV AKIŞI (CATCH FEED)                                             */}
       {/* ========================================================================= */}
       {activeTab === 'feed' && (
-        <div className="space-y-6">
-          {topTrophies.length > 0 && (
-            <div className="bg-gradient-to-br from-[#0F172A] via-slate-900 to-slate-800 text-white rounded-3xl p-5 shadow-xl border border-slate-700/80 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
-                <div className="flex items-center space-x-2">
-                  <div className="p-2 bg-amber-500/20 text-amber-400 rounded-xl border border-amber-500/30">
-                    <Trophy className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h2 className="font-extrabold text-sm sm:text-base text-white">
-                      {isTr ? 'Ayın Trofe Avları' : 'Trophy Leaderboard'}
-                    </h2>
-                    <p className="text-[11px] text-slate-400 font-medium">
-                      {isTr ? 'En büyük yakalamalar' : 'Top community catches'}
-                    </p>
-                  </div>
+        <div className="space-y-4">
+          {/* 📸 INSTAGRAM / SNAPCHAT STYLE 24H FISHING STORIES BAR */}
+          <div className="bg-white p-3 sm:p-4 rounded-3xl border border-slate-200/90 shadow-xs space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
+                {isTr ? '24 Saatlik Av Hikayeleri' : '24h Fishing Stories'}
+              </span>
+              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                {stories.length} {isTr ? 'Aktif Hikaye' : 'Active'}
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-3 overflow-x-auto pb-1 no-scrollbar pt-1">
+              {/* Add Story Circle Button */}
+              <div
+                onClick={() => {
+                  if (!currentUser) return router.push('/login');
+                  setIsAddStoryModalOpen(true);
+                }}
+                className="flex flex-col items-center space-y-1 cursor-pointer shrink-0 group"
+              >
+                <div className="relative w-13 h-13 rounded-full bg-slate-900 border-2 border-dashed border-emerald-500 flex items-center justify-center text-emerald-400 shadow-xs group-hover:scale-105 transition-transform">
+                  <Plus className="w-5 h-5 stroke-[2.5]" />
                 </div>
-                <span className="bg-amber-400/10 text-amber-300 border border-amber-400/30 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider hidden sm:inline-block">
-                  {isTr ? 'Liderlik Tablosu' : 'Leaderboard'}
+                <span className="text-[10px] font-extrabold text-slate-700 max-w-[60px] truncate text-center">
+                  {isTr ? 'Hikaye Ekle' : 'Add Story'}
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Story Avatars with Gradient Rings */}
+              {stories.map((st, idx) => {
+                const authorName = st.profiles?.full_name || (st.profiles?.username ? `@${st.profiles.username}` : 'Balıkçı');
+                return (
+                  <div
+                    key={st.id || idx}
+                    onClick={() => setActiveStoryIndex(idx)}
+                    className="flex flex-col items-center space-y-1 cursor-pointer shrink-0 group"
+                  >
+                    <div className="p-0.5 rounded-full bg-gradient-to-tr from-emerald-500 via-teal-400 to-cyan-500 shadow-xs group-hover:scale-105 transition-transform">
+                      <div className="w-12 h-12 rounded-full overflow-hidden relative border-2 border-white bg-slate-900">
+                        {st.image_url ? (
+                          <Image src={st.image_url} alt="Story" fill sizes="48px" className="object-cover" />
+                        ) : (
+                          <User className="w-5 h-5 text-slate-400 m-auto" />
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-700 max-w-[60px] truncate text-center">
+                      {authorName}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 🏆 COMPACT HORIZONTAL TROPHY CATCHES SLIDER */}
+          {topTrophies.length > 0 && (
+            <div className="bg-gradient-to-r from-[#0F172A] via-slate-900 to-[#0F172A] text-white rounded-3xl p-4 shadow-md border border-slate-800 space-y-2.5">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <div className="flex items-center space-x-2">
+                  <Trophy className="w-4 h-4 text-amber-400" />
+                  <h2 className="font-extrabold text-xs text-white uppercase tracking-wider">
+                    {isTr ? 'Ayın Trofe Avları' : 'Trophy Leaderboard'}
+                  </h2>
+                </div>
+                <span className="text-[10px] text-amber-400 font-bold">
+                  {isTr ? 'Yatay Kayan Liderler' : 'Top Catches'}
+                </span>
+              </div>
+
+              {/* Horizontal Scroll Track */}
+              <div className="flex space-x-2.5 overflow-x-auto pb-1 no-scrollbar snap-x">
                 {topTrophies.map((trophy, idx) => (
                   <div
                     key={trophy.id}
                     onClick={() => handleOpenAuthorModal(trophy.profiles, trophy.tackle_sets, trophy.user_id)}
-                    className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 rounded-2xl p-3 flex items-center space-x-3 cursor-pointer transition-all hover:scale-[1.02]"
+                    className="bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 rounded-2xl p-2.5 flex items-center space-x-2.5 cursor-pointer transition-all shrink-0 min-w-[210px] snap-start"
                   >
-                    <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-slate-600">
-                      <Image src={trophy.image_url} alt="Trophy" fill sizes="56px" className="object-cover" />
+                    <div className="relative w-11 h-11 rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-slate-700">
+                      <Image src={trophy.image_url} alt="Trophy" fill sizes="44px" className="object-cover" />
                       <div
-                        className={`absolute top-0 left-0 text-[10px] font-black px-1.5 py-0.5 rounded-br-lg ${
-                          idx === 0
-                            ? 'bg-amber-400 text-slate-900'
-                            : idx === 1
-                            ? 'bg-slate-300 text-slate-900'
-                            : 'bg-amber-700 text-white'
+                        className={`absolute top-0 left-0 text-[9px] font-black px-1 py-0.2 rounded-br-md ${
+                          idx === 0 ? 'bg-amber-400 text-slate-900' : 'bg-slate-700 text-white'
                         }`}
                       >
                         #{idx + 1}
@@ -550,16 +670,12 @@ export default function CommunityClient({
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-1 text-xs font-bold text-white truncate">
-                        <span>{trophy.profiles?.full_name || (trophy.profiles?.username ? `@${trophy.profiles.username}` : 'Balıkçı')}</span>
+                      <div className="text-xs font-bold text-white truncate">
+                        {trophy.profiles?.full_name || (trophy.profiles?.username ? `@${trophy.profiles.username}` : 'Balıkçı')}
                       </div>
-                      <div className="flex items-center space-x-2 text-xs font-black text-emerald-400 mt-0.5">
-                        {trophy.weight && <span>{trophy.weight} kg</span>}
-                        {trophy.length && <span className="text-slate-400 font-semibold text-[10px]">{trophy.length} cm</span>}
+                      <div className="text-xs font-black text-emerald-400">
+                        {trophy.weight ? `${trophy.weight} kg` : ''} {trophy.length ? `• ${trophy.length} cm` : ''}
                       </div>
-                      <span className="text-[10px] text-slate-400 truncate block">
-                        {trophy.location_note || 'Mera'}
-                      </span>
                     </div>
                   </div>
                 ))}
@@ -1112,6 +1228,167 @@ export default function CommunityClient({
                   </div>
                 )}
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* 📱 FULL-SCREEN INSTAGRAM / SNAPCHAT STORY VIEWER POPUP */}
+      <AnimatePresence>
+        {activeStoryIndex !== null && stories[activeStoryIndex] && (
+          <div className="fixed inset-0 z-[120] bg-black/95 backdrop-blur-md flex items-center justify-center p-0 sm:p-4 select-none">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full sm:max-w-md h-full sm:h-[780px] sm:max-h-[90vh] bg-slate-950 sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between"
+            >
+              {/* Top 10s Progress Bar */}
+              <div className="absolute top-3 left-3 right-3 z-30 flex gap-1">
+                <div className="h-1 bg-white/30 rounded-full w-full overflow-hidden">
+                  <motion.div
+                    key={activeStoryIndex}
+                    initial={{ width: '0%' }}
+                    animate={{ width: '100%' }}
+                    transition={{ duration: 10, ease: 'linear' }}
+                    onAnimationComplete={() => {
+                      if (activeStoryIndex < stories.length - 1) {
+                        setActiveStoryIndex(activeStoryIndex + 1);
+                      } else {
+                        setActiveStoryIndex(null);
+                      }
+                    }}
+                    className="h-full bg-emerald-400 rounded-full"
+                  />
+                </div>
+              </div>
+
+              {/* Story Header (Author Profile & Controls) */}
+              <div className="absolute top-6 left-4 right-4 z-30 flex items-center justify-between text-white">
+                <div className="flex items-center space-x-2.5 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
+                  <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center font-bold text-xs overflow-hidden">
+                    {stories[activeStoryIndex].profiles?.avatar_url ? (
+                      <Image src={stories[activeStoryIndex].profiles.avatar_url} alt="Avatar" width={28} height={28} className="object-cover" />
+                    ) : (
+                      <span>{(stories[activeStoryIndex].profiles?.full_name || 'B').charAt(0)}</span>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-xs font-black leading-none">
+                      {stories[activeStoryIndex].profiles?.full_name || (stories[activeStoryIndex].profiles?.username ? `@${stories[activeStoryIndex].profiles.username}` : 'Balıkçı')}
+                    </div>
+                    <div className="text-[9px] text-emerald-400 font-bold mt-0.5">
+                      {new Date(stories[activeStoryIndex].created_at).toLocaleTimeString(isTr ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  {(isAdmin || (currentUser && stories[activeStoryIndex].user_id === currentUser.id)) && (
+                    <button
+                      onClick={() => handleDeleteStory(stories[activeStoryIndex].id)}
+                      className="w-8 h-8 rounded-full bg-rose-600/80 hover:bg-rose-600 text-white flex items-center justify-center backdrop-blur-sm shadow-md"
+                      title="Hikayeyi Sil"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setActiveStoryIndex(null)}
+                    className="w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center backdrop-blur-sm border border-white/20"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Main Full-Screen Story Image */}
+              <div className="relative w-full h-full flex items-center justify-center bg-black">
+                <Image
+                  src={stories[activeStoryIndex].image_url}
+                  alt="Story content"
+                  fill
+                  sizes="100vw"
+                  className="object-contain"
+                  priority
+                />
+
+                {/* Left/Right Tap Zones to skip stories */}
+                <div
+                  onClick={() => setActiveStoryIndex(Math.max(0, activeStoryIndex - 1))}
+                  className="absolute left-0 top-16 bottom-16 w-1/3 z-20 cursor-pointer"
+                />
+                <div
+                  onClick={() => {
+                    if (activeStoryIndex < stories.length - 1) {
+                      setActiveStoryIndex(activeStoryIndex + 1);
+                    } else {
+                      setActiveStoryIndex(null);
+                    }
+                  }}
+                  className="absolute right-0 top-16 bottom-16 w-2/3 z-20 cursor-pointer"
+                />
+              </div>
+
+              {/* Story Caption at Bottom */}
+              {stories[activeStoryIndex].caption && (
+                <div className="absolute bottom-6 left-4 right-4 z-30 bg-black/60 backdrop-blur-md p-4 rounded-2xl border border-white/20 text-white text-xs sm:text-sm font-semibold leading-relaxed text-center">
+                  {stories[activeStoryIndex].caption}
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 📤 ADD STORY MODAL */}
+      <AnimatePresence>
+        {isAddStoryModalOpen && (
+          <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              className="bg-white rounded-t-[32px] sm:rounded-[32px] w-full max-w-md overflow-hidden shadow-2xl flex flex-col"
+            >
+              <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-white">
+                <h3 className="text-base font-extrabold text-[#0F172A]">
+                  {isTr ? 'Yeni Av Hikayesi Paylaş (24 Saat)' : 'Share 24h Fishing Story'}
+                </h3>
+                <button onClick={() => setIsAddStoryModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 font-bold">✕</button>
+              </div>
+
+              <form onSubmit={handleAddStory} className="p-6 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5">{isTr ? 'Hikaye Fotoğrafı *' : 'Story Photo *'}</label>
+                  <label className="cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors">
+                    <Camera className="w-8 h-8 text-emerald-500 mb-2" />
+                    <span className="text-xs font-bold text-slate-700">
+                      {storyImageFile ? storyImageFile.name : (isTr ? 'Galeriden Seç veya Fotoğraf Çek 📸' : 'Select Photo')}
+                    </span>
+                    <input type="file" accept="image/*" onChange={(e) => e.target.files && setStoryImageFile(e.target.files[0])} className="hidden" />
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5">{isTr ? 'Açıklama / Not (Opsiyonel)' : 'Caption (Optional)'}</label>
+                  <input
+                    type="text"
+                    value={storyCaption}
+                    onChange={(e) => setStoryCaption(e.target.value)}
+                    placeholder={isTr ? 'Örn: Boğazda trofe lüfer suyu! 🎣' : 'Write a caption...'}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={storySubmitting || !storyImageFile}
+                  className="w-full bg-[#0F172A] hover:bg-slate-800 text-white font-bold py-3.5 rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center space-x-2 text-xs shadow-md"
+                >
+                  {storySubmitting ? <Loader2 className="w-4 h-4 animate-spin text-emerald-400" /> : <span>{isTr ? 'Hikayeyi Paylaş (24 Saat Yayında)' : 'Share Story'}</span>}
+                </button>
+              </form>
             </motion.div>
           </div>
         )}

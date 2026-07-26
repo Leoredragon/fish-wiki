@@ -467,9 +467,9 @@ export default function ProfileClient({
       {/* Profile Header */}
       <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6 text-center sm:text-left">
         <div className="relative group shrink-0">
-          <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-[#0F172A] to-slate-800 flex items-center justify-center text-emerald-400 font-black text-3xl shadow-lg border-2 border-emerald-500/20">
+          <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-[#0F172A] to-slate-800 flex items-center justify-center text-emerald-400 font-black text-3xl shadow-lg border-2 border-emerald-500 relative">
             {avatarUrl ? (
-              <Image src={avatarUrl} alt={username || 'Profile'} fill sizes="96px" className="object-cover" />
+              <Image src={avatarUrl} alt={username || 'Profile'} fill sizes="96px" className="object-cover rounded-full" />
             ) : (
               (fullName || username || user?.email)?.charAt(0).toUpperCase() || 'U'
             )}
@@ -483,7 +483,7 @@ export default function ProfileClient({
         <div className="space-y-1.5 flex-1">
           <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-3">
             <h1 className="text-2xl sm:text-3xl font-black text-[#0F172A]">
-              {fullName || username || (isTr ? 'Oltapp Üyesi' : 'Angler')}
+              {fullName || username || (isTr ? 'OltaApp Üyesi' : 'Angler')}
             </h1>
             {username && (
               <span className="text-xs font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200 inline-block w-max mx-auto sm:mx-0">
@@ -503,7 +503,7 @@ export default function ProfileClient({
             )}
             <span className="flex items-center space-x-1 bg-slate-50 text-slate-600 px-2.5 py-0.5 rounded-lg border border-slate-200">
               <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>
-              Oltapp Pro
+              OltaApp Pro
             </span>
           </div>
         </div>
