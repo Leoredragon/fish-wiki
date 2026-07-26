@@ -53,16 +53,18 @@ export default async function CommunityPage() {
       .order('created_at', { ascending: false })
   ]);
 
-  // Merge catches and catch_logs (deduplicated)
-  const combinedCatches = [
-    ...(catchesRes.data || []),
-    ...(catchLogsRes.data || [])
-  ];
-
+  // Smart fingerprint deduplication (prevents double posts)
+  const allCatches = [...(catchesRes.data || []), ...(catchLogsRes.data || [])];
   const uniqueCatchesMap = new Map();
-  combinedCatches.forEach((item) => {
-    if (item.id && !uniqueCatchesMap.has(item.id)) {
-      uniqueCatchesMap.set(item.id, item);
+
+  allCatches.forEach((item) => {
+    // Unique key by image_url or user_id + location_note
+    const key = item.image_url && item.image_url.trim() !== '' 
+      ? item.image_url 
+      : `${item.user_id}_${item.location_note}_${item.weight}`;
+    
+    if (!uniqueCatchesMap.has(key)) {
+      uniqueCatchesMap.set(key, item);
     }
   });
 

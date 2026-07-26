@@ -185,19 +185,6 @@ export default function CommunityClient({
         console.warn('Catches table insert notice:', e);
       }
 
-      try {
-        await supabase.from('catch_logs').insert({
-          user_id: currentUser.id,
-          image_url: newCatch.image_url,
-          weight: newCatch.weight,
-          length: newCatch.length,
-          location_note: newCatch.location_note,
-          lure_used: newCatch.lure_used
-        });
-      } catch (e) {
-        console.warn('Catch logs insert notice:', e);
-      }
-
       setCatchesList((prev: any[]) => [newCatch, ...prev]);
       setIsAddCatchModalOpen(false);
       setCatchImageFile(null);
