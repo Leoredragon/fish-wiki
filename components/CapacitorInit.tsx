@@ -21,41 +21,27 @@ export default function CapacitorInit() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    // Add a class to html so we can tweak CSS specifically for native app
     document.documentElement.classList.add('is-native-app');
 
-    // 1. Handle Status Bar
-    const initStatusBar = async () => {
-      try {
-        await StatusBar.setOverlaysWebView({ overlay: false });
-        await StatusBar.setBackgroundColor({ color: '#0F172A' });
-        await StatusBar.setStyle({ style: Style.Dark });
-      } catch (e) {
-        console.error('StatusBar init failed', e);
+    // 1. Instant Status Bar (no blocking delay)
+    StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
+    StatusBar.setBackgroundColor({ color: '#0F172A' }).catch(() => {});
+    StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+
+    // 2. Instant Network Status Check
+    Network.getStatus().then((status) => {
+      setIsOffline(!status.connected);
+    }).catch(() => {});
+
+    const netListener = Network.addListener('networkStatusChange', (newStatus) => {
+      setIsOffline(!newStatus.connected);
+      if (newStatus.connected) {
+        window.location.reload();
       }
-    };
-    initStatusBar();
+    });
 
-    // 2. Handle Network Status (Offline Overlay)
-    const initNetwork = async () => {
-      try {
-        const status = await Network.getStatus();
-        setIsOffline(!status.connected);
-
-        Network.addListener('networkStatusChange', (newStatus) => {
-          setIsOffline(!newStatus.connected);
-          if (newStatus.connected) {
-            window.location.reload();
-          }
-        });
-      } catch (e) {
-        console.error('Network init failed', e);
-      }
-    };
-    initNetwork();
-
-    // 3. Setup Local Scheduled Notifications (Hava & Solunar Tahmini - Günde 2 Kere)
-    const initNotifications = async () => {
+    // 3. DEFER heavy notification bridge calls by 3.5s so initial UI launch is 100% lag-free
+    const timer = setTimeout(async () => {
       try {
         const localPerm = await LocalNotifications.requestPermissions();
         if (localPerm.display === 'granted') {
@@ -98,19 +84,16 @@ export default function CapacitorInit() {
           });
         }
 
-        // 4. Setup Push Notifications (Beğeni, Yorum & Etkileşim Bildirimleri)
         const pushPerm = await PushNotifications.requestPermissions();
         if (pushPerm.receive === 'granted') {
           await PushNotifications.register();
         }
       } catch (e) {
-        console.error('Notifications init failed', e);
+        console.error('Deferred notifications init failed', e);
       }
-    };
+    }, 3500);
 
-    initNotifications();
-
-    // 5. Handle Hardware Back Button
+    // 4. Handle Hardware Back Button
     const backButtonListener = App.addListener('backButton', async () => {
       if (pathname === '/' || pathname === '/tr' || pathname === '/en') {
         const { value } = await Dialog.confirm({
@@ -129,7 +112,9 @@ export default function CapacitorInit() {
     });
 
     return () => {
-      backButtonListener.then(listener => listener.remove());
+      clearTimeout(timer);
+      netListener.then((l) => l.remove());
+      backButtonListener.then((l) => l.remove());
     };
   }, [pathname, router]);
 
