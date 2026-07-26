@@ -184,8 +184,8 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative h-80 sm:h-[420px] w-full rounded-3xl overflow-hidden shadow-2xl border border-slate-800/80 bg-slate-900"
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="relative aspect-video sm:aspect-[21/9] max-h-[420px] w-full rounded-3xl overflow-hidden shadow-2xl border border-slate-800/80 bg-slate-900 flex items-center justify-center"
       >
         <Image
           src={displayImage}
@@ -196,7 +196,7 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
           onError={() => setImageError(true)}
           unoptimized
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
 
         {/* Title & Short Info Overlay */}
         <div className="absolute bottom-6 left-6 right-6 sm:bottom-10 sm:left-10 sm:right-10 text-white space-y-3">

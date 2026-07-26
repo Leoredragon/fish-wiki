@@ -88,7 +88,7 @@ export default function PWAInstallBanner() {
             </div>
             <div className="min-w-0">
               <div className="flex items-center space-x-1.5 text-xs font-black text-white">
-                <span className="truncate">{isTr ? 'Oltapp Mobil Uygulamasını Yükle 📲' : 'Install Oltapp Mobile App'}</span>
+                <span className="truncate">{isTr ? 'OltaApp Mobil Uygulamasını Yükle 📲' : 'Install OltaApp Mobile App'}</span>
                 <span className="bg-emerald-500/20 text-emerald-400 text-[10px] px-1.5 py-0.2 rounded-md border border-emerald-500/30 hidden sm:inline-block">
                   PWA
                 </span>
