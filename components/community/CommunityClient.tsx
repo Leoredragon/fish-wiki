@@ -584,7 +584,7 @@ export default function CommunityClient({
           <div className="bg-white p-3 sm:p-4 rounded-3xl border border-slate-200/90 shadow-xs space-y-2">
             <div className="flex items-center justify-between px-1">
               <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
-                {isTr ? '24 Saatlik Av Hikayeleri' : '24h Fishing Stories'}
+                {isTr ? 'Av Hikayeleri' : 'Fishing Stories'}
               </span>
               <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
                 {stories.length} {isTr ? 'Aktif Hikaye' : 'Active'}
