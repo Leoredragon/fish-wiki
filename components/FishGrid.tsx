@@ -316,27 +316,11 @@ export default function FishGrid({ selectedCategory, onSelectCategory, searchTer
           </p>
         </div>
       ) : (
-        <motion.div
-          layout
-          initial="hidden"
-          animate="show"
-          variants={{
-            hidden: { opacity: 0 },
-            show: {
-              opacity: 1,
-              transition: {
-                staggerChildren: 0.08
-              }
-            }
-          }}
-          className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-6"
-        >
-          <AnimatePresence mode="popLayout">
-            {filteredFishes.map((fish) => (
-              <FishCard key={fish.id || fish.name_tr} fish={fish} />
-            ))}
-          </AnimatePresence>
-        </motion.div>
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-6">
+          {filteredFishes.map((fish) => (
+            <FishCard key={fish.id || fish.name_tr} fish={fish} />
+          ))}
+        </div>
       )}
     </div>
   );

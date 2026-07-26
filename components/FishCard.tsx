@@ -35,14 +35,14 @@ export default function FishCard({ fish }: FishCardProps) {
       className="bg-white rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col overflow-hidden group relative"
     >
       <Link href={`/fish/${targetId}`} className="flex-1 flex flex-col">
-        {/* Compact Square-ish Image Container (100% Unobscured) */}
-        <div className="relative aspect-[4/3] w-full bg-slate-900 overflow-hidden flex items-center justify-center">
+        {/* Clean Unobscured Image Container (Full Fish Body Fit) */}
+        <div className="relative aspect-[16/10] w-full bg-[#0F172A] overflow-hidden flex items-center justify-center">
           <Image
             src={displayImage}
             alt={name || 'Fish species'}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
             onError={() => setImageError(true)}
           />
         </div>
