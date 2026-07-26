@@ -16,10 +16,10 @@ import {
   CloudLightning,
   CloudSnow,
   CloudFog,
-  Sparkles,
-  Zap,
   Calendar,
-  ChevronRight
+  ChevronRight,
+  MapPin,
+  Loader2
 } from 'lucide-react';
 
 interface CityWeatherSpot {
@@ -132,19 +132,17 @@ interface DailyForecastItem {
   tempMax: number;
   tempMin: number;
   windMax: number;
-  solunarScore: number;
 }
 
-// Weather Code Translator to WMO standards
 function parseWeatherCode(code: number, isTr: boolean) {
   if (code === 0) return { text: isTr ? 'Açık / Güneşli' : 'Clear Sky', iconType: 'sun' };
   if (code === 1 || code === 2) return { text: isTr ? 'Az Bulutlu' : 'Partly Cloudy', iconType: 'sun-cloud' };
-  if (code === 3) return { text: isTr ? 'Kapalı / Parçalı Bulutlu' : 'Overcast', iconType: 'cloud' };
+  if (code === 3) return { text: isTr ? 'Parçalı Bulutlu' : 'Overcast', iconType: 'cloud' };
   if (code >= 45 && code <= 48) return { text: isTr ? 'Sisli' : 'Foggy', iconType: 'fog' };
   if (code >= 51 && code <= 67) return { text: isTr ? 'Yağmurlu' : 'Rainy', iconType: 'rain' };
   if (code >= 71 && code <= 77) return { text: isTr ? 'Kar Yağışlı' : 'Snowy', iconType: 'snow' };
   if (code >= 80 && code <= 82) return { text: isTr ? 'Sağanak Yağışlı' : 'Heavy Showers', iconType: 'rain' };
-  if (code >= 95 && code <= 99) return { text: isTr ? 'Fırtınalı / Gök Gürültülü' : 'Thunderstorm', iconType: 'lightning' };
+  if (code >= 95 && code <= 99) return { text: isTr ? 'Gök Gürültülü Fırtına' : 'Thunderstorm', iconType: 'lightning' };
   return { text: isTr ? 'Ilıman' : 'Mild', iconType: 'sun-cloud' };
 }
 
@@ -156,9 +154,9 @@ export default function WeatherSolunarClient() {
   const [weatherData, setWeatherData] = useState<CurrentWeatherData | null>(null);
   const [dailyForecast, setDailyForecast] = useState<DailyForecastItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [locating, setLocating] = useState<boolean>(false);
   const [sortMode, setSortMode] = useState<'plate' | 'alpha'>('plate');
 
-  // Sorted Cities
   const sortedProvinces = [...TURKEY_PROVINCES].sort((a, b) => {
     if (sortMode === 'alpha') {
       const nameA = isTr ? a.nameTr : a.nameEn;
@@ -172,10 +170,41 @@ export default function WeatherSolunarClient() {
     fetchWeatherForSpot(selectedSpot);
   }, [selectedSpot]);
 
+  // Handle browser geolocation to find closest city
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) {
+      alert(isTr ? 'Cihazınız konum özelliğini desteklemiyor.' : 'Geolocation not supported.');
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        let closest = TURKEY_PROVINCES[0];
+        let minDistance = Infinity;
+
+        for (const spot of TURKEY_PROVINCES) {
+          const dist = Math.hypot(spot.lat - latitude, spot.lon - longitude);
+          if (dist < minDistance) {
+            minDistance = dist;
+            closest = spot;
+          }
+        }
+        setSelectedSpot(closest);
+        setLocating(false);
+      },
+      (_err) => {
+        alert(isTr ? 'Konum izni alınamadı. Lütfen listeden şehir seçiniz.' : 'Could not obtain location permission.');
+        setLocating(false);
+      },
+      { timeout: 8000 }
+    );
+  };
+
   const fetchWeatherForSpot = async (spot: CityWeatherSpot) => {
     setLoading(true);
     try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${spot.lat}&longitude=${spot.lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,wind_direction_10m_dominant&timezone=auto`;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${spot.lat}&longitude=${spot.lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max&timezone=auto`;
       const res = await fetch(url);
       const data = await res.json();
 
@@ -188,13 +217,11 @@ export default function WeatherSolunarClient() {
         const dateStrings = data.daily.time || [];
         for (let idx = 0; idx < Math.min(dateStrings.length, 5); idx++) {
           const rawDate = new Date(dateStrings[idx]);
-          const dayName = rawDate.toLocaleDateString(isTr ? 'tr-TR' : 'en-US', { weekday: 'long' });
+          const dayName = rawDate.toLocaleDateString(isTr ? 'tr-TR' : 'en-US', { weekday: 'short' });
           const weatherCode = data.daily.weather_code[idx];
           const tempMax = Math.round(data.daily.temperature_2m_max[idx]);
           const tempMin = Math.round(data.daily.temperature_2m_min[idx]);
           const windMax = Math.round(data.daily.wind_speed_10m_max[idx]);
-
-          const solunarScore = Math.min(98, Math.max(55, 90 - idx * 6 + (weatherCode === 0 ? 5 : 0)));
 
           days.push({
             date: dateStrings[idx],
@@ -202,30 +229,13 @@ export default function WeatherSolunarClient() {
             weatherCode,
             tempMax,
             tempMin,
-            windMax,
-            solunarScore
+            windMax
           });
         }
         setDailyForecast(days);
       }
     } catch (err) {
       console.error('Weather fetch error:', err);
-      // Fallback data
-      setWeatherData({
-        temperature_2m: 24,
-        relative_humidity_2m: 65,
-        surface_pressure: 1014,
-        wind_speed_10m: 16,
-        wind_direction_10m: 45,
-        weather_code: 1
-      });
-      setDailyForecast([
-        { date: '2026-07-23', dayName: isTr ? 'Bugün' : 'Today', weatherCode: 1, tempMax: 28, tempMin: 20, windMax: 14, solunarScore: 88 },
-        { date: '2026-07-24', dayName: isTr ? 'Yarın' : 'Tomorrow', weatherCode: 0, tempMax: 29, tempMin: 21, windMax: 12, solunarScore: 92 },
-        { date: '2026-07-25', dayName: 'Cuma', weatherCode: 3, tempMax: 26, tempMin: 19, windMax: 18, solunarScore: 78 },
-        { date: '2026-07-26', dayName: 'Cumartesi', weatherCode: 61, tempMax: 24, tempMin: 18, windMax: 22, solunarScore: 65 },
-        { date: '2026-07-27', dayName: 'Pazar', weatherCode: 2, tempMax: 27, tempMin: 19, windMax: 15, solunarScore: 84 }
-      ]);
     } finally {
       setLoading(false);
     }
@@ -252,72 +262,53 @@ export default function WeatherSolunarClient() {
     }
   };
 
-  const calculateSolunarScore = (pressure: number = 1013, wind: number = 10) => {
-    let score = 75;
-    if (pressure >= 1010 && pressure <= 1018) score += 15;
-    if (wind <= 15) score += 10;
-    else if (wind > 30) score -= 15;
-    return Math.min(99, Math.max(40, score));
-  };
-
-  const solunarScore = weatherData ? calculateSolunarScore(weatherData.surface_pressure, weatherData.wind_speed_10m) : 85;
   const weatherDetails = weatherData ? parseWeatherCode(weatherData.weather_code, isTr) : { text: '', iconType: 'sun-cloud' };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-16 pt-6">
-      {/* Hero Header */}
-      <motion.section
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="relative overflow-hidden bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0F172A] rounded-3xl p-8 sm:p-10 text-white shadow-xl border border-slate-800"
-      >
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-72 h-72 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 max-w-3xl space-y-3">
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            {isTr ? 'Tüm Şehirler İçin Hava Durumu Tahmini' : 'Weather Forecast for All Cities'}
-          </h1>
-
-          <p className="text-sm text-slate-300 leading-relaxed font-normal">
-            {isTr
-              ? 'Plaka sırasına göre 81 ilimizin canlı hava şartlarını ve 5 günlük tahminlerini inceleyin.'
-              : 'Explore live weather forecasts for 81 provinces ordered by license plate number.'}
-          </p>
-        </div>
-      </motion.section>
-
-      {/* Spot Dropdown Selector & Sorting Mode */}
-      <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-4 max-w-2xl mx-auto relative z-20">
+    <div className="max-w-4xl mx-auto space-y-5 pb-16 pt-2 px-4 sm:px-6">
+      {/* Compact City Dropdown & Geolocation Button */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Navigation className="w-5 h-5 text-emerald-600" />
-            <h2 className="text-sm font-extrabold text-[#0F172A] uppercase tracking-wider">
-              {isTr ? 'Şehir Seçin' : 'Select City'}
+            <Navigation className="w-4 h-4 text-emerald-600" />
+            <h2 className="text-xs font-extrabold text-[#0F172A] uppercase tracking-wider">
+              {isTr ? 'Şehir Seçiniz' : 'Select City'}
             </h2>
           </div>
 
-          {/* Sort Mode Toggle Buttons */}
-          <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-bold">
+          <div className="flex items-center space-x-2">
             <button
-              onClick={() => setSortMode('plate')}
-              className={`px-3 py-1 rounded-lg transition-all ${
-                sortMode === 'plate' ? 'bg-white text-emerald-600 shadow-xs' : 'text-slate-500 hover:text-slate-700'
-              }`}
+              onClick={handleDetectLocation}
+              disabled={locating}
+              className="flex items-center space-x-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-xl text-xs font-bold transition-all"
             >
-              {isTr ? 'Plaka Sıralı (01-81)' : 'By Plate (01-81)'}
+              {locating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MapPin className="w-3.5 h-3.5 text-emerald-600" />}
+              <span>{isTr ? 'Konumumu Bul' : 'My Location'}</span>
             </button>
-            <button
-              onClick={() => setSortMode('alpha')}
-              className={`px-3 py-1 rounded-lg transition-all ${
-                sortMode === 'alpha' ? 'bg-white text-emerald-600 shadow-xs' : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {isTr ? 'A-Z Alfabetik' : 'A-Z Alphabetical'}
-            </button>
+
+            {/* Sort Mode Toggle Buttons */}
+            <div className="flex bg-slate-100 p-0.5 rounded-xl text-[11px] font-bold">
+              <button
+                onClick={() => setSortMode('plate')}
+                className={`px-2.5 py-1 rounded-lg transition-all ${
+                  sortMode === 'plate' ? 'bg-white text-emerald-600 shadow-xs' : 'text-slate-500'
+                }`}
+              >
+                {isTr ? 'Plaka Sıralı' : 'By Plate'}
+              </button>
+              <button
+                onClick={() => setSortMode('alpha')}
+                className={`px-2.5 py-1 rounded-lg transition-all ${
+                  sortMode === 'alpha' ? 'bg-white text-emerald-600 shadow-xs' : 'text-slate-500'
+                }`}
+              >
+                {isTr ? 'A-Z' : 'A-Z'}
+              </button>
+            </div>
           </div>
         </div>
 
+        {/* Clean Dropdown without Plate Number Labels */}
         <div className="relative">
           <select
             value={selectedSpot.id}
@@ -325,166 +316,114 @@ export default function WeatherSolunarClient() {
               const spot = TURKEY_PROVINCES.find((s) => s.id === e.target.value);
               if (spot) setSelectedSpot(spot);
             }}
-            className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-base font-extrabold text-[#0F172A] appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer shadow-xs"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-extrabold text-[#0F172A] appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer shadow-xs"
           >
             {sortedProvinces.map((spot) => (
               <option key={spot.id} value={spot.id}>
-                {spot.id} - {isTr ? spot.nameTr : spot.nameEn} (Plaka: {spot.plate})
+                {isTr ? spot.nameTr : spot.nameEn}
               </option>
             ))}
           </select>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-            <ChevronRight className="w-5 h-5 rotate-90" />
+          <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+            <ChevronRight className="w-4 h-4 rotate-90" />
           </div>
         </div>
       </div>
 
-      {/* Main Weather Card & Solunar Index */}
+      {/* Main Weather Card (Integrated Temperature, Pressure, Wind & Humidity) */}
       {loading ? (
-        <div className="bg-white p-12 rounded-3xl border border-slate-200 shadow-sm text-center space-y-3">
-          <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
+        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-xs text-center space-y-2">
+          <Loader2 className="w-6 h-6 text-emerald-500 animate-spin mx-auto" />
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            {isTr ? 'Canlı meteoroloji verileri alınıyor...' : 'Loading live weather data...'}
+            {isTr ? 'Canlı hava verileri alınıyor...' : 'Loading weather data...'}
           </p>
         </div>
       ) : (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            
-            {/* Main Weather Card */}
-            <div className="md:col-span-8 bg-gradient-to-br from-[#0F172A] to-slate-900 text-white rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-lg flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-0 right-0 -mt-8 -mr-8 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+          <div className="bg-gradient-to-br from-[#0F172A] to-slate-900 text-white rounded-3xl p-5 sm:p-7 border border-slate-800 shadow-md relative overflow-hidden space-y-4">
+            <div className="absolute top-0 right-0 -mt-8 -mr-8 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-              <div className="flex justify-between items-start border-b border-slate-800 pb-4 relative z-10">
-                <div>
-                  <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full uppercase tracking-wider">
-                    Plaka {selectedSpot.id}
-                  </span>
-                  <h2 className="text-2xl sm:text-3xl font-black mt-2 tracking-tight">
-                    {isTr ? selectedSpot.nameTr : selectedSpot.nameEn}
-                  </h2>
-                </div>
-                <div className="text-right text-xs font-semibold text-slate-400">
-                  <div>{new Date().toLocaleDateString(isTr ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
-                  <div className="text-emerald-400 font-bold mt-0.5">{isTr ? 'Anlık Veri' : 'Live Data'}</div>
-                </div>
-              </div>
-
-              {/* Temp Display */}
-              <div className="py-6 flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/80">
-                    {renderWeatherIcon(weatherDetails.iconType, "w-10 h-10")}
-                  </div>
-                  <div>
-                    <div className="text-5xl sm:text-6xl font-black text-white tracking-tight">
-                      {Math.round(weatherData?.temperature_2m || 0)}°
-                    </div>
-                    <div className="text-sm font-bold text-slate-300 capitalize mt-1">
-                      {weatherDetails.text}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex sm:flex-col items-center sm:items-end gap-3 text-xs font-semibold text-slate-300 bg-slate-800/40 p-4 rounded-2xl border border-slate-700/50 w-full sm:w-auto">
-                  <div className="flex items-center space-x-1.5">
-                    <Droplets className="w-4 h-4 text-cyan-400" />
-                    <span>Nem: %{weatherData?.relative_humidity_2m}</span>
-                  </div>
-                  <div className="flex items-center space-x-1.5">
-                    <Wind className="w-4 h-4 text-emerald-400" />
-                    <span>Rüzgar: {weatherData?.wind_speed_10m} km/h</span>
-                  </div>
-                </div>
+            {/* Header: City Name & Date */}
+            <div className="flex justify-between items-center border-b border-slate-800/80 pb-3 relative z-10">
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                {isTr ? selectedSpot.nameTr : selectedSpot.nameEn}
+              </h2>
+              <div className="text-right text-xs font-semibold text-slate-400">
+                {new Date().toLocaleDateString(isTr ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'long' })}
               </div>
             </div>
 
-            {/* Side Column: Pressure, Wind */}
-            <div className="md:col-span-4 flex flex-col gap-6">
-              {/* Barometric Pressure Card */}
-              <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm flex-1 flex flex-col justify-center">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
-                    <Gauge className="w-5 h-5" />
+            {/* Temp & Main Status */}
+            <div className="flex items-center justify-between py-2 relative z-10">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 bg-slate-800/90 rounded-2xl border border-slate-700/80">
+                  {renderWeatherIcon(weatherDetails.iconType, "w-9 h-9")}
+                </div>
+                <div>
+                  <div className="text-4xl sm:text-5xl font-black text-white tracking-tight">
+                    {Math.round(weatherData?.temperature_2m || 0)}°C
                   </div>
-                  <div>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      {isTr ? 'Yüzey Basıncı' : 'Pressure'}
-                    </h3>
-                    <p className="text-xl font-black text-slate-900 mt-0.5">
-                      {weatherData?.surface_pressure ? `${weatherData.surface_pressure} hPa` : '-'}
-                    </p>
+                  <div className="text-xs font-bold text-emerald-400 capitalize mt-0.5">
+                    {weatherDetails.text}
                   </div>
                 </div>
               </div>
 
-              {/* Wind Speed Card */}
-              <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm flex-1 flex flex-col justify-center">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold">
-                    <Wind className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      {isTr ? 'Rüzgar Hızı' : 'Wind Speed'}
-                    </h3>
-                    <p className="text-xl font-black text-slate-900 mt-0.5">
-                      {weatherData?.wind_speed_10m} km/h
-                    </p>
-                  </div>
+              {/* Integrated Compact Metrics Grid inside Main Card */}
+              <div className="grid grid-cols-3 gap-2 text-center text-xs font-semibold text-slate-200 bg-slate-800/50 p-3 rounded-2xl border border-slate-700/60">
+                <div className="flex flex-col items-center">
+                  <Droplets className="w-4 h-4 text-cyan-400 mb-0.5" />
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">{isTr ? 'Nem' : 'Humidity'}</span>
+                  <span className="font-extrabold text-white mt-0.5">%{weatherData?.relative_humidity_2m}</span>
+                </div>
+
+                <div className="flex flex-col items-center border-x border-slate-700/60 px-2">
+                  <Wind className="w-4 h-4 text-emerald-400 mb-0.5" />
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">{isTr ? 'Rüzgar' : 'Wind'}</span>
+                  <span className="font-extrabold text-white mt-0.5">{weatherData?.wind_speed_10m} km/h</span>
+                </div>
+
+                <div className="flex flex-col items-center">
+                  <Gauge className="w-4 h-4 text-indigo-400 mb-0.5" />
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">{isTr ? 'Basınç' : 'Pressure'}</span>
+                  <span className="font-extrabold text-white mt-0.5">{weatherData?.surface_pressure} hPa</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 🗓️ 5-DAY WEATHER FORECAST SECTION */}
+          {/* 5-DAY WEATHER FORECAST GRID (Compact fit for mobile) */}
           {dailyForecast.length > 0 && (
-            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div className="flex items-center space-x-2.5">
-                  <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100">
-                    <Calendar className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-black text-[#0F172A]">
-                      {isTr ? '5 Günlük Hava Durumu Tahmini' : '5-Day Weather Forecast'}
-                    </h3>
-                    <p className="text-xs text-slate-500 font-semibold">
-                      {isTr ? `${selectedSpot.id} - ${selectedSpot.nameTr} için gelecek günlerin tahminleri` : 'Upcoming forecast predictions'}
-                    </p>
-                  </div>
-                </div>
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+              <div className="flex items-center space-x-2 border-b border-slate-100 pb-2">
+                <Calendar className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-xs font-extrabold text-[#0F172A] uppercase tracking-wider">
+                  {isTr ? '5 Günlük Hava Tahmini' : '5-Day Forecast'}
+                </h3>
               </div>
 
-              <div className="flex sm:grid sm:grid-cols-5 gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-none">
+              <div className="grid grid-cols-5 gap-1.5 w-full">
                 {dailyForecast.map((day, idx) => {
                   const parsed = parseWeatherCode(day.weatherCode, isTr);
                   return (
                     <div
                       key={day.date}
-                      className={`min-w-[155px] sm:min-w-0 flex-1 snap-start p-4 rounded-2xl border transition-all space-y-3 flex flex-col justify-between shrink-0 sm:shrink ${
+                      className={`p-2 rounded-xl border transition-all flex flex-col items-center justify-between text-center ${
                         idx === 0 
-                          ? 'bg-slate-900 text-white border-slate-800 shadow-md scale-[1.01]' 
-                          : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200'
+                          ? 'bg-[#0F172A] text-white border-slate-800 shadow-xs' 
+                          : 'bg-slate-50 text-slate-800 border-slate-200/80'
                       }`}
                     >
-                      <div className="space-y-1">
-                        <div className="text-xs font-black uppercase tracking-wider opacity-80">
-                          {day.dayName}
-                        </div>
-                        <div className="text-[10px] font-semibold opacity-60">
-                          {new Date(day.date).toLocaleDateString(isTr ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'short' })}
-                        </div>
+                      <div className="text-[11px] font-black tracking-tight">
+                        {day.dayName}
                       </div>
 
-                      <div className="py-2 flex flex-col items-center justify-center space-y-1">
-                        {renderWeatherIcon(parsed.iconType, "w-8 h-8")}
-                        <div className="text-xs font-bold text-center line-clamp-1">{parsed.text}</div>
+                      <div className="my-1.5">
+                        {renderWeatherIcon(parsed.iconType, "w-6 h-6")}
                       </div>
 
-                      <div className="pt-2 border-t border-slate-200/50 flex items-center justify-between text-xs font-extrabold">
-                        <span>{day.tempMax}°</span>
-                        <span className="opacity-60">{day.tempMin}°</span>
+                      <div className="text-xs font-black">
+                        {day.tempMax}° <span className="text-[10px] font-normal opacity-70">{day.tempMin}°</span>
                       </div>
                     </div>
                   );

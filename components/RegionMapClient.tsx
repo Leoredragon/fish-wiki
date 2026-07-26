@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocale } from 'next-intl';
-import { MapPin, Compass, Anchor, Sparkles, Loader2, Plus, AlertCircle, X, Camera, User, Calendar, ArrowRight, Star } from 'lucide-react';
+import { MapPin, Compass, Anchor, Sparkles, Loader2, Plus, AlertCircle, X, Camera, User, Calendar, ArrowRight, Star, Search } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -120,6 +120,9 @@ export default function RegionMapClient() {
   const [selectedSpot, setSelectedSpot] = useState<FishingSpot | null>(null); // Detail Modal
   const [isGuestModalOpen, setIsGuestModalOpen] = useState(false); // Guest Warning Modal
   
+  // Search & Filter State
+  const [spotSearchQuery, setSpotSearchQuery] = useState('');
+
   // Location Pick Mode State
   const [isPickingLocation, setIsPickingLocation] = useState(false);
   const [tempPickedLocation, setTempPickedLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -324,8 +327,8 @@ export default function RegionMapClient() {
       </AnimatePresence>
 
       {/* Interactive Leaflet Map Card */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+      <div className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
           <div className="flex items-center space-x-2">
             <Compass className="w-5 h-5 text-emerald-600" />
             <h2 className="text-sm font-extrabold uppercase tracking-wider text-[#0F172A]">
@@ -333,9 +336,27 @@ export default function RegionMapClient() {
             </h2>
           </div>
 
-          <span className="text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1 rounded-full">
-            {isTr ? 'Haritadan Bölge Seçin' : 'Click Region on Map'}
-          </span>
+          {/* Integrated Search Input for Fishing Spots & Regions */}
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-600" />
+            <input
+              type="text"
+              value={spotSearchQuery}
+              onChange={(e) => {
+                const query = e.target.value;
+                setSpotSearchQuery(query);
+                if (query.trim()) {
+                  const match = REGIONS.find(r => r.nameTr.toLowerCase().includes(query.toLowerCase()) || r.nameEn.toLowerCase().includes(query.toLowerCase()));
+                  if (match) setSelectedRegion(match);
+                }
+              }}
+              placeholder={isTr ? 'Haritada mera/bölge ara...' : 'Search spot on map...'}
+              className="w-full pl-9 pr-7 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+            />
+            {spotSearchQuery && (
+              <button onClick={() => setSpotSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">✕</button>
+            )}
+          </div>
         </div>
 
         {/* Dynamic Leaflet Map Component */}
