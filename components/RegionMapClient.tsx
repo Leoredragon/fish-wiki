@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { FishingSpot } from './MapComponent';
+import { compressImageToWebP } from '@/lib/image_compression';
 
 // Dynamically import Leaflet MapComponent with SSR disabled
 const MapComponent = dynamic(() => import('./MapComponent'), {
@@ -210,9 +211,9 @@ export default function RegionMapClient() {
     try {
       let image_url = null;
       if (imageFile) {
-        const fileExt = imageFile.name.split('.').pop();
-        const fileName = `spots/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage.from('user_uploads').upload(fileName, imageFile);
+        const compressed = await compressImageToWebP(imageFile);
+        const fileName = `spots/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.webp`;
+        const { error: uploadError } = await supabase.storage.from('user_uploads').upload(fileName, compressed, { contentType: 'image/webp', cacheControl: '31536000' });
         if (uploadError) {
           console.warn('Storage upload warning:', uploadError);
           alert(`Mera görseli yüklenemedi: ${uploadError.message}. Mera görselsiz olarak kaydedilecek.`);

@@ -34,6 +34,7 @@ import { createClient } from '@/lib/supabase/client';
 import CatchCardExport from './CatchCardExport';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { compressImageToWebP } from '@/lib/image_compression';
 
 const ADMIN_EMAIL = 'mail@mail.com';
 
@@ -165,9 +166,9 @@ export default function CommunityClient({
     try {
       let imageUrl = null;
       if (forumImageFile) {
-        const fileExt = forumImageFile.name.split('.').pop();
-        const filePath = `forum/${currentUser.id}_${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage.from('user_uploads').upload(filePath, forumImageFile);
+        const compressed = await compressImageToWebP(forumImageFile);
+        const filePath = `forum/${currentUser.id}_${Date.now()}.webp`;
+        const { error: uploadError } = await supabase.storage.from('user_uploads').upload(filePath, compressed, { contentType: 'image/webp', cacheControl: '31536000' });
         if (!uploadError) {
           const { data } = supabase.storage.from('user_uploads').getPublicUrl(filePath);
           imageUrl = data?.publicUrl || null;
@@ -224,9 +225,9 @@ export default function CommunityClient({
     try {
       let imageUrl = null;
       if (marketImageFile) {
-        const fileExt = marketImageFile.name.split('.').pop();
-        const filePath = `market/${currentUser.id}_${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage.from('user_uploads').upload(filePath, marketImageFile);
+        const compressed = await compressImageToWebP(marketImageFile);
+        const filePath = `market/${currentUser.id}_${Date.now()}.webp`;
+        const { error: uploadError } = await supabase.storage.from('user_uploads').upload(filePath, compressed, { contentType: 'image/webp', cacheControl: '31536000' });
         if (!uploadError) {
           const { data } = supabase.storage.from('user_uploads').getPublicUrl(filePath);
           imageUrl = data?.publicUrl || null;
@@ -374,9 +375,9 @@ export default function CommunityClient({
     try {
       let imageUrl = null;
       if (tipImageFile) {
-        const fileExt = tipImageFile.name.split('.').pop();
-        const filePath = `tips/${currentUser.id}_${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage.from('user_uploads').upload(filePath, tipImageFile);
+        const compressed = await compressImageToWebP(tipImageFile);
+        const filePath = `tips/${currentUser.id}_${Date.now()}.webp`;
+        const { error: uploadError } = await supabase.storage.from('user_uploads').upload(filePath, compressed, { contentType: 'image/webp', cacheControl: '31536000' });
         if (!uploadError) {
           const { data } = supabase.storage.from('user_uploads').getPublicUrl(filePath);
           imageUrl = data?.publicUrl || null;

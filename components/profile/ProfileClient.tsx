@@ -35,6 +35,7 @@ import Image from 'next/image';
 import TackleBox from './TackleBox';
 import CatchCardExport from '../community/CatchCardExport';
 import { getLegalMinSize } from '@/lib/fish_regulations';
+import { compressImageToWebP } from '@/lib/image_compression';
 
 export default function ProfileClient({
   user,
@@ -249,11 +250,11 @@ export default function ProfileClient({
     try {
       const supabase = createClient();
 
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+      const compressedFile = await compressImageToWebP(imageFile, 1200, 0.8);
+      const fileName = `${user.id}_${Date.now()}.webp`;
       const { error: uploadError } = await supabase.storage
         .from('catch_photos')
-        .upload(fileName, imageFile);
+        .upload(fileName, compressedFile, { contentType: 'image/webp', cacheControl: '31536000' });
 
       if (uploadError) {
         alert(isTr ? `Fotoğraf yüklenemedi: ${uploadError.message}` : `Photo upload failed: ${uploadError.message}`);
@@ -306,12 +307,12 @@ export default function ProfileClient({
     setAvatarUploading(true);
     try {
       const supabase = createClient();
-      const fileExt = file.name.split('.').pop();
-      const filePath = `avatars/${user.id}_${Date.now()}.${fileExt}`;
+      const compressedAvatar = await compressImageToWebP(file, 400, 0.85);
+      const filePath = `avatars/${user.id}_${Date.now()}.webp`;
 
       const { error: uploadError } = await supabase.storage
         .from('user_uploads')
-        .upload(filePath, file);
+        .upload(filePath, compressedAvatar, { contentType: 'image/webp', cacheControl: '31536000' });
 
       if (uploadError) {
         alert(isTr ? `Fotoğraf yüklenemedi: ${uploadError.message}` : `Upload error: ${uploadError.message}`);
