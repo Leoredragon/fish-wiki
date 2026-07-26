@@ -1210,26 +1210,38 @@ function ForumPostItem({
     setSubmittingReply(true);
     try {
       const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Balıkçısı';
-      const payload = {
+      let payload: Record<string, any> = {
         post_id: post.id,
         user_id: currentUser.id,
         username,
         content: newReply.trim()
       };
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('community_forum_replies')
         .insert(payload)
         .select('*')
         .single();
 
+      // Fallback: If username column is missing in older table, retry without username column!
+      if (error && (error.message?.includes('username') || error.code === 'PGRST204')) {
+        delete payload.username;
+        const fallbackRes = await supabase
+          .from('community_forum_replies')
+          .insert(payload)
+          .select('*')
+          .single();
+        data = fallbackRes.data;
+        error = fallbackRes.error;
+      }
+
       if (error) {
         console.error('Reply error:', error);
         alert(isTr 
-          ? `Yanıt gönderilemedi: ${error.message}\n\nLütfen Supabase SQL Editor'da 'supabase_community_v2_setup.sql' dosyasını çalıştırdığınızdan emin olun.` 
+          ? `Yanıt gönderilemedi: ${error.message}\n\nLütfen Supabase SQL Editor'da 'supabase_community_v2_setup.sql' dosyasını çalıştırın.` 
           : `Failed to reply: ${error.message}`);
       } else if (data) {
-        setReplies((prev) => [...prev, data]);
+        setReplies((prev) => [...prev, { ...data, username: data.username || username }]);
         setNewReply('');
       }
     } catch (err: any) {
@@ -1395,26 +1407,37 @@ function MarketplaceItemCard({
     setSubmittingComment(true);
     try {
       const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Balıkçısı';
-      const payload = {
+      let payload: Record<string, any> = {
         item_id: item.id,
         user_id: currentUser.id,
         username,
         comment: newComment.trim()
       };
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('community_marketplace_comments')
         .insert(payload)
         .select('*')
         .single();
 
+      if (error && (error.message?.includes('username') || error.code === 'PGRST204')) {
+        delete payload.username;
+        const fallbackRes = await supabase
+          .from('community_marketplace_comments')
+          .insert(payload)
+          .select('*')
+          .single();
+        data = fallbackRes.data;
+        error = fallbackRes.error;
+      }
+
       if (error) {
         console.error('Market comment error:', error);
         alert(isTr 
-          ? `Yorum eklenemedi: ${error.message}\n\nLütfen Supabase SQL Editor'da 'supabase_community_v2_setup.sql' dosyasını çalıştırdığınızdan emin olun.` 
+          ? `Yorum eklenemedi: ${error.message}\n\nLütfen Supabase SQL Editor'da 'supabase_community_v2_setup.sql' dosyasını çalıştırın.` 
           : `Failed to post comment: ${error.message}`);
       } else if (data) {
-        setComments((prev) => [...prev, data]);
+        setComments((prev) => [...prev, { ...data, username: data.username || username }]);
         setNewComment('');
       }
     } catch (err: any) {
@@ -1568,26 +1591,37 @@ function TipCardItem({
     setSubmittingComment(true);
     try {
       const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Balıkçısı';
-      const payload = {
+      let payload: Record<string, any> = {
         tip_id: tip.id,
         user_id: currentUser.id,
         username,
         comment: newComment.trim()
       };
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('community_tip_comments')
         .insert(payload)
         .select('*')
         .single();
 
+      if (error && (error.message?.includes('username') || error.code === 'PGRST204')) {
+        delete payload.username;
+        const fallbackRes = await supabase
+          .from('community_tip_comments')
+          .insert(payload)
+          .select('*')
+          .single();
+        data = fallbackRes.data;
+        error = fallbackRes.error;
+      }
+
       if (error) {
         console.error('Tip comment error:', error);
         alert(isTr 
-          ? `Yorum eklenemedi: ${error.message}\n\nLütfen Supabase SQL Editor'da 'supabase_community_v2_setup.sql' dosyasını çalıştırdığınızdan emin olun.` 
+          ? `Yorum eklenemedi: ${error.message}\n\nLütfen Supabase SQL Editor'da 'supabase_community_v2_setup.sql' dosyasını çalıştırın.` 
           : `Failed to post comment: ${error.message}`);
       } else if (data) {
-        setComments((prev) => [...prev, data]);
+        setComments((prev) => [...prev, { ...data, username: data.username || username }]);
         setNewComment('');
       }
     } catch (err: any) {
