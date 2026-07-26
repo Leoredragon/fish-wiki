@@ -13,28 +13,30 @@ export default function MobileBottomNav() {
     { href: '/', label: isTr ? 'Keşfet' : 'Explore', icon: Compass },
     { href: '/wiki', label: isTr ? 'Wiki' : 'Wiki', icon: BookOpen },
     { href: '/map', label: isTr ? 'Meralar' : 'Map', icon: MapPin },
-    { href: '/weather', label: isTr ? 'Solunar' : 'Solunar', icon: CloudSun },
+    { href: '/weather', label: isTr ? 'Hava Durumu' : 'Weather', icon: CloudSun },
     { href: '/community', label: isTr ? 'Topluluk' : 'Social', icon: Users }
   ];
 
   return (
     <nav
       aria-label="Mobile Navigation"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-[99] bg-[#0F172A] border-t border-slate-800/90 px-1 py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] shadow-md"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-[99] bg-[#0F172A] border-t border-slate-800/90 px-1 py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom,0px))] shadow-md"
       style={{
         position: 'fixed',
-        bottom: 0,
+        bottom: '-2px',
         left: 0,
         right: 0,
         transform: 'translate3d(0, 0, 0)',
         WebkitTransform: 'translate3d(0, 0, 0)',
         WebkitBackfaceVisibility: 'hidden',
         backfaceVisibility: 'hidden',
-        willChange: 'transform',
-        contain: 'layout style paint'
+        willChange: 'transform'
       }}
     >
-      <div className="flex items-center justify-around max-w-md mx-auto">
+      {/* Seamless background extension for Android gesture swipe bar area */}
+      <div className="absolute top-full left-0 right-0 h-12 bg-[#0F172A] pointer-events-none" />
+
+      <div className="flex items-center justify-around max-w-md mx-auto relative z-10">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
