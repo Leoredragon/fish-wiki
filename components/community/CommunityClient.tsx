@@ -603,7 +603,7 @@ export default function CommunityClient({
             </div>
 
             <div className="flex items-center space-x-3 overflow-x-auto pb-1 no-scrollbar pt-1">
-              {/* Add Story Circle Button */}
+              {/* Add Story Circle Button (Instagram Style with User Avatar + Plus Badge) */}
               <div
                 onClick={() => {
                   if (!currentUser) return router.push('/login');
@@ -611,8 +611,17 @@ export default function CommunityClient({
                 }}
                 className="flex flex-col items-center space-y-1 cursor-pointer shrink-0 group"
               >
-                <div className="relative w-13 h-13 rounded-full bg-slate-900 border-2 border-dashed border-emerald-500 flex items-center justify-center text-emerald-400 shadow-xs group-hover:scale-105 transition-transform">
-                  <Plus className="w-5 h-5 stroke-[2.5]" />
+                <div className="relative p-0.5 rounded-full bg-slate-200 group-hover:scale-105 transition-transform">
+                  <div className="w-12 h-12 rounded-full overflow-hidden relative border-2 border-white bg-[#0F172A] flex items-center justify-center text-emerald-400 font-extrabold text-sm">
+                    {currentUserProfile?.avatar_url ? (
+                      <Image src={currentUserProfile.avatar_url} alt="You" fill sizes="48px" className="object-cover" />
+                    ) : (
+                      <span>{(currentUserProfile?.full_name || currentUser?.email || 'S').charAt(0).toUpperCase()}</span>
+                    )}
+                  </div>
+                  <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center border-2 border-white shadow-xs">
+                    <Plus className="w-3 h-3 stroke-[3]" />
+                  </div>
                 </div>
                 <span className="text-[10px] font-extrabold text-slate-700 max-w-[60px] truncate text-center">
                   {isTr ? 'Hikaye Ekle' : 'Add Story'}
@@ -622,6 +631,8 @@ export default function CommunityClient({
               {/* Story Avatars with Gradient Rings */}
               {stories.map((st, idx) => {
                 const authorName = st.profiles?.full_name || (st.profiles?.username ? `@${st.profiles.username}` : 'Balıkçı');
+                const avatarImage = st.profiles?.avatar_url || st.image_url;
+
                 return (
                   <div
                     key={st.id || idx}
@@ -629,11 +640,11 @@ export default function CommunityClient({
                     className="flex flex-col items-center space-y-1 cursor-pointer shrink-0 group"
                   >
                     <div className="p-0.5 rounded-full bg-gradient-to-tr from-emerald-500 via-teal-400 to-cyan-500 shadow-xs group-hover:scale-105 transition-transform">
-                      <div className="w-12 h-12 rounded-full overflow-hidden relative border-2 border-white bg-slate-900">
-                        {st.image_url ? (
-                          <Image src={st.image_url} alt="Story" fill sizes="48px" className="object-cover" />
+                      <div className="w-12 h-12 rounded-full overflow-hidden relative border-2 border-white bg-[#0F172A] flex items-center justify-center font-extrabold text-white text-xs">
+                        {avatarImage ? (
+                          <Image src={avatarImage} alt="Story" fill sizes="48px" className="object-cover" />
                         ) : (
-                          <User className="w-5 h-5 text-slate-400 m-auto" />
+                          <span>{authorName.charAt(0).toUpperCase()}</span>
                         )}
                       </div>
                     </div>
