@@ -117,30 +117,79 @@ export default function CommunityClient({
   const [tipImageFile, setTipImageFile] = useState<File | null>(null);
   const [tipSubmitting, setTipSubmitting] = useState(false);
 
-  // 24h Stories State
-  const [stories, setStories] = useState<any[]>([
-    {
-      id: 'story-1',
-      user_id: 'sample-1',
-      image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
-      caption: 'Sarayburnu Boğaz avında günün bereketi! 🎣',
-      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      profiles: { username: 'Mucahit', full_name: 'Mücahit Cengiz', avatar_url: '' }
-    },
-    {
-      id: 'story-2',
-      user_id: 'sample-2',
-      image_url: 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?auto=format&fit=crop&w=800&q=80',
-      caption: 'LRF ile sabah suyu trofe lezzeti! 🔥',
-      created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-      profiles: { username: 'Kaptan_Ahmet', full_name: 'Ahmet Yılmaz', avatar_url: '' }
-    }
-  ]);
+  // 24h Stories State with LocalStorage & Supabase Persistence
+  const [stories, setStories] = useState<any[]>([]);
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
   const [isAddStoryModalOpen, setIsAddStoryModalOpen] = useState(false);
   const [storyImageFile, setStoryImageFile] = useState<File | null>(null);
   const [storyCaption, setStoryCaption] = useState('');
   const [storySubmitting, setStorySubmitting] = useState(false);
+
+  // Load & Sync Stories
+  const loadStories = async () => {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    // Read deleted IDs from LocalStorage
+    let deletedIds: string[] = [];
+    try {
+      deletedIds = JSON.parse(localStorage.getItem('oltaapp_deleted_story_ids') || '[]');
+    } catch {}
+
+    // Read user local stories from LocalStorage
+    let localSavedStories: any[] = [];
+    try {
+      localSavedStories = JSON.parse(localStorage.getItem('oltaapp_user_stories') || '[]');
+    } catch {}
+
+    // Default mock initial stories
+    const initialMocks = [
+      {
+        id: 'story-1',
+        user_id: 'sample-1',
+        image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
+        caption: 'Sarayburnu Boğaz avında günün bereketi! 🎣',
+        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        profiles: { username: 'Mucahit', full_name: 'Mücahit Cengiz', avatar_url: '' }
+      },
+      {
+        id: 'story-2',
+        user_id: 'sample-2',
+        image_url: 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?auto=format&fit=crop&w=800&q=80',
+        caption: 'LRF ile sabah suyu trofe lezzeti! 🔥',
+        created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+        profiles: { username: 'Kaptan_Ahmet', full_name: 'Ahmet Yılmaz', avatar_url: '' }
+      }
+    ];
+
+    // Try fetching from Supabase
+    let dbStories: any[] = [];
+    try {
+      const { data, error } = await supabase
+        .from('community_stories')
+        .select('*, profiles(username, full_name, avatar_url)')
+        .gte('created_at', cutoff)
+        .order('created_at', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        dbStories = data;
+      }
+    } catch {}
+
+    // Combine & Deduplicate
+    const combined = [...dbStories, ...localSavedStories, ...initialMocks];
+    const uniqueMap = new Map();
+
+    combined.forEach((st) => {
+      if (!st.id || deletedIds.includes(st.id)) return;
+      // 24 hour cutoff check
+      if (new Date(st.created_at).getTime() < Date.now() - 24 * 60 * 60 * 1000) return;
+      if (!uniqueMap.has(st.id)) {
+        uniqueMap.set(st.id, st);
+      }
+    });
+
+    setStories(Array.from(uniqueMap.values()));
+  };
 
   const handleAddStory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,8 +219,9 @@ export default function CommunityClient({
         || (authorUsername ? `@${authorUsername}` : null) 
         || (currentUser.email ? `@${currentUser.email.split('@')[0]}` : 'Balıkçı');
 
+      const storyId = `story-${Date.now()}`;
       const newStory = {
-        id: `story-${Date.now()}`,
+        id: storyId,
         user_id: currentUser.id,
         image_url: imageUrl || 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
         caption: storyCaption.trim() || undefined,
@@ -182,6 +232,22 @@ export default function CommunityClient({
           avatar_url: authorAvatar
         }
       };
+
+      // 1. Try Supabase Insert
+      try {
+        await supabase.from('community_stories').insert({
+          id: storyId,
+          user_id: currentUser.id,
+          image_url: newStory.image_url,
+          caption: newStory.caption
+        });
+      } catch {}
+
+      // 2. Save to LocalStorage
+      try {
+        const existing = JSON.parse(localStorage.getItem('oltaapp_user_stories') || '[]');
+        localStorage.setItem('oltaapp_user_stories', JSON.stringify([newStory, ...existing]));
+      } catch {}
 
       setStories((prev) => [newStory, ...prev]);
       setIsAddStoryModalOpen(false);
@@ -195,13 +261,31 @@ export default function CommunityClient({
     }
   };
 
-  const handleDeleteStory = (storyId: string) => {
+  const handleDeleteStory = async (storyId: string) => {
     if (!confirm(isTr ? 'Bu hikayeyi silmek istediğinize emin misiniz?' : 'Delete this story?')) return;
+
+    // 1. Try Supabase Delete
+    try {
+      await supabase.from('community_stories').delete().eq('id', storyId);
+    } catch {}
+
+    // 2. Save deleted ID to LocalStorage so it NEVER returns on refresh
+    try {
+      const deletedIds = JSON.parse(localStorage.getItem('oltaapp_deleted_story_ids') || '[]');
+      if (!deletedIds.includes(storyId)) {
+        localStorage.setItem('oltaapp_deleted_story_ids', JSON.stringify([...deletedIds, storyId]));
+      }
+      const localSaved = JSON.parse(localStorage.getItem('oltaapp_user_stories') || '[]');
+      const filteredLocal = localSaved.filter((s: any) => s.id !== storyId);
+      localStorage.setItem('oltaapp_user_stories', JSON.stringify(filteredLocal));
+    } catch {}
+
     setStories((prev) => prev.filter((s) => s.id !== storyId));
     setActiveStoryIndex(null);
   };
 
   useEffect(() => {
+    loadStories();
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       setCurrentUser(user);
       if (user) {
