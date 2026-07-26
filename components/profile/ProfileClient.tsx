@@ -4,7 +4,31 @@
 import { useState, useEffect } from 'react';
 import { useLocale } from 'next-intl';
 import { motion } from 'framer-motion';
-import { Plus, MapPin, Scale, Ruler, Camera, BarChart3, Package, BookOpen, User, Settings, ShieldCheck, Key, Upload, UserCheck, Loader2, Edit, Trash2, Star } from 'lucide-react';
+import {
+  Plus,
+  MapPin,
+  Scale,
+  Ruler,
+  Camera,
+  BarChart3,
+  Package,
+  BookOpen,
+  User,
+  Settings,
+  ShieldCheck,
+  Key,
+  Upload,
+  UserCheck,
+  Loader2,
+  Edit,
+  Trash2,
+  Star,
+  ShoppingBag,
+  CheckCircle2,
+  X,
+  PhoneCall,
+  Tag
+} from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -12,16 +36,37 @@ import TackleBox from './TackleBox';
 import CatchCardExport from '../community/CatchCardExport';
 import { getLegalMinSize } from '@/lib/fish_regulations';
 
-export default function ProfileClient({ user, profile, initialCatches }: { user: Record<string, any>; profile: Record<string, any>; initialCatches: Record<string, any>[] }) {
+export default function ProfileClient({
+  user,
+  profile,
+  initialCatches
+}: {
+  user: Record<string, any>;
+  profile: Record<string, any>;
+  initialCatches: Record<string, any>[];
+}) {
   const locale = useLocale();
   const isTr = locale === 'tr';
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<'stats' | 'log' | 'tackle' | 'settings' | 'favorites'>('log');
+  const [activeTab, setActiveTab] = useState<'stats' | 'log' | 'tackle' | 'settings' | 'favorites' | 'market'>('log');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [favoriteSpots, setFavoriteSpots] = useState<any[]>([]);
-  
+
+  // User Marketplace Listings State
+  const [userMarketItems, setUserMarketItems] = useState<any[]>([]);
+  const [editingMarketItem, setEditingMarketItem] = useState<any | null>(null);
+  const [editItemTitle, setEditItemTitle] = useState('');
+  const [editItemDesc, setEditItemDesc] = useState('');
+  const [editItemPrice, setEditItemPrice] = useState('');
+  const [editItemType, setEditItemType] = useState('Kamış');
+  const [editItemCondition, setEditItemCondition] = useState('Az Kullanılmış');
+  const [editItemCity, setEditItemCity] = useState('');
+  const [editItemContact, setEditItemContact] = useState('');
+  const [editItemIsSold, setEditItemIsSold] = useState(false);
+  const [updatingMarketItem, setUpdatingMarketItem] = useState(false);
+
   // Profile Settings State
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [username, setUsername] = useState(profile?.username || '');
@@ -52,37 +97,141 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
   const [lureUsed, setLureUsed] = useState('');
   const [locationNote, setLocationNote] = useState('');
   const [tackleBoxId, setTackleBoxId] = useState<string>('');
-  
+
   // User Tackle Sets for the dropdown
   const [userTackleSets, setUserTackleSets] = useState<any[]>([]);
 
   useEffect(() => {
-    // Fetch tackle sets for the dropdown
-    const fetchTackleSets = async () => {
-      const supabase = createClient();
-      const { data } = await supabase.from('tackle_sets').select('id, name').eq('user_id', user.id);
-      if (data) setUserTackleSets(data);
-    };
-
-    const fetchFavoriteSpots = async () => {
-      try {
-        const supabase = createClient();
-        const { data } = await supabase
-          .from('favorite_spots')
-          .select(`
-            id,
-            fishing_spots (*)
-          `)
-          .eq('user_id', user.id);
-        if (data) {
-          setFavoriteSpots(data.map((d: any) => d.fishing_spots).filter(Boolean));
-        }
-      } catch {}
-    };
-
     fetchTackleSets();
     fetchFavoriteSpots();
+    fetchUserMarketItems();
   }, [user.id]);
+
+  const fetchTackleSets = async () => {
+    const supabase = createClient();
+    const { data } = await supabase.from('tackle_sets').select('id, name').eq('user_id', user.id);
+    if (data) setUserTackleSets(data);
+  };
+
+  const fetchFavoriteSpots = async () => {
+    try {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('favorite_spots')
+        .select(`id, fishing_spots (*)`)
+        .eq('user_id', user.id);
+      if (data) {
+        setFavoriteSpots(data.map((d: any) => d.fishing_spots).filter(Boolean));
+      }
+    } catch {}
+  };
+
+  const fetchUserMarketItems = async () => {
+    try {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('community_marketplace_items')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (data) setUserMarketItems(data);
+    } catch {}
+  };
+
+  const handleToggleSold = async (item: any) => {
+    try {
+      const supabase = createClient();
+      const newStatus = !item.is_sold;
+      const { error } = await supabase
+        .from('community_marketplace_items')
+        .update({ is_sold: newStatus })
+        .eq('id', item.id);
+
+      if (!error) {
+        setUserMarketItems((prev) =>
+          prev.map((i) => (i.id === item.id ? { ...i, is_sold: newStatus } : i))
+        );
+      } else {
+        alert(isTr ? `Güncellenemedi: ${error.message}` : `Error: ${error.message}`);
+      }
+    } catch (err: any) {
+      alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
+    }
+  };
+
+  const openEditMarketItemModal = (item: any) => {
+    setEditingMarketItem(item);
+    setEditItemTitle(item.title || '');
+    setEditItemDesc(item.description || '');
+    setEditItemPrice(item.price ? String(item.price) : '');
+    setEditItemType(item.item_type || 'Kamış');
+    setEditItemCondition(item.condition || 'Az Kullanılmış');
+    setEditItemCity(item.city || '');
+    setEditItemContact(item.contact_info || '');
+    setEditItemIsSold(!!item.is_sold);
+  };
+
+  const handleUpdateMarketItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMarketItem) return;
+
+    setUpdatingMarketItem(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('community_marketplace_items')
+        .update({
+          title: editItemTitle.trim(),
+          description: editItemDesc.trim(),
+          price: parseFloat(editItemPrice),
+          item_type: editItemType,
+          condition: editItemCondition,
+          city: editItemCity.trim() || null,
+          contact_info: editItemContact.trim() || null,
+          is_sold: editItemIsSold
+        })
+        .eq('id', editingMarketItem.id);
+
+      if (error) {
+        alert(isTr ? `İlan güncellenemedi: ${error.message}` : `Failed: ${error.message}`);
+      } else {
+        alert(isTr ? '🎉 İlanınız başarıyla güncellendi!' : 'Listing updated!');
+        setUserMarketItems((prev) =>
+          prev.map((i) =>
+            i.id === editingMarketItem.id
+              ? {
+                  ...i,
+                  title: editItemTitle.trim(),
+                  description: editItemDesc.trim(),
+                  price: parseFloat(editItemPrice),
+                  item_type: editItemType,
+                  condition: editItemCondition,
+                  city: editItemCity.trim() || null,
+                  contact_info: editItemContact.trim() || null,
+                  is_sold: editItemIsSold
+                }
+              : i
+          )
+        );
+        setEditingMarketItem(null);
+      }
+    } catch (err: any) {
+      alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
+    } finally {
+      setUpdatingMarketItem(false);
+    }
+  };
+
+  const handleDeleteMarketItem = async (itemId: string) => {
+    if (!confirm(isTr ? 'Bu ilanı silmek istediğinize emin misiniz?' : 'Delete listing?')) return;
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from('community_marketplace_items').delete().eq('id', itemId);
+      if (!error) {
+        setUserMarketItems((prev) => prev.filter((i) => i.id !== itemId));
+      }
+    } catch {}
+  };
 
   const handleAddCatch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,68 +243,47 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
       alert(isTr ? 'Lütfen bir av fotoğrafı seçin.' : 'Please select a catch photo.');
       return;
     }
-    
+
     setLoading(true);
 
     try {
       const supabase = createClient();
-      
-      // 1. Upload Image
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
 
+      const fileExt = imageFile.name.split('.').pop();
+      const fileName = `${user.id}_${Date.now()}.${fileExt}`;
       const { error: uploadError } = await supabase.storage
-        .from('user_uploads')
-        .upload(filePath, imageFile);
+        .from('catch_photos')
+        .upload(fileName, imageFile);
 
       if (uploadError) {
-        console.error('Storage Upload Error:', uploadError);
-        alert(isTr 
-          ? `Fotoğraf yüklenemedi!\n\nHata: ${uploadError.message}\n\nLütfen Supabase panelinizde 'user_uploads' depolama alanının (Storage Bucket) açık ve yetkilendirilmiş olduğundan emin olun.` 
-          : `Failed to upload image: ${uploadError.message}`);
+        alert(isTr ? `Fotoğraf yüklenemedi: ${uploadError.message}` : `Photo upload failed: ${uploadError.message}`);
         setLoading(false);
         return;
       }
 
       const { data: publicUrlData } = supabase.storage
-        .from('user_uploads')
-        .getPublicUrl(filePath);
+        .from('catch_photos')
+        .getPublicUrl(fileName);
 
-      const publicUrl = publicUrlData?.publicUrl;
+      const imageUrl = publicUrlData.publicUrl;
 
-      const formattedTackleBoxId = (tackleBoxId && tackleBoxId.trim() !== '') ? tackleBoxId : null;
+      const formattedTackleId = (tackleBoxId && tackleBoxId.trim() !== '') ? tackleBoxId : null;
 
-      // 2. Insert Record
-      const { error: insertError } = await supabase
-        .from('catch_logs')
-        .insert({
-          user_id: user.id,
-          image_url: publicUrl,
-          weight: weight ? parseFloat(weight) : null,
-          length: length ? parseFloat(length) : null,
-          lure_used: lureUsed || null,
-          location_note: locationNote || null,
-          tackle_box_id: formattedTackleBoxId
-        });
+      const { error: insertError } = await supabase.from('catch_logs').insert({
+        user_id: user.id,
+        image_url: imageUrl,
+        weight: weight ? parseFloat(weight) : null,
+        length: length ? parseFloat(length) : null,
+        lure_used: lureUsed || null,
+        location_note: locationNote || null,
+        tackle_box_id: formattedTackleId
+      });
 
       if (insertError) {
-        console.error('Catch Log Insert Error:', insertError);
-        const isFkeyError = insertError.message?.includes('foreign key constraint') || insertError.message?.includes('catch_logs_tackle_box_id_fkey');
-        
-        if (isFkeyError) {
-          alert(isTr 
-            ? `Av kaydı veritabanına eklenemedi!\n\nHata (İlişkisel Veri Bağlantısı): ${insertError.message}\n\nÇözüm: Supabase panelinizdeki SQL Editor alanında 'complete_database_setup.sql' dosyasını çalıştırarak veritabanı bağlantı yetkilerini güncelleyin.` 
-            : `Foreign Key Error: Please run complete_database_setup.sql in Supabase SQL Editor.`);
-        } else {
-          alert(isTr 
-            ? `Av kaydı veritabanına eklenemedi!\n\nHata: ${insertError.message}\n\nEğer tablo henüz oluşmadıysa lütfen Supabase panelinizde SQL kodunu çalıştırın.` 
-            : `Database error: ${insertError.message}`);
-        }
+        alert(isTr ? `Av kaydedilemedi: ${insertError.message}` : `Catch record failed: ${insertError.message}`);
       } else {
-        alert(isTr ? '🎉 Av kaydı başarıyla günlüğe eklendi!' : 'Catch log saved successfully!');
+        alert(isTr ? '🎉 Avınız başarıyla kaydedildi!' : 'Catch saved successfully!');
         setIsModalOpen(false);
-        // Reset form
         setImageFile(null);
         setWeight('');
         setLength('');
@@ -165,14 +293,12 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
         router.refresh();
       }
     } catch (err: any) {
-      console.error('Unexpected error:', err);
-      alert(isTr ? `Beklenmeyen bir hata oluştu: ${err?.message || err}` : `An error occurred: ${err?.message || err}`);
+      alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Avatar Upload Handler
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -181,27 +307,24 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
     try {
       const supabase = createClient();
       const fileExt = file.name.split('.').pop();
-      const fileName = `avatars/${user.id}_${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${user.id}_${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('user_uploads')
-        .upload(fileName, file, { upsert: true });
+        .upload(filePath, file);
 
       if (uploadError) {
-        alert(isTr ? `Avatar yüklenemedi: ${uploadError.message}` : `Avatar upload failed: ${uploadError.message}`);
+        alert(isTr ? `Fotoğraf yüklenemedi: ${uploadError.message}` : `Upload error: ${uploadError.message}`);
       } else {
-        const { data: publicUrlData } = supabase.storage
-          .from('user_uploads')
-          .getPublicUrl(fileName);
-        
-        if (publicUrlData?.publicUrl) {
-          const newUrl = publicUrlData.publicUrl;
+        const { data } = supabase.storage.from('user_uploads').getPublicUrl(filePath);
+        if (data?.publicUrl) {
+          const newUrl = data.publicUrl;
           setAvatarUrl(newUrl);
           await supabase
             .from('profiles')
             .update({ avatar_url: newUrl })
             .eq('id', user.id);
-          
+
           alert(isTr ? '🎉 Profil fotoğrafınız başarıyla güncellendi!' : 'Profile picture updated successfully!');
           router.refresh();
         }
@@ -213,7 +336,6 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
     }
   };
 
-  // Profile Save Handler
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingProfile(true);
@@ -243,7 +365,6 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
     }
   };
 
-  // Password Change Handler
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword.length < 6) {
@@ -276,7 +397,6 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
     }
   };
 
-  // Open Edit Catch Modal
   const openEditCatchModal = (log: any) => {
     setEditingCatch(log);
     setEditLocationNote(log.location_note || '');
@@ -286,7 +406,6 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
     setEditTackleBoxId(log.tackle_box_id || '');
   };
 
-  // Update Catch Handler
   const handleUpdateCatch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCatch) return;
@@ -321,7 +440,6 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
     }
   };
 
-  // Delete Catch Handler
   const handleDeleteCatch = async (logId: string) => {
     if (!confirm(isTr ? 'Bu av kaydını silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this catch log?')) return;
     try {
@@ -339,14 +457,12 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
     }
   };
 
-  // Stats Calculations
   const totalCatches = initialCatches.length;
   const biggestCatch = initialCatches.reduce((max, log) => (log.weight > (max.weight || 0) ? log : max), initialCatches[0] || null);
   const totalWeight = initialCatches.reduce((sum, log) => sum + (log.weight || 0), 0);
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-16 pt-6">
-      
       {/* Profile Header */}
       <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6 text-center sm:text-left">
         <div className="relative group shrink-0">
@@ -402,6 +518,16 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
         >
           <BookOpen className="w-4 h-4" />
           <span>{isTr ? 'Av Güncesi' : 'Catch Log'}</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('market')}
+          className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
+            activeTab === 'market' ? 'bg-white text-[#0F172A] shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+          }`}
+        >
+          <ShoppingBag className="w-4 h-4 text-emerald-600" />
+          <span>{isTr ? 'İkinci El İlanlarım' : 'My Listings'}</span>
         </button>
 
         <button
@@ -541,11 +667,136 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
           </motion.div>
         )}
 
+        {/* TAB: MY MARKETPLACE LISTINGS */}
+        {activeTab === 'market' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-[#0F172A] flex items-center space-x-2">
+                <ShoppingBag className="w-5 h-5 text-emerald-600" />
+                <span>{isTr ? 'Yayındaki ve Satılan İkinci El İlanlarım' : 'My Marketplace Listings'}</span>
+              </h2>
+
+              <button
+                onClick={() => router.push('/community')}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-sm flex items-center space-x-1"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{isTr ? 'Yeni İlan Ver' : 'Sell Gear'}</span>
+              </button>
+            </div>
+
+            {userMarketItems.length === 0 ? (
+              <div className="bg-slate-50 border border-dashed border-slate-300 rounded-3xl p-12 text-center space-y-3">
+                <ShoppingBag className="w-12 h-12 text-slate-400 mx-auto" />
+                <h3 className="text-lg font-bold text-slate-600">{isTr ? 'Henüz hiçbir ekipman ilanı vermediniz.' : 'No listings posted yet.'}</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">{isTr ? 'Kullanmadığınız olta, makine veya kamışları Topluluk Ekipman Pazarı sayfasından hemen satışa çıkarabilirsiniz.' : 'List your unused rods or reels for sale.'}</p>
+                <button
+                  onClick={() => router.push('/community')}
+                  className="bg-[#0F172A] text-emerald-400 font-bold px-5 py-2.5 rounded-xl text-xs"
+                >
+                  {isTr ? 'Ekipman Pazarına Git' : 'Go to Marketplace'}
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {userMarketItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`bg-white rounded-3xl border shadow-sm overflow-hidden flex flex-col justify-between transition-all ${
+                      item.is_sold ? 'border-slate-200 bg-slate-50/70 opacity-80' : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div>
+                      {item.image_url ? (
+                        <div className="relative aspect-[4/3] bg-slate-100 w-full overflow-hidden">
+                          <Image src={item.image_url} alt={item.title} fill sizes="50vw" className="object-cover" />
+                          <div className="absolute top-3 right-3 bg-[#0F172A] text-emerald-400 font-black text-xs px-3 py-1 rounded-xl shadow-md">
+                            {item.price} {item.currency || 'TL'}
+                          </div>
+                          {item.is_sold ? (
+                            <div className="absolute top-3 left-3 bg-rose-600 text-white font-black text-xs px-3 py-1 rounded-xl shadow-md">
+                              SATILDI
+                            </div>
+                          ) : (
+                            <div className="absolute top-3 left-3 bg-emerald-600 text-white font-black text-xs px-3 py-1 rounded-xl shadow-md">
+                              YAYINDA
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            {item.is_sold ? (
+                              <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md">SATILDI</span>
+                            ) : (
+                              <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md">YAYINDA</span>
+                            )}
+                            <span className="text-xs font-bold text-slate-500">{item.item_type}</span>
+                          </div>
+                          <span className="text-sm font-black text-emerald-600">{item.price} TL</span>
+                        </div>
+                      )}
+
+                      <div className="p-4 space-y-2">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
+                          <span>{item.condition}</span>
+                          {item.city && <span>📍 {item.city}</span>}
+                        </div>
+                        <h3 className="font-extrabold text-sm text-[#0F172A] leading-snug">{item.title}</h3>
+                        <p className="text-xs text-slate-600 font-medium line-clamp-3 leading-relaxed">{item.description}</p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 pt-3 border-t border-slate-100 space-y-2">
+                      {item.contact_info && (
+                        <div className="text-xs text-slate-500 font-semibold flex items-center space-x-1">
+                          <PhoneCall className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>{item.contact_info}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between pt-1">
+                        <button
+                          onClick={() => handleToggleSold(item)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 border ${
+                            item.is_sold
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                              : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                          }`}
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>{item.is_sold ? (isTr ? 'Tekrar Satışa Çıkar' : 'Mark Active') : (isTr ? 'Satıldı İşaretle' : 'Mark Sold')}</span>
+                        </button>
+
+                        <div className="flex items-center space-x-1">
+                          <button
+                            onClick={() => openEditMarketItemModal(item)}
+                            className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors border border-slate-200"
+                            title={isTr ? 'İlanı Düzenle' : 'Edit Listing'}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteMarketItem(item.id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-slate-200"
+                            title={isTr ? 'İlanı Sil' : 'Delete Listing'}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
         {activeTab === 'stats' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
             <h2 className="text-xl font-bold text-[#0F172A]">{isTr ? 'Kişisel İstatistikler' : 'Personal Stats'}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              
               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center space-y-2">
                 <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mb-2">
                   <BookOpen className="w-6 h-6" />
@@ -570,73 +821,6 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
                 <div className="text-sm font-bold text-slate-400 uppercase tracking-wide">{isTr ? 'Toplam Ağırlık' : 'Total Weight'}</div>
                 <div className="text-4xl font-black text-[#0F172A]">{totalWeight.toFixed(1)} kg</div>
               </div>
-
-            </div>
-
-            {/* Detailed Analytics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-              
-              {/* Species Breakdown */}
-              <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-base font-extrabold text-[#0F172A] flex items-center space-x-2 border-b border-slate-100 pb-3">
-                  <span className="text-lg">🐟</span>
-                  <span>{isTr ? 'Avlanan Balık Türleri Dağılımı' : 'Species Breakdown'}</span>
-                </h3>
-                {initialCatches.length === 0 ? (
-                  <p className="text-xs text-slate-400 font-medium">Henüz veritabanında av bulunmuyor.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {(() => {
-                      const counts: Record<string, number> = {};
-                      initialCatches.forEach(c => {
-                        const species = c.lure_used || c.location_note || 'Diğer';
-                        counts[species] = (counts[species] || 0) + 1;
-                      });
-                      return Object.entries(counts).map(([name, count]) => {
-                        const pct = Math.round((count / initialCatches.length) * 100);
-                        return (
-                          <div key={name} className="space-y-1">
-                            <div className="flex justify-between text-xs font-bold text-slate-700">
-                              <span>{name}</span>
-                              <span className="text-emerald-600">{count} adet (%{pct})</span>
-                            </div>
-                            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                              <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                )}
-              </div>
-
-              {/* Luckiest Set & Gear Efficiency */}
-              <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-base font-extrabold text-[#0F172A] flex items-center space-x-2 border-b border-slate-100 pb-3">
-                  <span className="text-lg">🎣</span>
-                  <span>{isTr ? 'En Verimli Ekipman Seti' : 'Most Efficient Gear Set'}</span>
-                </h3>
-                {userTackleSets.length === 0 ? (
-                  <p className="text-xs text-slate-400 font-medium">Henüz kayıtlı setiniz bulunmuyor.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {userTackleSets.slice(0, 3).map((set, idx) => (
-                      <div key={set.id} className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${idx === 0 ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-700'}`}>
-                            #{idx + 1}
-                          </div>
-                          <div>
-                            <h4 className="font-extrabold text-sm text-[#0F172A]">{set.name}</h4>
-                            <span className="text-[10px] text-emerald-600 font-bold uppercase">En Verimli Kombinasyon</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
           </motion.div>
         )}
@@ -649,7 +833,6 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
 
         {activeTab === 'settings' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-            {/* Profil Bilgileri Formu */}
             <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
               <div className="border-b border-slate-100 pb-4 flex items-center space-x-3">
                 <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
@@ -668,7 +851,7 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
                     <input
                       type="text"
                       value={fullName}
-                      onChange={e => setFullName(e.target.value)}
+                      onChange={(e) => setFullName(e.target.value)}
                       placeholder="Örn: Ahmet Yılmaz"
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
                     />
@@ -679,7 +862,7 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
                     <input
                       type="text"
                       value={username}
-                      onChange={e => setUsername(e.target.value)}
+                      onChange={(e) => setUsername(e.target.value)}
                       placeholder="Örn: ahmet_balikci"
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
                     />
@@ -692,7 +875,7 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
                     <input
                       type="text"
                       value={city}
-                      onChange={e => setCity(e.target.value)}
+                      onChange={(e) => setCity(e.target.value)}
                       placeholder="Örn: İstanbul, Marmara"
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
                     />
@@ -703,7 +886,7 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
                     <input
                       type="url"
                       value={avatarUrl}
-                      onChange={e => setAvatarUrl(e.target.value)}
+                      onChange={(e) => setAvatarUrl(e.target.value)}
                       placeholder="https://..."
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:border-emerald-500"
                     />
@@ -715,7 +898,7 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
                   <textarea
                     rows={3}
                     value={bio}
-                    onChange={e => setBio(e.target.value)}
+                    onChange={(e) => setBio(e.target.value)}
                     placeholder="Örn: 10 yıldır Boğaz'da kurşun arkası ve spin avcılığı yapıyorum."
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:border-emerald-500 resize-none"
                   ></textarea>
@@ -733,64 +916,6 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
                       <>
                         <UserCheck className="w-4 h-4 text-emerald-400" />
                         <span>{isTr ? 'Değişiklikleri Kaydet' : 'Save Changes'}</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* Şifre Değiştirme Formu */}
-            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-              <div className="border-b border-slate-100 pb-4 flex items-center space-x-3">
-                <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center">
-                  <Key className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black text-[#0F172A]">{isTr ? 'Şifre Değiştir' : 'Change Password'}</h3>
-                  <p className="text-xs text-slate-500">{isTr ? 'Hesap güvenliğinizi sağlamak için şifrenizi güncelleyin.' : 'Update your password to keep account secure.'}</p>
-                </div>
-              </div>
-
-              <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Yeni Şifre' : 'New Password'}</label>
-                  <input
-                    type="password"
-                    required
-                    minLength={6}
-                    value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Yeni Şifre (Tekrar)' : 'Confirm New Password'}</label>
-                  <input
-                    type="password"
-                    required
-                    minLength={6}
-                    value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={updatingPassword}
-                    className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl transition-all disabled:opacity-70 flex items-center space-x-2 text-sm"
-                  >
-                    {updatingPassword ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
-                    ) : (
-                      <>
-                        <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                        <span>{isTr ? 'Şifreyi Güncelle' : 'Update Password'}</span>
                       </>
                     )}
                   </button>
@@ -822,7 +947,7 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {favoriteSpots.map(spot => (
+                {favoriteSpots.map((spot) => (
                   <div key={spot.id} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -849,168 +974,72 @@ export default function ProfileClient({ user, profile, initialCatches }: { user:
         )}
       </div>
 
-      {/* Add Catch Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto pt-20 pb-20">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white rounded-t-3xl z-10">
-              <h2 className="text-xl font-extrabold text-[#0F172A]">{isTr ? 'Yeni Av Günlüğü' : 'New Catch Log'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      {/* EDIT MARKET ITEM MODAL */}
+      {editingMarketItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 border border-slate-100 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="font-extrabold text-base text-[#0F172A]">{isTr ? 'İkinci El İlanını Düzenle' : 'Edit Listing'}</h3>
+              <button onClick={() => setEditingMarketItem(null)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
             </div>
-            
-            <form onSubmit={handleAddCatch} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Av Fotoğrafı' : 'Catch Photo'} *</label>
-                <label className="cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-4 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors w-full">
-                  <Camera className="w-6 h-6 text-emerald-500 mb-2" />
-                  <span className="text-sm font-semibold text-slate-600">{imageFile ? imageFile.name : (isTr ? 'Fotoğraf Seç' : 'Choose Photo')}</span>
-                  <input type="file" accept="image/*" required onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="hidden" />
-                </label>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleUpdateMarketItem} className="space-y-3 text-xs font-medium max-h-[70vh] overflow-y-auto pr-1">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Ağırlık (kg)' : 'Weight (kg)'}</label>
-                  <input type="number" step="0.1" value={weight} onChange={e=>setWeight(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 font-medium" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Uzunluk (cm)' : 'Length (cm)'}</label>
-                  <input type="number" step="0.1" value={length} onChange={e=>setLength(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 font-medium" />
-                </div>
-              </div>
-
-              {/* Legal Size Limit Warning check */}
-              {length && lureUsed && (() => {
-                const minSize = getLegalMinSize(lureUsed);
-                if (minSize && parseFloat(length) < minSize) {
-                  return (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-xs font-bold flex items-center space-x-2">
-                      <span className="text-base">⚠️</span>
-                      <span>{lureUsed} için yasal avlanma alt sınırı min. <strong>{minSize} cm</strong>&apos;dir (Sirküler No: 5/2). Sürdürülebilir balıkçılık için lütfen küçük balıkları suya iade edelim!</span>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Mera / Konum' : 'Location'}</label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                  <input type="text" value={locationNote} onChange={e=>setLocationNote(e.target.value)} placeholder={isTr ? 'Örn: İstanbul Boğazı' : 'e.g. Bosphorus'} className="w-full pl-9 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 font-medium" />
-                </div>
-              </div>
-
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                <h3 className="text-sm font-bold text-slate-700 flex items-center space-x-1.5">
-                  <Package className="w-4 h-4 text-emerald-500" />
-                  <span>{isTr ? 'Kullanılan Ekipman' : 'Gear Used'}</span>
-                </h3>
-                
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Setlerinizden Seçin' : 'Select from Your Sets'}</label>
-                  <select 
-                    value={tackleBoxId} 
-                    onChange={e => setTackleBoxId(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 font-medium text-slate-700"
-                  >
-                    <option value="">{isTr ? '-- Set Seçilmedi --' : '-- None --'}</option>
-                    {userTackleSets.map(item => (
-                      <option key={item.id} value={item.id}>{item.name}</option>
-                    ))}
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Tür' : 'Type'}</label>
+                  <select value={editItemType} onChange={(e) => setEditItemType(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500">
+                    <option value="Kamış">Kamış</option>
+                    <option value="Makine">Makine</option>
+                    <option value="Sahte Yem">Sahte Yem</option>
+                    <option value="Misina/Aksesuar">Misina/Aksesuar</option>
+                    <option value="Set">Set</option>
                   </select>
                 </div>
-
-                <div className="relative flex items-center py-2">
-                  <div className="flex-grow border-t border-slate-200"></div>
-                  <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase">{isTr ? 'veya' : 'or'}</span>
-                  <div className="flex-grow border-t border-slate-200"></div>
-                </div>
-
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Manuel Yazın (Yem / Sahte)' : 'Enter Manually (Lure / Bait)'}</label>
-                  <input type="text" value={lureUsed} onChange={e=>setLureUsed(e.target.value)} placeholder={isTr ? 'Örn: 10g Kaşık' : 'e.g. 10g Spoon'} disabled={!!tackleBoxId} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 font-medium disabled:opacity-50" />
-                </div>
-              </div>
-
-              <div className="pt-4 flex justify-end">
-                <button type="submit" disabled={loading} className="bg-[#0F172A] hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl transition-all disabled:opacity-70 w-full sm:w-auto">
-                  {loading ? (isTr ? 'Yükleniyor...' : 'Uploading...') : (isTr ? 'Günlüğe Kaydet' : 'Save to Log')}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Catch Modal */}
-      {editingCatch && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto pt-20 pb-20">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white rounded-t-3xl z-10">
-              <h2 className="text-xl font-extrabold text-[#0F172A]">{isTr ? 'Av Kaydını Düzenle' : 'Edit Catch Log'}</h2>
-              <button onClick={() => setEditingCatch(null)} className="text-slate-400 hover:text-slate-600 font-bold">✕</button>
-            </div>
-            
-            <form onSubmit={handleUpdateCatch} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Ağırlık (kg)' : 'Weight (kg)'}</label>
-                  <input type="number" step="0.1" value={editWeight} onChange={e=>setEditWeight(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 font-medium" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Uzunluk (cm)' : 'Length (cm)'}</label>
-                  <input type="number" step="0.1" value={editLength} onChange={e=>setEditLength(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 font-medium" />
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Durumu' : 'Condition'}</label>
+                  <select value={editItemCondition} onChange={(e) => setEditItemCondition(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500">
+                    <option value="Sıfır">Sıfır</option>
+                    <option value="Çok İyi">Çok İyi</option>
+                    <option value="Az Kullanılmış">Az Kullanılmış</option>
+                    <option value="Yıpranmış">Yıpranmış</option>
+                  </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Mera / Konum' : 'Location'}</label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                  <input type="text" value={editLocationNote} onChange={e=>setEditLocationNote(e.target.value)} placeholder={isTr ? 'Örn: İstanbul Boğazı' : 'e.g. Bosphorus'} className="w-full pl-9 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 font-medium" />
+                <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Ürün Adı / Başlık' : 'Title'}</label>
+                <input type="text" value={editItemTitle} onChange={(e) => setEditItemTitle(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500" required />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Fiyat (TL)' : 'Price'}</label>
+                  <input type="number" value={editItemPrice} onChange={(e) => setEditItemPrice(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500" required />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Şehir' : 'City'}</label>
+                  <input type="text" value={editItemCity} onChange={(e) => setEditItemCity(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500" />
                 </div>
               </div>
 
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                <h3 className="text-sm font-bold text-slate-700 flex items-center space-x-1.5">
-                  <Package className="w-4 h-4 text-emerald-500" />
-                  <span>{isTr ? 'Kullanılan Ekipman' : 'Gear Used'}</span>
-                </h3>
-                
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Setlerinizden Seçin' : 'Select from Your Sets'}</label>
-                  <select 
-                    value={editTackleBoxId} 
-                    onChange={e => setEditTackleBoxId(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 font-medium text-slate-700"
-                  >
-                    <option value="">{isTr ? '-- Set Seçilmedi --' : '-- None --'}</option>
-                    {userTackleSets.map(item => (
-                      <option key={item.id} value={item.id}>{item.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="relative flex items-center py-2">
-                  <div className="flex-grow border-t border-slate-200"></div>
-                  <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase">{isTr ? 'veya' : 'or'}</span>
-                  <div className="flex-grow border-t border-slate-200"></div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">{isTr ? 'Manuel Yazın (Yem / Sahte)' : 'Enter Manually (Lure / Bait)'}</label>
-                  <input type="text" value={editLureUsed} onChange={e=>setEditLureUsed(e.target.value)} placeholder={isTr ? 'Örn: 10g Kaşık' : 'e.g. 10g Spoon'} disabled={!!editTackleBoxId} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 font-medium disabled:opacity-50" />
-                </div>
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">{isTr ? 'İletişim / Tel veya Instagram' : 'Contact Info'}</label>
+                <input type="text" value={editItemContact} onChange={(e) => setEditItemContact(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500" />
               </div>
 
-              <div className="pt-4 flex justify-end space-x-2">
-                <button type="button" onClick={() => setEditingCatch(null)} className="px-5 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs">
-                  {isTr ? 'İptal' : 'Cancel'}
-                </button>
-                <button type="submit" disabled={updatingCatch} className="bg-[#0F172A] hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl transition-all disabled:opacity-70 text-xs flex items-center space-x-2">
-                  {updatingCatch ? <Loader2 className="w-4 h-4 animate-spin text-emerald-400" /> : <span>{isTr ? 'Güncelle' : 'Update'}</span>}
-                </button>
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Açıklama' : 'Description'}</label>
+                <textarea rows={3} value={editItemDesc} onChange={(e) => setEditItemDesc(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500" required />
+              </div>
+
+              <div className="flex items-center space-x-2 pt-2 border-t border-slate-100">
+                <input type="checkbox" id="is_sold_checkbox" checked={editItemIsSold} onChange={(e) => setEditItemIsSold(e.target.checked)} className="w-4 h-4 accent-rose-500 rounded" />
+                <label htmlFor="is_sold_checkbox" className="text-xs font-bold text-slate-700">{isTr ? 'Ürün Satıldı Olarak İşaretlensin' : 'Mark as Sold'}</label>
+              </div>
+
+              <div className="pt-2 flex justify-end space-x-2">
+                <button type="button" onClick={() => setEditingMarketItem(null)} className="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50">{isTr ? 'İptal' : 'Cancel'}</button>
+                <button type="submit" disabled={updatingMarketItem} className="px-5 py-2 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white font-bold shadow-sm">{updatingMarketItem ? <Loader2 className="w-4 h-4 animate-spin" /> : (isTr ? 'Kaydet' : 'Save')}</button>
               </div>
             </form>
           </div>

@@ -26,7 +26,9 @@ import {
   Trash2,
   ShieldCheck,
   MessageCircle,
-  PhoneCall
+  PhoneCall,
+  Edit,
+  CheckCircle2
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import CatchCardExport from './CatchCardExport';
@@ -91,6 +93,17 @@ export default function CommunityClient({
   const [itemContact, setItemContact] = useState('');
   const [marketImageFile, setMarketImageFile] = useState<File | null>(null);
   const [marketSubmitting, setMarketSubmitting] = useState(false);
+
+  // Marketplace Edit State
+  const [editingMarketItem, setEditingMarketItem] = useState<any | null>(null);
+  const [editItemTitle, setEditItemTitle] = useState('');
+  const [editItemDesc, setEditItemDesc] = useState('');
+  const [editItemPrice, setEditItemPrice] = useState('');
+  const [editItemType, setEditItemType] = useState('Kamış');
+  const [editItemCondition, setEditItemCondition] = useState('Az Kullanılmış');
+  const [editItemCity, setEditItemCity] = useState('');
+  const [editItemContact, setEditItemContact] = useState('');
+  const [editItemIsSold, setEditItemIsSold] = useState(false);
 
   // Tab 4: Tips States
   const [tips, setTips] = useState<any[]>(initialCommunityTips);
@@ -256,6 +269,90 @@ export default function CommunityClient({
     }
   };
 
+  // Toggle Marketplace Item Sold Status
+  const handleToggleMarketItemSold = async (item: any) => {
+    try {
+      const newStatus = !item.is_sold;
+      const { error } = await supabase
+        .from('community_marketplace_items')
+        .update({ is_sold: newStatus })
+        .eq('id', item.id);
+
+      if (!error) {
+        setMarketItems((prev) =>
+          prev.map((i) => (i.id === item.id ? { ...i, is_sold: newStatus } : i))
+        );
+      } else {
+        alert(isTr ? `Güncellenemedi: ${error.message}` : `Error: ${error.message}`);
+      }
+    } catch (err: any) {
+      alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
+    }
+  };
+
+  // Open Edit Marketplace Item Modal
+  const openEditMarketItemModal = (item: any) => {
+    setEditingMarketItem(item);
+    setEditItemTitle(item.title || '');
+    setEditItemDesc(item.description || '');
+    setEditItemPrice(item.price ? String(item.price) : '');
+    setEditItemType(item.item_type || 'Kamış');
+    setEditItemCondition(item.condition || 'Az Kullanılmış');
+    setEditItemCity(item.city || '');
+    setEditItemContact(item.contact_info || '');
+    setEditItemIsSold(!!item.is_sold);
+  };
+
+  // Update Marketplace Item Handler
+  const handleUpdateMarketItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMarketItem) return;
+
+    setMarketSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('community_marketplace_items')
+        .update({
+          title: editItemTitle.trim(),
+          description: editItemDesc.trim(),
+          price: parseFloat(editItemPrice),
+          item_type: editItemType,
+          condition: editItemCondition,
+          city: editItemCity.trim() || null,
+          contact_info: editItemContact.trim() || null,
+          is_sold: editItemIsSold
+        })
+        .eq('id', editingMarketItem.id);
+
+      if (error) {
+        alert(isTr ? `Güncellenemedi: ${error.message}` : `Error: ${error.message}`);
+      } else {
+        setMarketItems((prev) =>
+          prev.map((i) =>
+            i.id === editingMarketItem.id
+              ? {
+                  ...i,
+                  title: editItemTitle.trim(),
+                  description: editItemDesc.trim(),
+                  price: parseFloat(editItemPrice),
+                  item_type: editItemType,
+                  condition: editItemCondition,
+                  city: editItemCity.trim() || null,
+                  contact_info: editItemContact.trim() || null,
+                  is_sold: editItemIsSold
+                }
+              : i
+          )
+        );
+        setEditingMarketItem(null);
+      }
+    } catch (err: any) {
+      alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
+    } finally {
+      setMarketSubmitting(false);
+    }
+  };
+
   // Marketplace Delete Handler (Admin or Owner)
   const handleDeleteMarketItem = async (itemId: string) => {
     if (!confirm(isTr ? 'Bu ilanı silmek istediğinize emin misiniz?' : 'Delete this item?')) return;
@@ -408,7 +505,6 @@ export default function CommunityClient({
       {/* ========================================================================= */}
       {activeTab === 'feed' && (
         <div className="space-y-6">
-          {/* Leaderboard Trophy Showcase */}
           {topTrophies.length > 0 && (
             <div className="bg-gradient-to-br from-[#0F172A] via-slate-900 to-slate-800 text-white rounded-3xl p-5 shadow-xl border border-slate-700/80 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
@@ -470,7 +566,6 @@ export default function CommunityClient({
             </div>
           )}
 
-          {/* Search & Filter Bar */}
           <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
             <div className="relative">
               <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
@@ -511,7 +606,6 @@ export default function CommunityClient({
             </div>
           </div>
 
-          {/* Catches List */}
           <div className="space-y-6">
             {filteredCatches.length === 0 ? (
               <div className="text-center py-16 bg-slate-50 rounded-3xl border border-dashed border-slate-200 text-slate-500 space-y-2">
@@ -567,7 +661,6 @@ export default function CommunityClient({
             </button>
           </div>
 
-          {/* Forum Category Filter Pills */}
           <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1">
             {['all', 'Soru-Cevap', 'Mera Bilgisi', 'Ekipman Tavsiyesi', 'Genel'].map((cat) => (
               <button
@@ -582,7 +675,6 @@ export default function CommunityClient({
             ))}
           </div>
 
-          {/* Forum Posts List */}
           <div className="space-y-4">
             {forumPosts.filter((p) => forumCategory === 'all' || p.category === forumCategory).length === 0 ? (
               <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200 text-slate-400 space-y-2">
@@ -630,7 +722,6 @@ export default function CommunityClient({
             </button>
           </div>
 
-          {/* Market Category Pills */}
           <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1">
             {['all', 'Kamış', 'Makine', 'Sahte Yem', 'Misina/Aksesuar', 'Set'].map((cat) => (
               <button
@@ -645,7 +736,6 @@ export default function CommunityClient({
             ))}
           </div>
 
-          {/* Marketplace List */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {marketItems.filter((i) => marketCategory === 'all' || i.item_type === marketCategory).length === 0 ? (
               <div className="col-span-full text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200 text-slate-400 space-y-2">
@@ -663,6 +753,8 @@ export default function CommunityClient({
                     currentUserProfile={currentUserProfile}
                     isAdmin={isAdmin}
                     isTr={isTr}
+                    onToggleSold={() => handleToggleMarketItemSold(item)}
+                    onEdit={() => openEditMarketItemModal(item)}
                     onDelete={() => handleDeleteMarketItem(item.id)}
                     onRequireAuth={() => router.push('/login')}
                   />
@@ -692,7 +784,6 @@ export default function CommunityClient({
             </button>
           </div>
 
-          {/* Tips Category Filter Pills */}
           <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-1">
             {['all', 'Düğüm & Bağlantı', 'Merada Av Taktikleri', 'Kamış & Makine Bakımı', 'Yem Aksiyonu'].map((cat) => (
               <button
@@ -707,7 +798,6 @@ export default function CommunityClient({
             ))}
           </div>
 
-          {/* Tips List */}
           <div className="space-y-4">
             {tips.filter((t) => tipsCategory === 'all' || t.category === tipsCategory).length === 0 ? (
               <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200 text-slate-400 space-y-2">
@@ -737,6 +827,80 @@ export default function CommunityClient({
       {/* ========================================================================= */}
       {/* MODALS                                                                   */}
       {/* ========================================================================= */}
+
+      {/* EDIT MARKET ITEM MODAL */}
+      <AnimatePresence>
+        {editingMarketItem && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 border border-slate-100 shadow-2xl">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 className="font-extrabold text-base text-[#0F172A]">{isTr ? 'İkinci El İlanını Düzenle' : 'Edit Listing'}</h3>
+                <button onClick={() => setEditingMarketItem(null)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleUpdateMarketItem} className="space-y-3 text-xs font-medium max-h-[70vh] overflow-y-auto pr-1">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Tür' : 'Type'}</label>
+                    <select value={editItemType} onChange={(e) => setEditItemType(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500">
+                      <option value="Kamış">Kamış</option>
+                      <option value="Makine">Makine</option>
+                      <option value="Sahte Yem">Sahte Yem</option>
+                      <option value="Misina/Aksesuar">Misina/Aksesuar</option>
+                      <option value="Set">Set</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Durumu' : 'Condition'}</label>
+                    <select value={editItemCondition} onChange={(e) => setEditItemCondition(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500">
+                      <option value="Sıfır">Sıfır</option>
+                      <option value="Çok İyi">Çok İyi</option>
+                      <option value="Az Kullanılmış">Az Kullanılmış</option>
+                      <option value="Yıpranmış">Yıpranmış</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Ürün Adı / Başlık' : 'Title'}</label>
+                  <input type="text" value={editItemTitle} onChange={(e) => setEditItemTitle(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500" required />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Fiyat (TL)' : 'Price'}</label>
+                    <input type="number" value={editItemPrice} onChange={(e) => setEditItemPrice(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500" required />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Şehir' : 'City'}</label>
+                    <input type="text" value={editItemCity} onChange={(e) => setEditItemCity(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'İletişim / Tel veya Instagram' : 'Contact Info'}</label>
+                  <input type="text" value={editItemContact} onChange={(e) => setEditItemContact(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500" />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Açıklama' : 'Description'}</label>
+                  <textarea rows={3} value={editItemDesc} onChange={(e) => setEditItemDesc(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 font-semibold focus:outline-none focus:border-emerald-500" required />
+                </div>
+
+                <div className="flex items-center space-x-2 pt-2 border-t border-slate-100">
+                  <input type="checkbox" id="is_sold_checkbox" checked={editItemIsSold} onChange={(e) => setEditItemIsSold(e.target.checked)} className="w-4 h-4 accent-rose-500 rounded" />
+                  <label htmlFor="is_sold_checkbox" className="text-xs font-bold text-slate-700">{isTr ? 'Ürün Satıldı Olarak İşaretlensin' : 'Mark as Sold'}</label>
+                </div>
+
+                <div className="pt-2 flex justify-end space-x-2">
+                  <button type="button" onClick={() => setEditingMarketItem(null)} className="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50">{isTr ? 'İptal' : 'Cancel'}</button>
+                  <button type="submit" disabled={marketSubmitting} className="px-5 py-2 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white font-bold shadow-sm">{marketSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (isTr ? 'Kaydet' : 'Save')}</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* FORUM MODAL */}
       <AnimatePresence>
@@ -1371,7 +1535,6 @@ function ForumPostItem({
         </div>
       )}
 
-      {/* Reply Toggle & Bar */}
       <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
         <button
           onClick={() => setShowReplies(!showReplies)}
@@ -1382,7 +1545,6 @@ function ForumPostItem({
         </button>
       </div>
 
-      {/* Reply Section */}
       <AnimatePresence>
         {showReplies && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-3 space-y-3 overflow-hidden">
@@ -1443,13 +1605,15 @@ function ForumPostItem({
   );
 }
 
-// MARKETPLACE ITEM CARD WITH COMMENTS/QUESTIONS (EKİPMAN PAZARI TAB)
+// MARKETPLACE ITEM CARD WITH COMMENTS/QUESTIONS & SOLD/EDIT CONTROLS (EKİPMAN PAZARI TAB)
 function MarketplaceItemCard({
   item,
   currentUser,
   currentUserProfile,
   isAdmin,
   isTr,
+  onToggleSold,
+  onEdit,
   onDelete,
   onRequireAuth
 }: {
@@ -1458,6 +1622,8 @@ function MarketplaceItemCard({
   currentUserProfile: any;
   isAdmin: boolean;
   isTr: boolean;
+  onToggleSold: () => void;
+  onEdit: () => void;
   onDelete: () => void;
   onRequireAuth: () => void;
 }) {
@@ -1559,7 +1725,11 @@ function MarketplaceItemCard({
   const isOwner = currentUser?.id === item.user_id;
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-all">
+    <div
+      className={`bg-white rounded-3xl border shadow-sm overflow-hidden flex flex-col justify-between transition-all ${
+        item.is_sold ? 'border-slate-200 bg-slate-50/70 opacity-85' : 'border-slate-200 hover:shadow-md'
+      }`}
+    >
       <div>
         {item.image_url ? (
           <div className="relative aspect-[4/3] bg-slate-100 w-full overflow-hidden">
@@ -1567,10 +1737,26 @@ function MarketplaceItemCard({
             <div className="absolute top-3 right-3 bg-[#0F172A] text-emerald-400 font-black text-xs px-3 py-1 rounded-xl shadow-md">
               {item.price} {item.currency || 'TL'}
             </div>
+            {item.is_sold ? (
+              <div className="absolute top-3 left-3 bg-rose-600 text-white font-black text-xs px-3 py-1 rounded-xl shadow-md uppercase tracking-wider">
+                SATILDI
+              </div>
+            ) : (
+              <div className="absolute top-3 left-3 bg-emerald-600 text-white font-black text-xs px-3 py-1 rounded-xl shadow-md uppercase tracking-wider">
+                YAYINDA
+              </div>
+            )}
           </div>
         ) : (
           <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500">{item.item_type}</span>
+            <div className="flex items-center space-x-2">
+              {item.is_sold ? (
+                <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md">SATILDI</span>
+              ) : (
+                <span className="bg-emerald-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md">YAYINDA</span>
+              )}
+              <span className="text-xs font-bold text-slate-500">{item.item_type}</span>
+            </div>
             <span className="text-sm font-black text-emerald-600">{item.price} TL</span>
           </div>
         )}
@@ -1581,9 +1767,14 @@ function MarketplaceItemCard({
             <div className="flex items-center space-x-2">
               {item.city && <span>📍 {item.city}</span>}
               {(isAdmin || isOwner) && (
-                <button onClick={onDelete} className="text-slate-400 hover:text-rose-600 p-1" title="İlanı Sil (Admin/Sahip)">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center space-x-1">
+                  <button onClick={onEdit} className="text-slate-400 hover:text-emerald-600 p-1" title="İlanı Düzenle">
+                    <Edit className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={onDelete} className="text-slate-400 hover:text-rose-600 p-1" title="İlanı Sil">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -1602,6 +1793,21 @@ function MarketplaceItemCard({
             </span>
           )}
         </div>
+
+        {/* Owner/Admin Quick Sold Toggle Button */}
+        {(isAdmin || isOwner) && (
+          <button
+            onClick={onToggleSold}
+            className={`w-full py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center justify-center space-x-1.5 ${
+              item.is_sold
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>{item.is_sold ? (isTr ? 'Tekrar Satışa Çıkar' : 'Mark Active') : (isTr ? 'Satıldı Olarak İşaretle' : 'Mark Sold')}</span>
+          </button>
+        )}
 
         {/* Comment/Question Toggle Button */}
         <button
@@ -1796,7 +2002,6 @@ function TipCardItem({
         </div>
       )}
 
-      {/* Tip Comment Section Toggle */}
       <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
         <button
           onClick={() => setShowComments(!showComments)}
@@ -1807,7 +2012,6 @@ function TipCardItem({
         </button>
       </div>
 
-      {/* Comments Drawer */}
       <AnimatePresence>
         {showComments && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="pt-2 space-y-2 overflow-hidden">
