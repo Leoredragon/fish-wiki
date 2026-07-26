@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Link, usePathname } from '@/i18n/routing';
 import { useLocale } from 'next-intl';
 import { Compass, BookOpen, MapPin, CloudSun, Users } from 'lucide-react';
@@ -8,6 +9,12 @@ export default function MobileBottomNav() {
   const locale = useLocale();
   const isTr = locale === 'tr';
   const pathname = usePathname();
+  const [clickedHref, setClickedHref] = useState<string | null>(null);
+
+  // Clear optimistic clicked item when route actually completes changing
+  useEffect(() => {
+    setClickedHref(null);
+  }, [pathname]);
 
   const navItems = [
     { href: '/', label: isTr ? 'Keşfet' : 'Explore', icon: Compass },
@@ -20,7 +27,7 @@ export default function MobileBottomNav() {
   return (
     <nav
       aria-label="Mobile Navigation"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-[99] bg-[#0F172A] border-t border-slate-800/90 px-1 py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom,0px))] shadow-md"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-[99] bg-[#0F172A] border-t border-slate-800/90 px-1 py-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom,0px))] shadow-md select-none"
       style={{
         position: 'fixed',
         bottom: '-2px',
@@ -39,18 +46,23 @@ export default function MobileBottomNav() {
       <div className="grid grid-cols-5 w-full items-center max-w-md mx-auto relative z-10 gap-0.5">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+          const isRouteActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+          const isClicked = clickedHref === item.href;
+          const isActive = isClicked || (clickedHref === null && isRouteActive);
+
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-colors text-center w-full ${
+              prefetch={true}
+              onClick={() => setClickedHref(item.href)}
+              className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all duration-100 text-center w-full active:scale-90 active:bg-emerald-500/20 ${
                 isActive
-                  ? 'text-emerald-400 bg-emerald-500/10 font-bold'
+                  ? 'text-emerald-400 bg-emerald-500/10 font-bold scale-100'
                   : 'text-slate-400 hover:text-slate-200 font-medium'
               }`}
             >
-              <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.25px]' : 'stroke-[1.75px]'}`} />
+              <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.25px] text-emerald-400' : 'stroke-[1.75px]'}`} />
               <span className="text-[10px] mt-1 tracking-tight whitespace-nowrap text-center">{item.label}</span>
             </Link>
           );
