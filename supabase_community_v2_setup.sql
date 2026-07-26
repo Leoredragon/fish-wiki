@@ -36,7 +36,6 @@ CREATE TABLE IF NOT EXISTS public.community_forum_replies (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Tablo önceden oluştutulduysa 'username' sütununu ekle
 ALTER TABLE public.community_forum_replies ADD COLUMN IF NOT EXISTS username TEXT;
 
 ALTER TABLE public.community_forum_replies ENABLE ROW LEVEL SECURITY;
@@ -91,7 +90,6 @@ CREATE TABLE IF NOT EXISTS public.community_marketplace_comments (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Tablo önceden oluştutulduysa 'username' sütununu ekle
 ALTER TABLE public.community_marketplace_comments ADD COLUMN IF NOT EXISTS username TEXT;
 
 ALTER TABLE public.community_marketplace_comments ENABLE ROW LEVEL SECURITY;
@@ -138,7 +136,6 @@ CREATE TABLE IF NOT EXISTS public.community_tip_comments (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Tablo önceden oluştutulduysa 'username' sütununu ekle
 ALTER TABLE public.community_tip_comments ADD COLUMN IF NOT EXISTS username TEXT;
 
 ALTER TABLE public.community_tip_comments ENABLE ROW LEVEL SECURITY;
@@ -150,6 +147,25 @@ CREATE POLICY "Users insert tip comment" ON public.community_tip_comments FOR IN
 
 DROP POLICY IF EXISTS "Users delete tip comment" ON public.community_tip_comments;
 CREATE POLICY "Users delete tip comment" ON public.community_tip_comments FOR DELETE USING (auth.uid() = user_id OR true);
+
+
+-- ====================================================================
+-- MEVCUT YANIT VE YORUMLARDAKİ 'mail' KULLANICI ADLARINI PROFİL BİLGİSİYLE GÜNCELLE
+-- ====================================================================
+UPDATE public.community_forum_replies r
+SET username = COALESCE(p.full_name, CASE WHEN p.username IS NOT NULL THEN '@' || p.username ELSE NULL END, r.username)
+FROM public.profiles p
+WHERE r.user_id = p.id AND (r.username = 'mail' OR r.username IS NULL OR r.username = 'mail@mail.com');
+
+UPDATE public.community_marketplace_comments c
+SET username = COALESCE(p.full_name, CASE WHEN p.username IS NOT NULL THEN '@' || p.username ELSE NULL END, c.username)
+FROM public.profiles p
+WHERE c.user_id = p.id AND (c.username = 'mail' OR c.username IS NULL OR c.username = 'mail@mail.com');
+
+UPDATE public.community_tip_comments c
+SET username = COALESCE(p.full_name, CASE WHEN p.username IS NOT NULL THEN '@' || p.username ELSE NULL END, c.username)
+FROM public.profiles p
+WHERE c.user_id = p.id AND (c.username = 'mail' OR c.username IS NULL OR c.username = 'mail@mail.com');
 
 -- Supabase Önbelleğini Yenile
 NOTIFY pgrst, 'reload schema';

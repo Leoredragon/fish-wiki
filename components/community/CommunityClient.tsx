@@ -55,6 +55,7 @@ export default function CommunityClient({
 
   const [activeTab, setActiveTab] = useState<'feed' | 'forum' | 'market' | 'tips'>('feed');
   const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const [currentUserProfile, setCurrentUserProfile] = useState<any | null>(null);
   const isAdmin = currentUser?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
   // Tab 1: Feed States
@@ -102,8 +103,16 @@ export default function CommunityClient({
   const [tipSubmitting, setTipSubmitting] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       setCurrentUser(user);
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username, full_name, avatar_url')
+          .eq('id', user.id)
+          .single();
+        if (profile) setCurrentUserProfile(profile);
+      }
     });
   }, []);
 
@@ -445,7 +454,7 @@ export default function CommunityClient({
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-1 text-xs font-bold text-white truncate">
-                        <span>{trophy.profiles?.username || 'Balıkçı'}</span>
+                        <span>{trophy.profiles?.full_name || (trophy.profiles?.username ? `@${trophy.profiles.username}` : 'Balıkçı')}</span>
                       </div>
                       <div className="flex items-center space-x-2 text-xs font-black text-emerald-400 mt-0.5">
                         {trophy.weight && <span>{trophy.weight} kg</span>}
@@ -514,6 +523,7 @@ export default function CommunityClient({
                   key={log.id}
                   log={log}
                   currentUser={currentUser}
+                  currentUserProfile={currentUserProfile}
                   isAdmin={isAdmin}
                   isTr={isTr}
                   onRequireAuth={() => router.push('/login')}
@@ -588,6 +598,7 @@ export default function CommunityClient({
                     key={post.id}
                     post={post}
                     currentUser={currentUser}
+                    currentUserProfile={currentUserProfile}
                     isAdmin={isAdmin}
                     isTr={isTr}
                     onDelete={() => handleDeleteForumPost(post.id)}
@@ -649,6 +660,7 @@ export default function CommunityClient({
                     key={item.id}
                     item={item}
                     currentUser={currentUser}
+                    currentUserProfile={currentUserProfile}
                     isAdmin={isAdmin}
                     isTr={isTr}
                     onDelete={() => handleDeleteMarketItem(item.id)}
@@ -710,6 +722,7 @@ export default function CommunityClient({
                     key={tip.id}
                     tip={tip}
                     currentUser={currentUser}
+                    currentUserProfile={currentUserProfile}
                     isAdmin={isAdmin}
                     isTr={isTr}
                     onDelete={() => handleDeleteTip(tip.id)}
@@ -917,7 +930,7 @@ export default function CommunityClient({
                   </div>
 
                   <div className="space-y-1">
-                    <h3 className="text-lg font-black text-[#0F172A]">{selectedAuthorModal.profile?.full_name || selectedAuthorModal.profile?.username || 'Oltapp Balıkçısı'}</h3>
+                    <h3 className="text-lg font-black text-[#0F172A]">{selectedAuthorModal.profile?.full_name || (selectedAuthorModal.profile?.username ? `@${selectedAuthorModal.profile.username}` : 'Oltapp Balıkçısı')}</h3>
                     {selectedAuthorModal.profile?.username && <p className="text-xs font-bold text-emerald-600">@{selectedAuthorModal.profile.username}</p>}
                     {selectedAuthorModal.profile?.city && (
                       <p className="text-xs text-slate-500 font-semibold flex items-center">
@@ -950,6 +963,7 @@ export default function CommunityClient({
 function CatchPostItem({
   log,
   currentUser,
+  currentUserProfile,
   isAdmin,
   isTr,
   onRequireAuth,
@@ -957,6 +971,7 @@ function CatchPostItem({
 }: {
   log: Record<string, any>;
   currentUser: any;
+  currentUserProfile: any;
   isAdmin: boolean;
   isTr: boolean;
   onRequireAuth: () => void;
@@ -988,8 +1003,19 @@ function CatchPostItem({
   };
 
   const fetchComments = async () => {
-    const { data } = await supabase.from('catch_comments').select('*').eq('catch_id', log.id).order('created_at', { ascending: true });
-    if (data) setComments(data);
+    try {
+      const { data } = await supabase
+        .from('catch_comments')
+        .select(`*, profiles(username, full_name, avatar_url)`)
+        .eq('catch_id', log.id)
+        .order('created_at', { ascending: true });
+      if (data) {
+        setComments(data);
+      } else {
+        const { data: raw } = await supabase.from('catch_comments').select('*').eq('catch_id', log.id).order('created_at', { ascending: true });
+        if (raw) setComments(raw);
+      }
+    } catch {}
   };
 
   const handleToggleLike = async () => {
@@ -1015,7 +1041,12 @@ function CatchPostItem({
     if (!newComment.trim()) return;
 
     setCommenting(true);
-    const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Üyesi';
+    const username = currentUserProfile?.full_name 
+      || (currentUserProfile?.username ? `@${currentUserProfile.username}` : null) 
+      || currentUser.user_metadata?.full_name 
+      || currentUser.user_metadata?.username 
+      || 'Oltapp Üyesi';
+
     const { data, error } = await supabase
       .from('catch_comments')
       .insert({
@@ -1024,12 +1055,27 @@ function CatchPostItem({
         username,
         comment: newComment.trim()
       })
-      .select()
+      .select(`*, profiles(username, full_name, avatar_url)`)
       .single();
 
     if (!error && data) {
       setComments((prev) => [...prev, data]);
       setNewComment('');
+    } else if (error) {
+      const fallbackRes = await supabase
+        .from('catch_comments')
+        .insert({
+          catch_id: log.id,
+          user_id: currentUser.id,
+          username,
+          comment: newComment.trim()
+        })
+        .select('*')
+        .single();
+      if (fallbackRes.data) {
+        setComments((prev) => [...prev, { ...fallbackRes.data, username, profiles: currentUserProfile }]);
+        setNewComment('');
+      }
     }
     setCommenting(false);
   };
@@ -1054,7 +1100,7 @@ function CatchPostItem({
           </div>
           <div>
             <div className="font-extrabold text-[#0F172A] text-sm group-hover:text-emerald-600 transition-colors flex items-center space-x-1.5">
-              <span>{log.profiles?.full_name || log.profiles?.username || 'Oltapp Balıkçısı'}</span>
+              <span>{log.profiles?.full_name || (log.profiles?.username ? `@${log.profiles.username}` : 'Oltapp Balıkçısı')}</span>
               {log.tackle_sets && (
                 <span className="bg-emerald-50 text-emerald-700 text-[10px] px-1.5 py-0.5 rounded-md border border-emerald-200 font-bold">
                   {log.tackle_sets.name}
@@ -1067,7 +1113,7 @@ function CatchPostItem({
           </div>
         </button>
 
-        <CatchCardExport log={log} profileName={log.profiles?.username || 'Oltapp User'} />
+        <CatchCardExport log={log} profileName={log.profiles?.full_name || (log.profiles?.username ? `@${log.profiles.username}` : 'Oltapp User')} />
       </div>
 
       {/* Image */}
@@ -1140,22 +1186,25 @@ function CatchPostItem({
               </form>
 
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                {comments.map((c) => (
-                  <div key={c.id} className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs flex justify-between items-start">
-                    <div className="space-y-1 flex-1">
-                      <div className="flex justify-between items-center">
-                        <span className="font-extrabold text-[#0F172A]">{c.username}</span>
-                        <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleDateString()}</span>
+                {comments.map((c) => {
+                  const authorName = c.profiles?.full_name || (c.profiles?.username ? `@${c.profiles.username}` : null) || c.username || 'Oltapp Üyesi';
+                  return (
+                    <div key={c.id} className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs flex justify-between items-start">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex justify-between items-center">
+                          <span className="font-extrabold text-[#0F172A]">{authorName}</span>
+                          <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-slate-600 font-medium">{c.comment}</p>
                       </div>
-                      <p className="text-slate-600 font-medium">{c.comment}</p>
+                      {(isAdmin || currentUser?.id === c.user_id) && (
+                        <button onClick={() => handleDeleteComment(c.id)} className="text-slate-400 hover:text-rose-600 ml-2">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
-                    {(isAdmin || currentUser?.id === c.user_id) && (
-                      <button onClick={() => handleDeleteComment(c.id)} className="text-slate-400 hover:text-rose-600 ml-2">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </motion.div>
           )}
@@ -1169,6 +1218,7 @@ function CatchPostItem({
 function ForumPostItem({
   post,
   currentUser,
+  currentUserProfile,
   isAdmin,
   isTr,
   onDelete,
@@ -1176,6 +1226,7 @@ function ForumPostItem({
 }: {
   post: Record<string, any>;
   currentUser: any;
+  currentUserProfile: any;
   isAdmin: boolean;
   isTr: boolean;
   onDelete: () => void;
@@ -1195,10 +1246,15 @@ function ForumPostItem({
     try {
       const { data } = await supabase
         .from('community_forum_replies')
-        .select('*')
+        .select(`*, profiles(username, full_name, avatar_url)`)
         .eq('post_id', post.id)
         .order('created_at', { ascending: true });
-      if (data) setReplies(data);
+      if (data) {
+        setReplies(data);
+      } else {
+        const { data: raw } = await supabase.from('community_forum_replies').select('*').eq('post_id', post.id).order('created_at', { ascending: true });
+        if (raw) setReplies(raw);
+      }
     } catch {}
   };
 
@@ -1209,7 +1265,12 @@ function ForumPostItem({
 
     setSubmittingReply(true);
     try {
-      const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Balıkçısı';
+      const username = currentUserProfile?.full_name 
+        || (currentUserProfile?.username ? `@${currentUserProfile.username}` : null) 
+        || currentUser.user_metadata?.full_name 
+        || currentUser.user_metadata?.username 
+        || 'Oltapp Balıkçısı';
+
       let payload: Record<string, any> = {
         post_id: post.id,
         user_id: currentUser.id,
@@ -1220,12 +1281,10 @@ function ForumPostItem({
       let { data, error } = await supabase
         .from('community_forum_replies')
         .insert(payload)
-        .select('*')
+        .select(`*, profiles(username, full_name, avatar_url)`)
         .single();
 
-      // Fallback: If username column is missing in older table, retry without username column!
-      if (error && (error.message?.includes('username') || error.code === 'PGRST204')) {
-        delete payload.username;
+      if (error) {
         const fallbackRes = await supabase
           .from('community_forum_replies')
           .insert(payload)
@@ -1235,13 +1294,24 @@ function ForumPostItem({
         error = fallbackRes.error;
       }
 
+      if (error && (error.message?.includes('username') || error.code === 'PGRST204')) {
+        delete payload.username;
+        const fallbackNoUserRes = await supabase
+          .from('community_forum_replies')
+          .insert(payload)
+          .select('*')
+          .single();
+        data = fallbackNoUserRes.data;
+        error = fallbackNoUserRes.error;
+      }
+
       if (error) {
         console.error('Reply error:', error);
         alert(isTr 
-          ? `Yanıt gönderilemedi: ${error.message}\n\nLütfen Supabase SQL Editor'da 'supabase_community_v2_setup.sql' dosyasını çalıştırın.` 
+          ? `Yanıt gönderilemedi: ${error.message}` 
           : `Failed to reply: ${error.message}`);
       } else if (data) {
-        setReplies((prev) => [...prev, { ...data, username: data.username || username }]);
+        setReplies((prev) => [...prev, { ...data, username: data.username || username, profiles: data.profiles || currentUserProfile }]);
         setNewReply('');
       }
     } catch (err: any) {
@@ -1272,7 +1342,7 @@ function ForumPostItem({
           </div>
           <div>
             <div className="text-xs font-extrabold text-[#0F172A] flex items-center space-x-1.5">
-              <span>{post.profiles?.full_name || post.profiles?.username || 'Balıkçı'}</span>
+              <span>{post.profiles?.full_name || (post.profiles?.username ? `@${post.profiles.username}` : 'Balıkçı')}</span>
             </div>
             <div className="text-[10px] text-slate-400">{new Date(post.created_at).toLocaleDateString()}</div>
           </div>
@@ -1339,24 +1409,31 @@ function ForumPostItem({
               {replies.length === 0 ? (
                 <p className="text-[11px] text-slate-400 italic">Henüz cevap yazılmamış. İlk cevabı siz verin!</p>
               ) : (
-                replies.map((reply) => (
-                  <div key={reply.id} className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs space-y-1">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-1.5 font-extrabold text-[#0F172A]">
-                        <span>{reply.username || reply.profiles?.username || 'Balıkçı'}</span>
+                replies.map((reply) => {
+                  const replyAuthorName = reply.profiles?.full_name 
+                    || (reply.profiles?.username ? `@${reply.profiles.username}` : null) 
+                    || reply.username 
+                    || 'Balıkçı';
+
+                  return (
+                    <div key={reply.id} className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs space-y-1">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-1.5 font-extrabold text-[#0F172A]">
+                          <span>{replyAuthorName}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[10px] text-slate-400">{new Date(reply.created_at).toLocaleDateString()}</span>
+                          {(isAdmin || currentUser?.id === reply.user_id) && (
+                            <button onClick={() => handleDeleteReply(reply.id)} className="text-slate-400 hover:text-rose-600">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-[10px] text-slate-400">{new Date(reply.created_at).toLocaleDateString()}</span>
-                        {(isAdmin || currentUser?.id === reply.user_id) && (
-                          <button onClick={() => handleDeleteReply(reply.id)} className="text-slate-400 hover:text-rose-600">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
+                      <p className="text-slate-600 font-medium whitespace-pre-line">{reply.content}</p>
                     </div>
-                    <p className="text-slate-600 font-medium whitespace-pre-line">{reply.content}</p>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </motion.div>
@@ -1370,6 +1447,7 @@ function ForumPostItem({
 function MarketplaceItemCard({
   item,
   currentUser,
+  currentUserProfile,
   isAdmin,
   isTr,
   onDelete,
@@ -1377,6 +1455,7 @@ function MarketplaceItemCard({
 }: {
   item: Record<string, any>;
   currentUser: any;
+  currentUserProfile: any;
   isAdmin: boolean;
   isTr: boolean;
   onDelete: () => void;
@@ -1394,8 +1473,17 @@ function MarketplaceItemCard({
 
   const fetchComments = async () => {
     try {
-      const { data } = await supabase.from('community_marketplace_comments').select('*').eq('item_id', item.id).order('created_at', { ascending: true });
-      if (data) setComments(data);
+      const { data } = await supabase
+        .from('community_marketplace_comments')
+        .select(`*, profiles(username, full_name, avatar_url)`)
+        .eq('item_id', item.id)
+        .order('created_at', { ascending: true });
+      if (data) {
+        setComments(data);
+      } else {
+        const { data: raw } = await supabase.from('community_marketplace_comments').select('*').eq('item_id', item.id).order('created_at', { ascending: true });
+        if (raw) setComments(raw);
+      }
     } catch {}
   };
 
@@ -1406,7 +1494,12 @@ function MarketplaceItemCard({
 
     setSubmittingComment(true);
     try {
-      const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Balıkçısı';
+      const username = currentUserProfile?.full_name 
+        || (currentUserProfile?.username ? `@${currentUserProfile.username}` : null) 
+        || currentUser.user_metadata?.full_name 
+        || currentUser.user_metadata?.username 
+        || 'Oltapp Balıkçısı';
+
       let payload: Record<string, any> = {
         item_id: item.id,
         user_id: currentUser.id,
@@ -1417,11 +1510,10 @@ function MarketplaceItemCard({
       let { data, error } = await supabase
         .from('community_marketplace_comments')
         .insert(payload)
-        .select('*')
+        .select(`*, profiles(username, full_name, avatar_url)`)
         .single();
 
-      if (error && (error.message?.includes('username') || error.code === 'PGRST204')) {
-        delete payload.username;
+      if (error) {
         const fallbackRes = await supabase
           .from('community_marketplace_comments')
           .insert(payload)
@@ -1431,13 +1523,24 @@ function MarketplaceItemCard({
         error = fallbackRes.error;
       }
 
+      if (error && (error.message?.includes('username') || error.code === 'PGRST204')) {
+        delete payload.username;
+        const fallbackNoUserRes = await supabase
+          .from('community_marketplace_comments')
+          .insert(payload)
+          .select('*')
+          .single();
+        data = fallbackNoUserRes.data;
+        error = fallbackNoUserRes.error;
+      }
+
       if (error) {
         console.error('Market comment error:', error);
         alert(isTr 
-          ? `Yorum eklenemedi: ${error.message}\n\nLütfen Supabase SQL Editor'da 'supabase_community_v2_setup.sql' dosyasını çalıştırın.` 
+          ? `Yorum eklenemedi: ${error.message}` 
           : `Failed to post comment: ${error.message}`);
       } else if (data) {
-        setComments((prev) => [...prev, { ...data, username: data.username || username }]);
+        setComments((prev) => [...prev, { ...data, username: data.username || username, profiles: data.profiles || currentUserProfile }]);
         setNewComment('');
       }
     } catch (err: any) {
@@ -1491,7 +1594,7 @@ function MarketplaceItemCard({
 
       <div className="p-4 pt-0 space-y-3 border-t border-slate-100 mt-2">
         <div className="flex items-center justify-between text-xs font-semibold text-slate-500 pt-2">
-          <span className="font-bold text-[#0F172A]">@{item.profiles?.username || 'Satıcı'}</span>
+          <span className="font-bold text-[#0F172A]">{item.profiles?.full_name || (item.profiles?.username ? `@${item.profiles.username}` : 'Satıcı')}</span>
           {item.contact_info && (
             <span className="text-emerald-600 font-bold flex items-center space-x-1">
               <PhoneCall className="w-3 h-3" />
@@ -1528,19 +1631,22 @@ function MarketplaceItemCard({
               </form>
 
               <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                {comments.map((c) => (
-                  <div key={c.id} className="bg-slate-50 p-2 rounded-xl border border-slate-100 text-xs flex justify-between items-start">
-                    <div className="space-y-0.5 flex-1">
-                      <span className="font-extrabold text-[#0F172A]">{c.username}</span>
-                      <p className="text-slate-600 font-medium">{c.comment}</p>
+                {comments.map((c) => {
+                  const authorName = c.profiles?.full_name || (c.profiles?.username ? `@${c.profiles.username}` : null) || c.username || 'Oltapp Üyesi';
+                  return (
+                    <div key={c.id} className="bg-slate-50 p-2 rounded-xl border border-slate-100 text-xs flex justify-between items-start">
+                      <div className="space-y-0.5 flex-1">
+                        <span className="font-extrabold text-[#0F172A]">{authorName}</span>
+                        <p className="text-slate-600 font-medium">{c.comment}</p>
+                      </div>
+                      {(isAdmin || currentUser?.id === c.user_id) && (
+                        <button onClick={() => handleDeleteComment(c.id)} className="text-slate-400 hover:text-rose-600 ml-1">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
-                    {(isAdmin || currentUser?.id === c.user_id) && (
-                      <button onClick={() => handleDeleteComment(c.id)} className="text-slate-400 hover:text-rose-600 ml-1">
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </motion.div>
           )}
@@ -1554,6 +1660,7 @@ function MarketplaceItemCard({
 function TipCardItem({
   tip,
   currentUser,
+  currentUserProfile,
   isAdmin,
   isTr,
   onDelete,
@@ -1561,6 +1668,7 @@ function TipCardItem({
 }: {
   tip: Record<string, any>;
   currentUser: any;
+  currentUserProfile: any;
   isAdmin: boolean;
   isTr: boolean;
   onDelete: () => void;
@@ -1578,8 +1686,17 @@ function TipCardItem({
 
   const fetchComments = async () => {
     try {
-      const { data } = await supabase.from('community_tip_comments').select('*').eq('tip_id', tip.id).order('created_at', { ascending: true });
-      if (data) setComments(data);
+      const { data } = await supabase
+        .from('community_tip_comments')
+        .select(`*, profiles(username, full_name, avatar_url)`)
+        .eq('tip_id', tip.id)
+        .order('created_at', { ascending: true });
+      if (data) {
+        setComments(data);
+      } else {
+        const { data: raw } = await supabase.from('community_tip_comments').select('*').eq('tip_id', tip.id).order('created_at', { ascending: true });
+        if (raw) setComments(raw);
+      }
     } catch {}
   };
 
@@ -1590,7 +1707,12 @@ function TipCardItem({
 
     setSubmittingComment(true);
     try {
-      const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Oltapp Balıkçısı';
+      const username = currentUserProfile?.full_name 
+        || (currentUserProfile?.username ? `@${currentUserProfile.username}` : null) 
+        || currentUser.user_metadata?.full_name 
+        || currentUser.user_metadata?.username 
+        || 'Oltapp Balıkçısı';
+
       let payload: Record<string, any> = {
         tip_id: tip.id,
         user_id: currentUser.id,
@@ -1601,11 +1723,10 @@ function TipCardItem({
       let { data, error } = await supabase
         .from('community_tip_comments')
         .insert(payload)
-        .select('*')
+        .select(`*, profiles(username, full_name, avatar_url)`)
         .single();
 
-      if (error && (error.message?.includes('username') || error.code === 'PGRST204')) {
-        delete payload.username;
+      if (error) {
         const fallbackRes = await supabase
           .from('community_tip_comments')
           .insert(payload)
@@ -1615,13 +1736,24 @@ function TipCardItem({
         error = fallbackRes.error;
       }
 
+      if (error && (error.message?.includes('username') || error.code === 'PGRST204')) {
+        delete payload.username;
+        const fallbackNoUserRes = await supabase
+          .from('community_tip_comments')
+          .insert(payload)
+          .select('*')
+          .single();
+        data = fallbackNoUserRes.data;
+        error = fallbackNoUserRes.error;
+      }
+
       if (error) {
         console.error('Tip comment error:', error);
         alert(isTr 
-          ? `Yorum eklenemedi: ${error.message}\n\nLütfen Supabase SQL Editor'da 'supabase_community_v2_setup.sql' dosyasını çalıştırın.` 
+          ? `Yorum eklenemedi: ${error.message}` 
           : `Failed to post comment: ${error.message}`);
       } else if (data) {
-        setComments((prev) => [...prev, { ...data, username: data.username || username }]);
+        setComments((prev) => [...prev, { ...data, username: data.username || username, profiles: data.profiles || currentUserProfile }]);
         setNewComment('');
       }
     } catch (err: any) {
@@ -1646,7 +1778,7 @@ function TipCardItem({
           {tip.category}
         </span>
         <div className="flex items-center space-x-2">
-          <span className="text-[11px] text-slate-400 font-medium">@{tip.profiles?.username || 'Balıkçı'}</span>
+          <span className="text-[11px] text-slate-400 font-medium">{tip.profiles?.full_name || (tip.profiles?.username ? `@${tip.profiles.username}` : 'Balıkçı')}</span>
           {(isAdmin || isOwner) && (
             <button onClick={onDelete} className="p-1 text-slate-400 hover:text-rose-600 transition-colors" title="Püf Noktasını Sil (Admin/Sahip)">
               <Trash2 className="w-3.5 h-3.5" />
@@ -1694,19 +1826,22 @@ function TipCardItem({
             </form>
 
             <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-              {comments.map((c) => (
-                <div key={c.id} className="bg-slate-50 p-2.5 rounded-2xl border border-slate-100 text-xs flex justify-between items-start">
-                  <div className="space-y-0.5 flex-1">
-                    <span className="font-extrabold text-[#0F172A]">{c.username}</span>
-                    <p className="text-slate-600 font-medium">{c.comment}</p>
+              {comments.map((c) => {
+                const authorName = c.profiles?.full_name || (c.profiles?.username ? `@${c.profiles.username}` : null) || c.username || 'Oltapp Üyesi';
+                return (
+                  <div key={c.id} className="bg-slate-50 p-2.5 rounded-2xl border border-slate-100 text-xs flex justify-between items-start">
+                    <div className="space-y-0.5 flex-1">
+                      <span className="font-extrabold text-[#0F172A]">{authorName}</span>
+                      <p className="text-slate-600 font-medium">{c.comment}</p>
+                    </div>
+                    {(isAdmin || currentUser?.id === c.user_id) && (
+                      <button onClick={() => handleDeleteComment(c.id)} className="text-slate-400 hover:text-rose-600 ml-1">
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
-                  {(isAdmin || currentUser?.id === c.user_id) && (
-                    <button onClick={() => handleDeleteComment(c.id)} className="text-slate-400 hover:text-rose-600 ml-1">
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </motion.div>
         )}
