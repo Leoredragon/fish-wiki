@@ -159,6 +159,17 @@ export default function CommunityClient({
         imageUrl = data?.publicUrl || null;
       }
 
+      const authorFullName = currentUserProfile?.full_name 
+        || currentUser.user_metadata?.full_name;
+      const authorUsername = currentUserProfile?.username 
+        || currentUser.user_metadata?.username;
+      const authorAvatar = currentUserProfile?.avatar_url 
+        || currentUser.user_metadata?.avatar_url;
+
+      const displayAuthorName = authorFullName 
+        || (authorUsername ? `@${authorUsername}` : null) 
+        || (currentUser.email ? `@${currentUser.email.split('@')[0]}` : 'Balıkçı');
+
       const newStory = {
         id: `story-${Date.now()}`,
         user_id: currentUser.id,
@@ -166,9 +177,9 @@ export default function CommunityClient({
         caption: storyCaption.trim() || undefined,
         created_at: new Date().toISOString(),
         profiles: {
-          username: currentUser.user_metadata?.username,
-          full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Balıkçı',
-          avatar_url: currentUser.user_metadata?.avatar_url
+          username: authorUsername || displayAuthorName,
+          full_name: displayAuthorName,
+          avatar_url: authorAvatar
         }
       };
 
