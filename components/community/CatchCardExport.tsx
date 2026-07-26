@@ -5,7 +5,7 @@ import { useLocale } from 'next-intl';
 import { Share2, Scale, Ruler, MapPin, Package, X, Loader2 } from 'lucide-react';
 import * as htmlToImage from 'html-to-image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { triggerHapticLight, triggerHapticMedium } from '@/lib/capacitorUtils';
+import { triggerHapticLight, triggerHapticMedium, shareImageNative } from '@/lib/capacitorUtils';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 
@@ -19,13 +19,14 @@ export default function CatchCardExport({ log, profileName }: { log: any; profil
   const generateCardImage = async () => {
     if (!cardRef.current) return null;
     try {
+      console.log('[CatchCardExport] Starting htmlToImage.toPng...');
       return await htmlToImage.toPng(cardRef.current, {
         quality: 0.95,
         pixelRatio: 2,
         cacheBust: true,
       });
     } catch (err) {
-      console.error('Error generating card image', err);
+      console.error('[CatchCardExport ERROR] htmlToImage failed:', err);
       return null;
     }
   };
@@ -38,35 +39,37 @@ export default function CatchCardExport({ log, profileName }: { log: any; profil
   const handleShareToSocial = async () => {
     triggerHapticMedium();
     setSharing(true);
+    console.log('[CatchCardExport] handleShareToSocial triggered');
     try {
-      // 1. Generate PNG Card Image
       const dataUrl = await generateCardImage();
-      const shareUrl = typeof window !== 'undefined' ? window.location.href : 'https://oltaapp.com';
+      console.log('[CatchCardExport] PNG dataUrl length:', dataUrl ? dataUrl.length : 0);
 
-      // 2. Open Android Native Share Sheet listing WhatsApp, Facebook, Instagram...
+      if (!dataUrl) {
+        console.error('[CatchCardExport ERROR] PNG dataUrl is null/empty');
+        alert(isTr ? 'Görsel üretilemedi.' : 'Image generation failed.');
+        return;
+      }
+
       if (Capacitor.isNativePlatform()) {
-        await Share.share({
-          title: `${log.location_note || 'Balık Avı'} - oltaApp`,
-          text: `${profileName} oltaApp'te av kaydı paylaştı! 🎣`,
-          url: dataUrl || shareUrl,
-          dialogTitle: 'Sosyal Medyada Paylaş (WhatsApp, Instagram, Facebook...)'
-        });
+        console.log('[CatchCardExport] Calling shareImageNative for Capacitor...');
+        const ok = await shareImageNative(dataUrl, `${log.location_note || 'Balık Avı'} - oltaApp`);
+        console.log('[CatchCardExport] shareImageNative returned:', ok);
       } else if (typeof navigator !== 'undefined' && navigator.share) {
-        // Web Share API
         await navigator.share({
           title: 'oltaApp Av Kartı',
           text: `${profileName} oltaApp'te av kaydı paylaştı!`,
-          url: shareUrl
+          url: typeof window !== 'undefined' ? window.location.href : 'https://oltaapp.com'
         });
       } else {
-        // Fallback: Copy link
-        if (navigator.clipboard) {
-          await navigator.clipboard.writeText(`${profileName} oltaApp'te av kaydı paylaştı: ${shareUrl}`);
-          alert(isTr ? 'Av kaydı bağlantısı kopyalandı!' : 'Link copied!');
-        }
+        const link = document.createElement('a');
+        link.download = `oltapp_catch_${log.id || Date.now()}.png`;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       }
-    } catch (err) {
-      console.error('Error sharing catch card', err);
+    } catch (err: any) {
+      console.error('[CatchCardExport ERROR] handleShareToSocial exception:', err);
     } finally {
       setSharing(false);
     }

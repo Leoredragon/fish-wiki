@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { Share } from '@capacitor/share';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 
 export const isNativeApp = () => Capacitor.isNativePlatform();
 
@@ -14,7 +15,7 @@ export const triggerHapticLight = async () => {
   if (!isNativeApp()) return;
   try {
     await Haptics.impact({ style: ImpactStyle.Light });
-  } catch (e) {
+  } catch {
     try { await Haptics.vibrate({ duration: 35 }); } catch {}
   }
 };
@@ -29,7 +30,7 @@ export const triggerHapticMedium = async () => {
   if (!isNativeApp()) return;
   try {
     await Haptics.impact({ style: ImpactStyle.Medium });
-  } catch (e) {
+  } catch {
     try { await Haptics.vibrate({ duration: 60 }); } catch {}
   }
 };
@@ -44,17 +45,60 @@ export const triggerHapticSuccess = async () => {
   if (!isNativeApp()) return;
   try {
     await Haptics.notification({ type: NotificationType.Success });
-  } catch (e) {
+  } catch {
     try { await Haptics.vibrate({ duration: 80 }); } catch {}
   }
 };
 
 /**
- * Native Android Share Sheet with fallback for web
+ * Native Android Share Sheet for Image Files (PNG/JPEG)
+ */
+export const shareImageNative = async (base64DataUrl: string, title: string) => {
+  console.log('[oltaApp Share] 1. shareImageNative triggered with title:', title);
+
+  if (!isNativeApp()) {
+    console.log('[oltaApp Share] Not native app');
+    return false;
+  }
+
+  try {
+    console.log('[oltaApp Share] 2. Extracting base64 image data...');
+    const fileName = `oltaapp_catch_${Date.now()}.png`;
+    const cleanBase64 = base64DataUrl.includes(',') ? base64DataUrl.split(',')[1] : base64DataUrl;
+
+    console.log('[oltaApp Share] 3. Writing PNG to Filesystem Directory.Cache...');
+    const savedFile = await Filesystem.writeFile({
+      path: fileName,
+      data: cleanBase64,
+      directory: Directory.Cache
+    });
+
+    console.log('[oltaApp Share] 4. File saved at URI:', savedFile.uri);
+
+    console.log('[oltaApp Share] 5. Calling Share.share with file URI...');
+    const result = await Share.share({
+      title: title,
+      text: 'oltaApp ile kaydedilen av kartı 🎣',
+      url: savedFile.uri,
+      dialogTitle: 'Av Kartını Paylaş (WhatsApp, Instagram...)'
+    });
+
+    console.log('[oltaApp Share] 6. Share result:', result);
+    return true;
+  } catch (err: any) {
+    console.error('[oltaApp Share ERROR] Failed during native image share:', err?.message || err);
+    return false;
+  }
+};
+
+/**
+ * Native Android Share Sheet with fallback for text/urls
  */
 export const nativeShare = async (options: { title: string; text?: string; url?: string }) => {
   const shareUrl = options.url || (typeof window !== 'undefined' ? window.location.href : 'https://oltaapp.com');
   const shareText = options.text ? `${options.text}\n${shareUrl}` : `oltaApp'te bu içeriğe göz at: ${shareUrl}`;
+
+  console.log('[oltaApp Share] Text/URL share triggered:', options.title);
 
   if (isNativeApp()) {
     try {
@@ -66,11 +110,11 @@ export const nativeShare = async (options: { title: string; text?: string; url?:
       });
       return true;
     } catch (e) {
-      console.debug('Native Share error:', e);
+      console.error('[oltaApp Share ERROR] Text share failed:', e);
     }
   }
 
-  // Web Fallback (Desktop / Web Browser)
+  // Web Fallback
   if (typeof navigator !== 'undefined' && navigator.share) {
     try {
       await navigator.share({
@@ -80,17 +124,16 @@ export const nativeShare = async (options: { title: string; text?: string; url?:
       });
       return true;
     } catch {
-      // Ignore user abort
+      // User cancelled
     }
   }
 
-  // Clipboard fallback
   if (typeof navigator !== 'undefined' && navigator.clipboard) {
     try {
       await navigator.clipboard.writeText(`${shareText}`);
       return true;
     } catch (e) {
-      console.debug('Clipboard write error:', e);
+      console.error('[oltaApp Share ERROR] Clipboard write failed:', e);
     }
   }
 
