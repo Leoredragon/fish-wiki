@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocale } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -566,37 +566,39 @@ export default function WikiClient({ initialArticles = [] }: { initialArticles?:
 
   const currentSubCategories = subCategoriesMap[selectedCategory] || [];
 
-  const filteredArticles = articles.filter((item) => {
-    const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
-    const matchesWater = selectedWaterType === 'all' || item.water_type === 'Tüm Sular' || item.water_type === selectedWaterType;
-    const matchesSearch =
-      (item.title_tr || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.short_desc_tr || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.content_tr || '').toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredArticles = useMemo(() => {
+    return articles.filter((item) => {
+      const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+      const matchesWater = selectedWaterType === 'all' || item.water_type === 'Tüm Sular' || item.water_type === selectedWaterType;
+      const matchesSearch =
+        (item.title_tr || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.short_desc_tr || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.content_tr || '').toLowerCase().includes(searchQuery.toLowerCase());
 
-    const titleLower = (item.title_tr || '').toLowerCase();
-    const matchesSub =
-      selectedSubCategory === 'all' ||
-      item.sub_category === selectedSubCategory ||
-      (selectedSubCategory === 'rod' && titleLower.includes('kamış')) ||
-      (selectedSubCategory === 'reel' && titleLower.includes('makine')) ||
-      (selectedSubCategory === 'braid' && (titleLower.includes('ip') || titleLower.includes('örgü'))) ||
-      (selectedSubCategory === 'fluorocarbon' && titleLower.includes('fluorocarbon')) ||
-      (selectedSubCategory === 'monofilament' && (titleLower.includes('mono') || titleLower.includes('naylon'))) ||
-      (selectedSubCategory === 'leader' && titleLower.includes('lider')) ||
-      (selectedSubCategory === 'minnow' && titleLower.includes('minnow')) ||
-      (selectedSubCategory === 'surface' && (titleLower.includes('popper') || titleLower.includes('su üstü') || titleLower.includes('wtd'))) ||
-      (selectedSubCategory === 'silicone' && (titleLower.includes('silikon') || titleLower.includes('jighead'))) ||
-      (selectedSubCategory === 'spoon' && (titleLower.includes('kaşık') || titleLower.includes('jig'))) ||
-      (selectedSubCategory === 'egi' && (titleLower.includes('egi') || titleLower.includes('kalamar'))) ||
-      (selectedSubCategory === 'vibration' && titleLower.includes('vibrasyon')) ||
-      (selectedSubCategory === 'carp_rig' && item.category === 'rigs' && (item.water_type === 'Tatlı Su' || titleLower.includes('rig'))) ||
-      (selectedSubCategory === 'sea_rig' && item.category === 'rigs' && item.water_type !== 'Tatlı Su') ||
-      (selectedSubCategory === 'line_join' && item.category === 'knots' && (titleLower.includes('fg') || titleLower.includes('alberto'))) ||
-      (selectedSubCategory === 'terminal' && item.category === 'knots' && (titleLower.includes('palomar') || titleLower.includes('clinch')));
+      const titleLower = (item.title_tr || '').toLowerCase();
+      const matchesSub =
+        selectedSubCategory === 'all' ||
+        item.sub_category === selectedSubCategory ||
+        (selectedSubCategory === 'rod' && titleLower.includes('kamış')) ||
+        (selectedSubCategory === 'reel' && titleLower.includes('makine')) ||
+        (selectedSubCategory === 'braid' && (titleLower.includes('ip') || titleLower.includes('örgü'))) ||
+        (selectedSubCategory === 'fluorocarbon' && titleLower.includes('fluorocarbon')) ||
+        (selectedSubCategory === 'monofilament' && (titleLower.includes('mono') || titleLower.includes('naylon'))) ||
+        (selectedSubCategory === 'leader' && titleLower.includes('lider')) ||
+        (selectedSubCategory === 'minnow' && titleLower.includes('minnow')) ||
+        (selectedSubCategory === 'surface' && (titleLower.includes('popper') || titleLower.includes('su üstü') || titleLower.includes('wtd'))) ||
+        (selectedSubCategory === 'silicone' && (titleLower.includes('silikon') || titleLower.includes('jighead'))) ||
+        (selectedSubCategory === 'spoon' && (titleLower.includes('kaşık') || titleLower.includes('jig'))) ||
+        (selectedSubCategory === 'egi' && (titleLower.includes('egi') || titleLower.includes('kalamar'))) ||
+        (selectedSubCategory === 'vibration' && titleLower.includes('vibrasyon')) ||
+        (selectedSubCategory === 'carp_rig' && item.category === 'rigs' && (item.water_type === 'Tatlı Su' || titleLower.includes('rig'))) ||
+        (selectedSubCategory === 'sea_rig' && item.category === 'rigs' && item.water_type !== 'Tatlı Su') ||
+        (selectedSubCategory === 'line_join' && item.category === 'knots' && (titleLower.includes('fg') || titleLower.includes('alberto'))) ||
+        (selectedSubCategory === 'terminal' && item.category === 'knots' && (titleLower.includes('palomar') || titleLower.includes('clinch')));
 
-    return matchesCategory && matchesSub && matchesWater && matchesSearch;
-  });
+      return matchesCategory && matchesSub && matchesWater && matchesSearch;
+    });
+  }, [articles, selectedCategory, selectedSubCategory, selectedWaterType, searchQuery]);
 
   const getCategoryLabel = (catId: string) => {
     const found = categories.find((c) => c.id === catId);
@@ -608,7 +610,7 @@ export default function WikiClient({ initialArticles = [] }: { initialArticles?:
       {/* Hero Header Banner (Matching Homepage Layout & Search) */}
       <div className="relative overflow-hidden bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0F172A] rounded-3xl p-5 sm:p-8 text-white shadow-xl border border-slate-800 space-y-4">
         {/* Background glow */}
-        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 -mt-12 -mr-12 w-80 h-80 bg-emerald-500/10 rounded-full pointer-events-none" />
 
         <div className="relative z-10 max-w-3xl space-y-2">
           <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight text-white">
@@ -631,7 +633,7 @@ export default function WikiClient({ initialArticles = [] }: { initialArticles?:
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={isTr ? 'Wiki rehberlerinde ara (Örn: LRF, Spin Kamış, Surfcast, FG Knot...)' : 'Search wiki guides...'}
-              className="w-full pl-10 pr-10 py-3.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent transition-all shadow-xl"
+              className="w-full pl-10 pr-10 py-3.5 bg-slate-800/80 border border-slate-700 rounded-2xl text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#10B981] focus:border-transparent transition-all shadow-xl"
             />
             {searchQuery && (
               <button
@@ -713,7 +715,7 @@ export default function WikiClient({ initialArticles = [] }: { initialArticles?:
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-6">
-          {filteredArticles.map((article, idx) => (
+          {filteredArticles.map((article: any, idx: number) => (
             <div
               key={article.id || idx}
               onClick={() => setActiveArticle(article)}
