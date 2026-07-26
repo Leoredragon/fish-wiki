@@ -63,6 +63,10 @@ export default function CommunityClient({
   const isAdmin = currentUser?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
   // Tab 1: Feed States
+  const [catchesList, setCatchesList] = useState<any[]>(catches);
+  useEffect(() => {
+    setCatchesList(catches);
+  }, [catches]);
   const [visibleCount, setVisibleCount] = useState<number>(10);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'trophy'>('all');
@@ -116,6 +120,81 @@ export default function CommunityClient({
   const [tipContent, setTipContent] = useState('');
   const [tipImageFile, setTipImageFile] = useState<File | null>(null);
   const [tipSubmitting, setTipSubmitting] = useState(false);
+
+  // Add Catch Modal State in Community Feed
+  const [isAddCatchModalOpen, setIsAddCatchModalOpen] = useState(false);
+  const [catchImageFile, setCatchImageFile] = useState<File | null>(null);
+  const [catchWeight, setCatchWeight] = useState('');
+  const [catchLength, setCatchLength] = useState('');
+  const [catchLureUsed, setCatchLureUsed] = useState('');
+  const [catchLocationNote, setCatchLocationNote] = useState('');
+  const [catchSubmitting, setCatchSubmitting] = useState(false);
+
+  const handleAddCommunityCatch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return router.push('/login');
+    if (!catchImageFile) return alert(isTr ? 'Lütfen bir av fotoğrafı seçin.' : 'Please select a catch photo.');
+    if (!catchLocationNote.trim()) return alert(isTr ? 'Lütfen mera / konum notu girin.' : 'Please enter location note.');
+
+    setCatchSubmitting(true);
+    try {
+      const compressed = await compressImageToWebP(catchImageFile, 1200, 0.85);
+      const filePath = `catches/${currentUser.id}_${Date.now()}.webp`;
+      const { error: uploadError } = await supabase.storage.from('user_uploads').upload(filePath, compressed, { contentType: 'image/webp', cacheControl: '31536000' });
+
+      let imageUrl = null;
+      if (!uploadError) {
+        const { data } = supabase.storage.from('user_uploads').getPublicUrl(filePath);
+        imageUrl = data?.publicUrl || null;
+      }
+
+      const authorFullName = currentUserProfile?.full_name || currentUser.user_metadata?.full_name;
+      const authorUsername = currentUserProfile?.username || currentUser.user_metadata?.username;
+      const authorAvatar = currentUserProfile?.avatar_url || currentUser.user_metadata?.avatar_url;
+
+      const catchId = `catch-${Date.now()}`;
+      const newCatch = {
+        id: catchId,
+        user_id: currentUser.id,
+        image_url: imageUrl || 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
+        weight: parseFloat(catchWeight) || undefined,
+        length: parseFloat(catchLength) || undefined,
+        location_note: catchLocationNote.trim(),
+        lure_used: catchLureUsed.trim() || undefined,
+        created_at: new Date().toISOString(),
+        profiles: {
+          username: authorUsername || (authorFullName ? `@${authorFullName}` : 'Balıkçı'),
+          full_name: authorFullName || (authorUsername ? `@${authorUsername}` : 'Balıkçı'),
+          avatar_url: authorAvatar
+        }
+      };
+
+      try {
+        await supabase.from('catches').insert({
+          id: catchId,
+          user_id: currentUser.id,
+          image_url: newCatch.image_url,
+          weight: newCatch.weight,
+          length: newCatch.length,
+          location_note: newCatch.location_note,
+          lure_used: newCatch.lure_used
+        });
+      } catch {}
+
+      setCatchesList((prev: any[]) => [newCatch, ...prev]);
+      setIsAddCatchModalOpen(false);
+      setCatchImageFile(null);
+      setCatchWeight('');
+      setCatchLength('');
+      setCatchLureUsed('');
+      setCatchLocationNote('');
+      alert(isTr ? '🎉 Avınız topluluk akışında başarıyla paylaşıldı!' : 'Catch shared successfully!');
+    } catch (err: any) {
+      alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
+    } finally {
+      setCatchSubmitting(false);
+    }
+  };
 
   // 24h Stories State with LocalStorage & Supabase Persistence
   const [stories, setStories] = useState<any[]>([]);
@@ -301,15 +380,15 @@ export default function CommunityClient({
 
   // Leaderboard Top 3 Trophies
   const topTrophies = useMemo(() => {
-    return [...catches]
+    return [...catchesList]
       .filter((c) => c.weight || c.length)
       .sort((a, b) => (b.weight || 0) - (a.weight || 0))
       .slice(0, 3);
-  }, [catches]);
+  }, [catchesList]);
 
   // Filtered Catches
   const filteredCatches = useMemo(() => {
-    return catches.filter((c) => {
+    return catchesList.filter((c) => {
       if (activeFilter === 'trophy' && (!c.weight || c.weight < 1.5)) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -321,7 +400,7 @@ export default function CommunityClient({
       }
       return true;
     });
-  }, [catches, activeFilter, searchQuery]);
+  }, [catchesList, activeFilter, searchQuery]);
 
   const displayedCatches = filteredCatches.slice(0, visibleCount);
 
@@ -790,20 +869,33 @@ export default function CommunityClient({
           )}
 
           <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={isTr ? 'Mera adı, balıkçı veya kullanılan yem ara...' : 'Search spot, angler, or lure...'}
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-2.5 text-xs font-bold text-slate-400 hover:text-slate-600">
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+            <div className="flex flex-col sm:flex-row items-center gap-2">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={isTr ? 'Mera adı, balıkçı veya kullanılan yem ara...' : 'Search spot, angler, or lure...'}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} className="absolute right-3 top-2.5 text-xs font-bold text-slate-400 hover:text-slate-600">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              <button
+                onClick={() => {
+                  if (!currentUser) return router.push('/login');
+                  setIsAddCatchModalOpen(true);
+                }}
+                className="w-full sm:w-auto bg-[#0F172A] hover:bg-slate-800 text-white px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-sm shrink-0"
+              >
+                <Plus className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
+                <span>{isTr ? 'Av Paylaş 🎣' : 'Share Catch 🎣'}</span>
+              </button>
             </div>
 
             <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar pt-1">
@@ -1493,6 +1585,69 @@ export default function CommunityClient({
                   className="w-full bg-[#0F172A] hover:bg-slate-800 text-white font-bold py-3.5 rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center space-x-2 text-xs shadow-md"
                 >
                   {storySubmitting ? <Loader2 className="w-4 h-4 animate-spin text-emerald-400" /> : <span>{isTr ? 'Hikayeyi Paylaş (24 Saat Yayında)' : 'Share Story'}</span>}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 🎣 ADD COMMUNITY CATCH LOG MODAL */}
+      <AnimatePresence>
+        {isAddCatchModalOpen && (
+          <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              className="bg-white rounded-t-[32px] sm:rounded-[32px] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col"
+            >
+              <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-white">
+                <h3 className="text-base font-extrabold text-[#0F172A]">
+                  {isTr ? 'Yeni Av Paylaş 🎣' : 'Share New Catch 🎣'}
+                </h3>
+                <button onClick={() => setIsAddCatchModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 font-bold">✕</button>
+              </div>
+
+              <form onSubmit={handleAddCommunityCatch} className="p-6 space-y-4 text-xs font-medium max-h-[75vh] overflow-y-auto">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1.5">{isTr ? 'Av Fotoğrafı *' : 'Catch Photo *'}</label>
+                  <label className="cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-5 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors">
+                    <Camera className="w-8 h-8 text-emerald-500 mb-2" />
+                    <span className="text-xs font-bold text-slate-700">
+                      {catchImageFile ? catchImageFile.name : (isTr ? 'Fotoğraf Seç veya Çek 📸' : 'Select Photo')}
+                    </span>
+                    <input type="file" accept="image/*" onChange={(e) => e.target.files && setCatchImageFile(e.target.files[0])} className="hidden" required />
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Ağırlık (kg)' : 'Weight (kg)'}</label>
+                    <input type="number" step="0.1" value={catchWeight} onChange={(e) => setCatchWeight(e.target.value)} placeholder="Örn: 2.5" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500" />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Boy (cm)' : 'Length (cm)'}</label>
+                    <input type="number" step="1" value={catchLength} onChange={(e) => setCatchLength(e.target.value)} placeholder="Örn: 45" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Mera / Konum Notu *' : 'Location / Spot Note *'}</label>
+                  <input type="text" value={catchLocationNote} onChange={(e) => setCatchLocationNote(e.target.value)} placeholder={isTr ? 'Örn: Sarayburnu Kıyısı' : 'Spot location...'} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500" required />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Kullanılan Yem / Takım' : 'Lure / Tackle Used'}</label>
+                  <input type="text" value={catchLureUsed} onChange={(e) => setCatchLureUsed(e.target.value)} placeholder={isTr ? 'Örn: LRF 5g Jighead + Silikon' : 'Lure used...'} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500" />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={catchSubmitting || !catchImageFile}
+                  className="w-full bg-[#0F172A] hover:bg-slate-800 text-white font-bold py-3.5 rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center space-x-2 text-xs shadow-md mt-2"
+                >
+                  {catchSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-emerald-400" /> : <span>{isTr ? 'Avı Toplulukta Paylaş 🎣' : 'Share Catch Log'}</span>}
                 </button>
               </form>
             </motion.div>

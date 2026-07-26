@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLocale } from 'next-intl';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
   MapPin,
@@ -583,7 +583,7 @@ export default function ProfileClient({
                 className="flex items-center space-x-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-sm text-sm"
               >
                 <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">{isTr ? 'Yeni Av Ekle' : 'Add Catch'}</span>
+                <span className="text-xs font-extrabold">{isTr ? 'Yeni Av Ekle 🎣' : 'Add Catch 🎣'}</span>
               </button>
             </div>
 
@@ -974,6 +974,53 @@ export default function ProfileClient({
           </motion.div>
         )}
       </div>
+
+      {/* ADD CATCH MODAL */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 border border-slate-100 shadow-2xl">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 className="font-extrabold text-base text-[#0F172A]">{isTr ? 'Yeni Av Ekle' : 'Add New Catch'}</h3>
+                <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+              </div>
+
+              <form onSubmit={handleAddCatch} className="space-y-4 text-xs font-medium max-h-[75vh] overflow-y-auto pr-1">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Av Fotoğrafı *' : 'Catch Photo *'}</label>
+                  <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700" required />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Ağırlık (kg)' : 'Weight (kg)'}</label>
+                    <input type="number" step="0.1" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="Örn: 2.5" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500" />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Boy (cm)' : 'Length (cm)'}</label>
+                    <input type="number" step="1" value={length} onChange={(e) => setLength(e.target.value)} placeholder="Örn: 45" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Mera / Konum Notu *' : 'Location / Spot Note *'}</label>
+                  <input type="text" value={locationNote} onChange={(e) => setLocationNote(e.target.value)} placeholder={isTr ? 'Örn: Sarayburnu Kıyısı' : 'Spot location...'} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500" required />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Kullanılan Yem / Takım' : 'Lure / Tackle Used'}</label>
+                  <input type="text" value={lureUsed} onChange={(e) => setLureUsed(e.target.value)} placeholder={isTr ? 'Örn: LRF 5g Jighead + Silikon' : 'Lure used...'} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-semibold focus:outline-none focus:border-emerald-500" />
+                </div>
+
+                <div className="pt-2 flex justify-end space-x-2 border-t border-slate-100">
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50">{isTr ? 'İptal' : 'Cancel'}</button>
+                  <button type="submit" disabled={loading} className="px-5 py-2.5 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white font-bold shadow-sm">{loading ? <Loader2 className="w-4 h-4 animate-spin text-emerald-400" /> : (isTr ? 'Avı Kaydet' : 'Save Catch')}</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* EDIT MARKET ITEM MODAL */}
       {editingMarketItem && (
