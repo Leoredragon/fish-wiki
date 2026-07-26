@@ -894,7 +894,7 @@ export default function CommunityClient({
                 className="w-full sm:w-auto bg-[#0F172A] hover:bg-slate-800 text-white px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-sm shrink-0"
               >
                 <Plus className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
-                <span>{isTr ? 'Av Paylaş 🎣' : 'Share Catch 🎣'}</span>
+                <span>{isTr ? 'Av Paylaş' : 'Share Catch'}</span>
               </button>
             </div>
 
@@ -1562,7 +1562,7 @@ export default function CommunityClient({
                   <label className="cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors">
                     <Camera className="w-8 h-8 text-emerald-500 mb-2" />
                     <span className="text-xs font-bold text-slate-700">
-                      {storyImageFile ? storyImageFile.name : (isTr ? 'Galeriden Seç veya Fotoğraf Çek 📸' : 'Select Photo')}
+                      {storyImageFile ? storyImageFile.name : (isTr ? 'Galeriden Seç veya Fotoğraf Çek' : 'Select Photo')}
                     </span>
                     <input type="file" accept="image/*" onChange={(e) => e.target.files && setStoryImageFile(e.target.files[0])} className="hidden" />
                   </label>
@@ -1574,7 +1574,7 @@ export default function CommunityClient({
                     type="text"
                     value={storyCaption}
                     onChange={(e) => setStoryCaption(e.target.value)}
-                    placeholder={isTr ? 'Örn: Boğazda trofe lüfer suyu! 🎣' : 'Write a caption...'}
+                    placeholder={isTr ? 'Örn: Boğazda trofe lüfer suyu!' : 'Write a caption...'}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
@@ -1604,7 +1604,7 @@ export default function CommunityClient({
             >
               <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-white">
                 <h3 className="text-base font-extrabold text-[#0F172A]">
-                  {isTr ? 'Yeni Av Paylaş 🎣' : 'Share New Catch 🎣'}
+                  {isTr ? 'Yeni Av Paylaş' : 'Share New Catch'}
                 </h3>
                 <button onClick={() => setIsAddCatchModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 font-bold">✕</button>
               </div>
@@ -1615,7 +1615,7 @@ export default function CommunityClient({
                   <label className="cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-5 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors">
                     <Camera className="w-8 h-8 text-emerald-500 mb-2" />
                     <span className="text-xs font-bold text-slate-700">
-                      {catchImageFile ? catchImageFile.name : (isTr ? 'Fotoğraf Seç veya Çek 📸' : 'Select Photo')}
+                      {catchImageFile ? catchImageFile.name : (isTr ? 'Fotoğraf Seç veya Çek' : 'Select Photo')}
                     </span>
                     <input type="file" accept="image/*" onChange={(e) => e.target.files && setCatchImageFile(e.target.files[0])} className="hidden" required />
                   </label>
@@ -1647,7 +1647,7 @@ export default function CommunityClient({
                   disabled={catchSubmitting || !catchImageFile}
                   className="w-full bg-[#0F172A] hover:bg-slate-800 text-white font-bold py-3.5 rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center space-x-2 text-xs shadow-md mt-2"
                 >
-                  {catchSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-emerald-400" /> : <span>{isTr ? 'Avı Toplulukta Paylaş 🎣' : 'Share Catch Log'}</span>}
+                  {catchSubmitting ? <Loader2 className="w-4 h-4 animate-spin text-emerald-400" /> : <span>{isTr ? 'Avı Toplulukta Paylaş' : 'Share Catch Log'}</span>}
                 </button>
               </form>
             </motion.div>

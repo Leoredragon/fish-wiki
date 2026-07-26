@@ -583,7 +583,7 @@ export default function ProfileClient({
                 className="flex items-center space-x-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-sm text-sm"
               >
                 <Plus className="w-4 h-4" />
-                <span className="text-xs font-extrabold">{isTr ? 'Yeni Av Ekle 🎣' : 'Add Catch 🎣'}</span>
+                <span className="text-xs font-extrabold">{isTr ? 'Yeni Av Ekle' : 'Add Catch'}</span>
               </button>
             </div>
 
