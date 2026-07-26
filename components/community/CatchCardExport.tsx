@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useLocale } from 'next-intl';
-import { Download, Share2, Scale, Ruler, MapPin, Package, X, Loader2 } from 'lucide-react';
+import { Share2, Scale, Ruler, MapPin, Package, X, Loader2 } from 'lucide-react';
 import * as htmlToImage from 'html-to-image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { triggerHapticLight, triggerHapticMedium } from '@/lib/capacitorUtils';
@@ -13,7 +13,7 @@ export default function CatchCardExport({ log, profileName }: { log: any; profil
   const locale = useLocale();
   const isTr = locale === 'tr';
   const [isOpen, setIsOpen] = useState(false);
-  const [generating, setGenerating] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   const generateCardImage = async () => {
@@ -30,65 +30,45 @@ export default function CatchCardExport({ log, profileName }: { log: any; profil
     }
   };
 
-  const handleMainShare = async () => {
+  const handleOpenModal = () => {
     triggerHapticLight();
-    setGenerating(true);
-    try {
-      // 1. Generate high-quality PNG card
-      const dataUrl = await generateCardImage();
-
-      // 2. If Native App (Capacitor)
-      if (Capacitor.isNativePlatform()) {
-        const shareOptions: any = {
-          title: `${log.location_note || 'Balık Avı'} - oltaApp`,
-          text: `${profileName} oltaApp'te av kaydı paylaştı! 🎣`,
-          dialogTitle: 'Av Kaydını Paylaş'
-        };
-
-        if (dataUrl) {
-          shareOptions.url = dataUrl;
-        } else {
-          shareOptions.url = typeof window !== 'undefined' ? window.location.href : 'https://oltaapp.com';
-        }
-
-        await Share.share(shareOptions);
-      } else {
-        // Web Browser: Open preview modal so user can view & save PNG or web share
-        setIsOpen(true);
-      }
-    } catch (e) {
-      console.error('Share action error:', e);
-      setIsOpen(true);
-    } finally {
-      setGenerating(false);
-    }
+    setIsOpen(true);
   };
 
-  const handleSavePng = async () => {
+  const handleShareToSocial = async () => {
     triggerHapticMedium();
-    setGenerating(true);
+    setSharing(true);
     try {
+      // 1. Generate PNG Card Image
       const dataUrl = await generateCardImage();
-      if (!dataUrl) return;
+      const shareUrl = typeof window !== 'undefined' ? window.location.href : 'https://oltaapp.com';
 
+      // 2. Open Android Native Share Sheet listing WhatsApp, Facebook, Instagram...
       if (Capacitor.isNativePlatform()) {
         await Share.share({
+          title: `${log.location_note || 'Balık Avı'} - oltaApp`,
+          text: `${profileName} oltaApp'te av kaydı paylaştı! 🎣`,
+          url: dataUrl || shareUrl,
+          dialogTitle: 'Sosyal Medyada Paylaş (WhatsApp, Instagram, Facebook...)'
+        });
+      } else if (typeof navigator !== 'undefined' && navigator.share) {
+        // Web Share API
+        await navigator.share({
           title: 'oltaApp Av Kartı',
-          url: dataUrl,
-          dialogTitle: 'Av Kartı Görselini Kaydet / Gönder'
+          text: `${profileName} oltaApp'te av kaydı paylaştı!`,
+          url: shareUrl
         });
       } else {
-        const link = document.createElement('a');
-        link.download = `oltapp_catch_${log.id || Date.now()}.png`;
-        link.href = dataUrl;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        // Fallback: Copy link
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(`${profileName} oltaApp'te av kaydı paylaştı: ${shareUrl}`);
+          alert(isTr ? 'Av kaydı bağlantısı kopyalandı!' : 'Link copied!');
+        }
       }
     } catch (err) {
-      console.error('Error saving image', err);
+      console.error('Error sharing catch card', err);
     } finally {
-      setGenerating(false);
+      setSharing(false);
     }
   };
 
@@ -113,13 +93,13 @@ export default function CatchCardExport({ log, profileName }: { log: any; profil
           </div>
 
           <div className="relative z-10 flex justify-between items-center p-6 w-full">
-            <div className="bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center space-x-2">
-              <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white font-black text-[10px]">
+            <div className="bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center space-x-2 max-w-[200px]">
+              <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white font-black text-[10px] shrink-0">
                 {profileName?.charAt(0).toUpperCase()}
               </div>
-              <span className="text-white text-xs font-bold tracking-wide">{profileName}</span>
+              <span className="text-white text-xs font-bold tracking-wide truncate">{profileName}</span>
             </div>
-            <div className="bg-emerald-500 text-white px-3 py-1.5 rounded-full font-black text-xs tracking-widest uppercase shadow-lg">
+            <div className="bg-emerald-500 text-white px-3 py-1.5 rounded-full font-black text-xs tracking-widest uppercase shadow-lg shrink-0">
               OLTAPP
             </div>
           </div>
@@ -166,22 +146,17 @@ export default function CatchCardExport({ log, profileName }: { log: any; profil
         </div>
       </div>
 
-      {/* SINGLE CLEAN PAYLAŞ BUTTON */}
+      {/* SINGLE CLEAN PAYLAŞ BUTTON (Does not shrink even with long usernames) */}
       <button
-        onClick={handleMainShare}
-        disabled={generating}
-        className="shrink-0 flex items-center space-x-1.5 text-xs font-bold text-slate-500 hover:text-emerald-500 transition-colors active:scale-95 bg-slate-100 hover:bg-slate-200/80 px-3 py-1.5 rounded-xl border border-slate-200"
+        onClick={handleOpenModal}
+        className="shrink-0 flex items-center space-x-1.5 text-xs font-bold text-slate-500 hover:text-emerald-500 transition-colors active:scale-95 bg-slate-100 hover:bg-slate-200/80 px-3 py-1 rounded-xl border border-slate-200"
         title={isTr ? 'Paylaş' : 'Share'}
       >
-        {generating ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" />
-        ) : (
-          <Share2 className="w-3.5 h-3.5 text-emerald-500" />
-        )}
-        <span>{isTr ? 'Paylaş' : 'Share'}</span>
+        <Share2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+        <span className="shrink-0">{isTr ? 'Paylaş' : 'Share'}</span>
       </button>
 
-      {/* MODAL FOR PREVIEW / PNG SAVE */}
+      {/* MODAL FOR PREVIEW & NATIVE SOCIAL MEDIA SHARE */}
       <AnimatePresence>
         {isOpen && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-slate-900/80 backdrop-blur-sm">
@@ -193,8 +168,8 @@ export default function CatchCardExport({ log, profileName }: { log: any; profil
             >
               <div className="flex justify-between items-center mb-4">
                 <div>
-                  <h3 className="font-extrabold text-[#0F172A]">{isTr ? 'Sosyal Medya Av Kartı' : 'Social Catch Card'}</h3>
-                  <p className="text-xs text-slate-500 font-medium">{isTr ? 'Instagram veya WhatsApp için dikey format' : 'Vertical format for Instagram/WhatsApp'}</p>
+                  <h3 className="font-extrabold text-[#0F172A]">{isTr ? 'Av Kartını Paylaş' : 'Share Catch Card'}</h3>
+                  <p className="text-xs text-slate-500 font-medium">{isTr ? 'WhatsApp, Instagram, Facebook vb. için dikey format' : 'Vertical format for WhatsApp, Instagram, Facebook'}</p>
                 </div>
                 <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-slate-700 bg-slate-100 rounded-full p-2">
                   <X className="w-4 h-4" />
@@ -252,12 +227,20 @@ export default function CatchCardExport({ log, profileName }: { log: any; profil
 
               <div className="mt-4 pt-4 border-t border-slate-100 flex space-x-3">
                 <button
-                  onClick={handleSavePng}
-                  disabled={generating}
+                  onClick={handleShareToSocial}
+                  disabled={sharing}
                   className="w-full flex justify-center items-center space-x-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-md disabled:opacity-70"
                 >
-                  <Download className="w-5 h-5" />
-                  <span>{generating ? (isTr ? 'Hazırlanıyor...' : 'Preparing...') : (isTr ? 'PNG Olarak Kaydet / Paylaş' : 'Save PNG / Share')}</span>
+                  {sharing ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Share2 className="w-5 h-5" />
+                  )}
+                  <span>
+                    {sharing 
+                      ? (isTr ? 'Görsel Hazırlanıyor...' : 'Preparing Image...') 
+                      : (isTr ? 'Sosyal Medyada Paylaş (WhatsApp, Instagram...)' : 'Share via WhatsApp / Instagram')}
+                  </span>
                 </button>
               </div>
             </motion.div>

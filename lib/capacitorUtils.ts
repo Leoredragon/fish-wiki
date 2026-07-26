@@ -8,11 +8,14 @@ export const isNativeApp = () => Capacitor.isNativePlatform();
  * Trigger subtle light haptic feedback (for tab taps, likes, button clicks)
  */
 export const triggerHapticLight = async () => {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    try { navigator.vibrate(35); } catch {}
+  }
   if (!isNativeApp()) return;
   try {
     await Haptics.impact({ style: ImpactStyle.Light });
   } catch (e) {
-    console.debug('Haptics error:', e);
+    try { await Haptics.vibrate({ duration: 35 }); } catch {}
   }
 };
 
@@ -20,11 +23,14 @@ export const triggerHapticLight = async () => {
  * Trigger medium haptic feedback (for submitting forms, creating stories/catches)
  */
 export const triggerHapticMedium = async () => {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    try { navigator.vibrate(60); } catch {}
+  }
   if (!isNativeApp()) return;
   try {
     await Haptics.impact({ style: ImpactStyle.Medium });
   } catch (e) {
-    console.debug('Haptics error:', e);
+    try { await Haptics.vibrate({ duration: 60 }); } catch {}
   }
 };
 
@@ -32,11 +38,14 @@ export const triggerHapticMedium = async () => {
  * Trigger notification success haptic feedback (for completed uploads)
  */
 export const triggerHapticSuccess = async () => {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    try { navigator.vibrate([40, 30, 40]); } catch {}
+  }
   if (!isNativeApp()) return;
   try {
     await Haptics.notification({ type: NotificationType.Success });
   } catch (e) {
-    console.debug('Haptics error:', e);
+    try { await Haptics.vibrate({ duration: 80 }); } catch {}
   }
 };
 
@@ -53,7 +62,7 @@ export const nativeShare = async (options: { title: string; text?: string; url?:
         title: options.title,
         text: shareText,
         url: shareUrl,
-        dialogTitle: 'oltaApp Paylaş'
+        dialogTitle: 'oltaApp Paylaş (WhatsApp, Instagram...)'
       });
       return true;
     } catch (e) {
