@@ -41,6 +41,7 @@ const ADMIN_EMAIL = 'mail@mail.com';
 
 interface CommunityClientProps {
   catches: Record<string, any>[];
+  initialStories?: Record<string, any>[];
   initialForumPosts?: Record<string, any>[];
   initialMarketplaceItems?: Record<string, any>[];
   initialCommunityTips?: Record<string, any>[];
@@ -48,6 +49,7 @@ interface CommunityClientProps {
 
 export default function CommunityClient({
   catches = [],
+  initialStories = [],
   initialForumPosts = [],
   initialMarketplaceItems = [],
   initialCommunityTips = []
@@ -179,7 +181,22 @@ export default function CommunityClient({
           location_note: newCatch.location_note,
           lure_used: newCatch.lure_used
         });
-      } catch {}
+      } catch (e) {
+        console.warn('Catches table insert notice:', e);
+      }
+
+      try {
+        await supabase.from('catch_logs').insert({
+          user_id: currentUser.id,
+          image_url: newCatch.image_url,
+          weight: newCatch.weight,
+          length: newCatch.length,
+          location_note: newCatch.location_note,
+          lure_used: newCatch.lure_used
+        });
+      } catch (e) {
+        console.warn('Catch logs insert notice:', e);
+      }
 
       setCatchesList((prev: any[]) => [newCatch, ...prev]);
       setIsAddCatchModalOpen(false);
@@ -255,7 +272,7 @@ export default function CommunityClient({
     } catch {}
 
     // Combine & Deduplicate
-    const combined = [...dbStories, ...localSavedStories, ...initialMocks];
+    const combined = [...dbStories, ...initialStories, ...localSavedStories, ...initialMocks];
     const uniqueMap = new Map();
 
     combined.forEach((st) => {
@@ -319,7 +336,7 @@ export default function CommunityClient({
           id: storyId,
           user_id: currentUser.id,
           image_url: newStory.image_url,
-          caption: newStory.caption
+          location_note: newStory.caption
         });
         if (storyInsErr) {
           console.warn('community_stories insert notice:', storyInsErr.message);
