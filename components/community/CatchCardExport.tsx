@@ -5,6 +5,7 @@ import { useLocale } from 'next-intl';
 import { Download, Share2, Scale, Ruler, MapPin, Package, X } from 'lucide-react';
 import * as htmlToImage from 'html-to-image';
 import { motion, AnimatePresence } from 'framer-motion';
+import { nativeShare, triggerHapticLight, triggerHapticMedium } from '@/lib/capacitorUtils';
 
 export default function CatchCardExport({ log, profileName }: { log: any; profileName: string }) {
   const locale = useLocale();
@@ -13,14 +14,27 @@ export default function CatchCardExport({ log, profileName }: { log: any; profil
   const [downloading, setDownloading] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
+  const handleShareButtonClick = async () => {
+    triggerHapticLight();
+    const shared = await nativeShare({
+      title: `${log.location_note || 'Balık Avı'} - oltaApp`,
+      text: `${profileName} oltaApp'te yeni bir av kaydı paylaştı!`,
+      url: typeof window !== 'undefined' ? window.location.href : 'https://oltaapp.com'
+    });
+
+    if (!shared) {
+      setIsOpen(true);
+    }
+  };
+
   const handleDownload = async () => {
+    triggerHapticMedium();
     if (!cardRef.current) return;
     setDownloading(true);
     try {
-      // Need to wait for images to load ideally, but let's assume it's loaded if modal is open
       const dataUrl = await htmlToImage.toPng(cardRef.current, {
         quality: 1,
-        pixelRatio: 2, // High resolution for social media
+        pixelRatio: 2,
         cacheBust: true,
       });
       
@@ -38,8 +52,8 @@ export default function CatchCardExport({ log, profileName }: { log: any; profil
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
-        className="flex items-center space-x-1.5 text-xs font-bold text-slate-500 hover:text-emerald-500 transition-colors"
+        onClick={handleShareButtonClick}
+        className="flex items-center space-x-1.5 text-xs font-bold text-slate-500 hover:text-emerald-500 transition-colors active:scale-95"
       >
         <Share2 className="w-3.5 h-3.5" />
         <span>{isTr ? 'Paylaş' : 'Share'}</span>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Link, usePathname } from '@/i18n/routing';
 import { useLocale } from 'next-intl';
 import { Compass, BookOpen, MapPin, CloudSun, Users } from 'lucide-react';
+import { triggerHapticLight } from '@/lib/capacitorUtils';
 
 export default function MobileBottomNav() {
   const locale = useLocale();
@@ -55,7 +56,10 @@ export default function MobileBottomNav() {
               key={item.href}
               href={item.href}
               prefetch={true}
-              onClick={() => setClickedHref(item.href)}
+              onClick={() => {
+                triggerHapticLight();
+                setClickedHref(item.href);
+              }}
               className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all duration-100 text-center w-full active:scale-90 active:bg-emerald-500/20 ${
                 isActive
                   ? 'text-emerald-400 bg-emerald-500/10 font-bold scale-100'
