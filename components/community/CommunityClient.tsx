@@ -298,7 +298,8 @@ export default function CommunityClient({
         || (authorUsername ? `@${authorUsername}` : null) 
         || (currentUser.email ? `@${currentUser.email.split('@')[0]}` : 'Balıkçı');
 
-      const storyId = `story-${Date.now()}`;
+      const validUuid = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-0000-4000-8000-000000000000`;
+      const storyId = validUuid;
       const newStory = {
         id: storyId,
         user_id: currentUser.id,
@@ -314,13 +315,18 @@ export default function CommunityClient({
 
       // 1. Try Supabase Insert
       try {
-        await supabase.from('community_stories').insert({
+        const { error: storyInsErr } = await supabase.from('community_stories').insert({
           id: storyId,
           user_id: currentUser.id,
           image_url: newStory.image_url,
           caption: newStory.caption
         });
-      } catch {}
+        if (storyInsErr) {
+          console.warn('community_stories insert notice:', storyInsErr.message);
+        }
+      } catch (e) {
+        console.warn('community_stories insert exception:', e);
+      }
 
       // 2. Save to LocalStorage
       try {

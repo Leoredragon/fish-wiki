@@ -14,17 +14,13 @@ export default function CatchCardExport({ log, profileName }: { log: any; profil
   const [downloading, setDownloading] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const handleShareButtonClick = async () => {
+  const handleShareDirect = async () => {
     triggerHapticLight();
-    const shared = await nativeShare({
+    await nativeShare({
       title: `${log.location_note || 'Balık Avı'} - oltaApp`,
       text: `${profileName} oltaApp'te yeni bir av kaydı paylaştı!`,
       url: typeof window !== 'undefined' ? window.location.href : 'https://oltaapp.com'
     });
-
-    if (!shared) {
-      setIsOpen(true);
-    }
   };
 
   const handleDownload = async () => {
@@ -38,10 +34,23 @@ export default function CatchCardExport({ log, profileName }: { log: any; profil
         cacheBust: true,
       });
       
-      const link = document.createElement('a');
-      link.download = `oltapp_catch_${log.id}.png`;
-      link.href = dataUrl;
-      link.click();
+      // Native Android APK check: Use Share API to let user save image to gallery or share
+      if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
+        const { Share } = await import('@capacitor/share');
+        await Share.share({
+          title: 'oltaApp Av Kartı',
+          url: dataUrl,
+          dialogTitle: 'Av Kartı Görselini Kaydet / Paylaş'
+        });
+      } else {
+        // Standard Web Browser Download
+        const link = document.createElement('a');
+        link.download = `oltapp_catch_${log.id}.png`;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     } catch (err) {
       console.error('Error generating image', err);
     } finally {
@@ -51,13 +60,30 @@ export default function CatchCardExport({ log, profileName }: { log: any; profil
 
   return (
     <>
-      <button
-        onClick={handleShareButtonClick}
-        className="flex items-center space-x-1.5 text-xs font-bold text-slate-500 hover:text-emerald-500 transition-colors active:scale-95"
-      >
-        <Share2 className="w-3.5 h-3.5" />
-        <span>{isTr ? 'Paylaş' : 'Share'}</span>
-      </button>
+      <div className="flex items-center space-x-3">
+        {/* Direct Native Share Button */}
+        <button
+          onClick={handleShareDirect}
+          className="flex items-center space-x-1.5 text-xs font-bold text-slate-500 hover:text-emerald-500 transition-colors active:scale-95"
+          title={isTr ? 'Paylaş' : 'Share'}
+        >
+          <Share2 className="w-3.5 h-3.5" />
+          <span>{isTr ? 'Paylaş' : 'Share'}</span>
+        </button>
+
+        {/* Social Card / Download Button */}
+        <button
+          onClick={() => {
+            triggerHapticLight();
+            setIsOpen(true);
+          }}
+          className="flex items-center space-x-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition-all active:scale-95 border border-emerald-200/60"
+          title={isTr ? 'Av Kartı İndir' : 'Download Card'}
+        >
+          <Download className="w-3.5 h-3.5" />
+          <span>{isTr ? 'Av Kartı (PNG)' : 'Catch Card'}</span>
+        </button>
+      </div>
 
       <AnimatePresence>
         {isOpen && (

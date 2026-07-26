@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import CommunityClient from '@/components/community/CommunityClient';
 
-export const revalidate = 60;
+export const revalidate = 0;
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
   return {
