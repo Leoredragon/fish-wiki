@@ -457,46 +457,46 @@ export default function CommunityClient({
         </p>
       </div>
 
-      {/* Modern Clean 4-Tab Navigation Bar */}
-      <div className="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-1 overflow-x-auto no-scrollbar">
+      {/* Modern Clean 4-Tab Navigation Bar (Grid fit for zero mobile scroll) */}
+      <div className="bg-white p-1 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-4 gap-1 w-full">
         <button
           onClick={() => setActiveTab('feed')}
-          className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center ${
             activeTab === 'feed' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
-          <Flame className="w-4 h-4 text-emerald-400" />
-          <span>{isTr ? 'Av Akışı' : 'Catch Feed'}</span>
+          <Flame className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          <span className="truncate">{isTr ? 'Av Akışı' : 'Feed'}</span>
         </button>
 
         <button
           onClick={() => setActiveTab('forum')}
-          className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center ${
             activeTab === 'forum' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
-          <MessageSquare className="w-4 h-4 text-emerald-400" />
-          <span>{isTr ? 'Soru & Forum' : 'Q&A Forum'}</span>
+          <MessageSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          <span className="truncate">{isTr ? 'Soru & Forum' : 'Forum'}</span>
         </button>
 
         <button
           onClick={() => setActiveTab('market')}
-          className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center ${
             activeTab === 'market' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
-          <ShoppingBag className="w-4 h-4 text-emerald-400" />
-          <span>{isTr ? 'Ekipman Pazarı' : 'Marketplace'}</span>
+          <ShoppingBag className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          <span className="truncate">{isTr ? '2. El Pazar' : 'Market'}</span>
         </button>
 
         <button
           onClick={() => setActiveTab('tips')}
-          className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center ${
             activeTab === 'tips' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
-          <BookOpen className="w-4 h-4 text-emerald-400" />
-          <span>{isTr ? 'Püf Noktaları' : 'Pro Tips'}</span>
+          <BookOpen className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          <span className="truncate">{isTr ? 'Püf Noktaları' : 'Tips'}</span>
         </button>
       </div>
 

@@ -274,27 +274,22 @@ export default function RegionMapClient() {
       
       {/* Hero Banner */}
       <motion.section
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative overflow-hidden bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0F172A] rounded-3xl p-8 sm:p-10 text-white shadow-xl border border-slate-800"
+        transition={{ duration: 0.4 }}
+        className="relative overflow-hidden bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0F172A] rounded-3xl p-5 sm:p-8 text-white shadow-xl border border-slate-800"
       >
         <div className="absolute top-0 right-0 -mt-10 -mr-10 w-72 h-72 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 max-w-3xl space-y-4">
-          <div className="inline-flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-3.5 py-1 rounded-full text-xs font-semibold">
-            <MapPin className="w-3.5 h-3.5" />
-            <span>{isTr ? 'İnteraktif Av Meraları ve Harita Rehberi' : 'Interactive Angling Map & Spot Guide'}</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            {isTr ? 'Türkiye’nin Popüler Balıkçılık Meraları' : 'Premier Fishing Locations of Turkey'}
+        <div className="relative z-10 max-w-3xl space-y-2">
+          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+            {isTr ? 'Türkiye Balıkçılık Haritası' : 'Turkey Angling Map'}
           </h1>
 
-          <p className="text-sm text-slate-300 leading-relaxed font-normal">
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
             {isTr
-              ? 'Haritadaki meraları inceleyin, yeşil pinlere dokunarak oluşturan kişi ve mera detaylarını görün. Kendi meranızı haritaya ekleyin.'
-              : 'Explore spots on the map, click green pins for details, and contribute your own fishing spots.'}
+              ? 'Haritadaki meraları inceleyin, yeşil pinlere dokunarak detayı görün ve kendi meranızı ekleyin.'
+              : 'Explore spots on the map, click green pins for details, and add your own fishing spots.'}
           </p>
         </div>
       </motion.section>

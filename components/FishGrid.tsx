@@ -297,44 +297,6 @@ export default function FishGrid({ selectedCategory, onSelectCategory, searchTer
             <Heart className="w-3.5 h-3.5 fill-current" />
             <span>{t('favorites')} ({favorites.length})</span>
           </button>
-
-          {/* Discipline: LRF & Fly-Fishing */}
-          <button
-            onClick={() => onSelectCategory('lrf_fly')}
-            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start flex items-center space-x-1 ${
-              selectedCategory === 'lrf_fly'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200/80'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>LRF & Fly-Fishing</span>
-          </button>
-
-          {/* Discipline: Sazan & Kamp */}
-          <button
-            onClick={() => onSelectCategory('carp_camp')}
-            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start flex items-center space-x-1 ${
-              selectedCategory === 'carp_camp'
-                ? 'bg-amber-600 text-white shadow-sm'
-                : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200/80'
-            }`}
-          >
-            <Anchor className="w-3.5 h-3.5" />
-            <span>{isTr ? 'Sazan & Kamp Avı' : 'Carp & Camping'}</span>
-          </button>
-
-          {/* Warning: Protected species */}
-          <button
-            onClick={() => onSelectCategory('protected')}
-            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start flex items-center space-x-1 ${
-              selectedCategory === 'protected'
-                ? 'bg-emerald-700 text-white shadow-sm'
-                : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300'
-            }`}
-          >
-            <span>♻️ {isTr ? 'Koruma Altındaki Türler' : 'Protected Species'}</span>
-          </button>
         </div>
       </div>
 

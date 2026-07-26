@@ -12,7 +12,7 @@ export default function MobileBottomNav() {
   const navItems = [
     { href: '/', label: isTr ? 'Keşfet' : 'Explore', icon: Compass },
     { href: '/wiki', label: isTr ? 'Wiki' : 'Wiki', icon: BookOpen },
-    { href: '/map', label: isTr ? 'Meralar' : 'Map', icon: MapPin },
+    { href: '/map', label: isTr ? 'Harita' : 'Map', icon: MapPin },
     { href: '/weather', label: isTr ? 'Hava Durumu' : 'Weather', icon: CloudSun },
     { href: '/community', label: isTr ? 'Topluluk' : 'Social', icon: Users }
   ];
@@ -36,7 +36,7 @@ export default function MobileBottomNav() {
       {/* Seamless background extension for Android gesture swipe bar area */}
       <div className="absolute top-full left-0 right-0 h-12 bg-[#0F172A] pointer-events-none" />
 
-      <div className="flex items-center justify-around max-w-md mx-auto relative z-10">
+      <div className="grid grid-cols-5 w-full items-center max-w-md mx-auto relative z-10 gap-0.5">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
@@ -44,14 +44,14 @@ export default function MobileBottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-colors ${
+              className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-colors text-center w-full ${
                 isActive
                   ? 'text-emerald-400 bg-emerald-500/10 font-bold'
                   : 'text-slate-400 hover:text-slate-200 font-medium'
               }`}
             >
               <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.25px]' : 'stroke-[1.75px]'}`} />
-              <span className="text-[10px] mt-0.5 tracking-tight whitespace-nowrap">{item.label}</span>
+              <span className="text-[10px] mt-1 tracking-tight whitespace-nowrap text-center">{item.label}</span>
             </Link>
           );
         })}
