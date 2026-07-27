@@ -167,5 +167,9 @@ SET username = COALESCE(p.full_name, CASE WHEN p.username IS NOT NULL THEN '@' |
 FROM public.profiles p
 WHERE c.user_id = p.id AND (c.username = 'mail' OR c.username IS NULL OR c.username = 'mail@mail.com');
 
+-- 6. PRO/PREMIUM ÜYELİK ALANI (profiles.is_premium)
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS is_premium BOOLEAN DEFAULT false NOT NULL;
+
 -- Supabase Önbelleğini Yenile
 NOTIFY pgrst, 'reload schema';
