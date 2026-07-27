@@ -36,8 +36,6 @@ import CatchCardExport from './CatchCardExport';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { compressImageToWebP } from '@/lib/image_compression';
-import { useProStatus } from '@/lib/useProStatus';
-import ProLockModal from '@/components/ProLockModal';
 
 const ADMIN_EMAIL = 'mail@mail.com';
 
@@ -60,11 +58,6 @@ export default function CommunityClient({
   const isTr = locale === 'tr';
   const supabase = createClient();
   const router = useRouter();
-
-  const { isPro } = useProStatus();
-  const [lockModalConfig, setLockModalConfig] = useState<{ isOpen: boolean; title?: string; description?: string }>({
-    isOpen: false
-  });
 
   const [activeTab, setActiveTab] = useState<'feed' | 'forum' | 'market' | 'tips'>('feed');
   const [currentUser, setCurrentUser] = useState<any | null>(null);
@@ -735,19 +728,7 @@ export default function CommunityClient({
         </button>
 
         <button
-          onClick={() => {
-            if (!isPro) {
-              setLockModalConfig({
-                isOpen: true,
-                title: isTr ? 'Soru-Cevap & Forum 🔒' : 'Q&A Forum 🔒',
-                description: isTr
-                  ? 'Soru-cevap ve tartışma forumu sadece oltaApp PRO üyelerine açıktır. PRO sürüme geçerek sorularınızı topluluğa sorabilirsiniz.'
-                  : 'Q&A Forum is exclusive to oltaApp PRO members.'
-              });
-              return;
-            }
-            setActiveTab('forum');
-          }}
+          onClick={() => setActiveTab('forum')}
           className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center ${
             activeTab === 'forum' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
@@ -797,16 +778,6 @@ export default function CommunityClient({
               {/* Add Story Circle Button (Instagram Style with User Avatar + Plus Badge) */}
               <div
                 onClick={() => {
-                  if (!isPro) {
-                    setLockModalConfig({
-                      isOpen: true,
-                      title: isTr ? 'Av Hikayeleri 🔒' : 'Fishing Stories 🔒',
-                      description: isTr
-                        ? 'Topluluk av hikayeleri paylaşmak ve izlemek sadece oltaApp PRO üyelerinde bulunmaktadır.'
-                        : 'Fishing stories are exclusive to oltaApp PRO members.'
-                    });
-                    return;
-                  }
                   if (!currentUser) return router.push('/login');
                   setIsAddStoryModalOpen(true);
                 }}
@@ -837,19 +808,7 @@ export default function CommunityClient({
                 return (
                   <div
                     key={st.id || idx}
-                    onClick={() => {
-                      if (!isPro) {
-                        setLockModalConfig({
-                          isOpen: true,
-                          title: isTr ? 'Av Hikayeleri 🔒' : 'Fishing Stories 🔒',
-                          description: isTr
-                            ? 'Topluluk av hikayelerini izlemek sadece oltaApp PRO üyelerinde bulunmaktadır.'
-                            : 'Fishing stories are exclusive to oltaApp PRO members.'
-                        });
-                        return;
-                      }
-                      setActiveStoryIndex(idx);
-                    }}
+                    onClick={() => setActiveStoryIndex(idx)}
                     className="flex flex-col items-center space-y-1 cursor-pointer shrink-0 group"
                   >
                     <div className="p-0.5 rounded-full bg-gradient-to-tr from-emerald-500 via-teal-400 to-cyan-500 shadow-xs group-hover:scale-105 transition-transform">
@@ -1704,13 +1663,6 @@ export default function CommunityClient({
           </div>
         )}
       </AnimatePresence>
-      {/* PRO LOCK MODAL */}
-      <ProLockModal
-        isOpen={lockModalConfig.isOpen}
-        onClose={() => setLockModalConfig({ isOpen: false })}
-        title={lockModalConfig.title}
-        description={lockModalConfig.description}
-      />
     </div>
   );
 }
