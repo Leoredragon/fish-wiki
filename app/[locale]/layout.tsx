@@ -10,6 +10,7 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import AppSplashScreen from '@/components/AppSplashScreen';
 import CapacitorInit from '@/components/CapacitorInit';
 import { Metadata, Viewport } from 'next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
   title: 'Oltapp - Dijital Balıkçılık & Livar',
@@ -67,6 +68,7 @@ export default async function LocaleLayout({
           </main>
           <MobileBottomNav />
           <Footer />
+          <SpeedInsights />
         </NextIntlClientProvider>
       </body>
     </html>
