@@ -9,6 +9,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { FishingSpot } from './MapComponent';
 import { compressImageToWebP } from '@/lib/image_compression';
+import { useProStatus } from '@/lib/useProStatus';
+import ProLockModal from './ProLockModal';
 
 // Dynamically import Leaflet MapComponent with SSR disabled
 const MapComponent = dynamic(() => import('./MapComponent'), {
@@ -108,7 +110,8 @@ export default function RegionMapClient() {
   const isTr = locale === 'tr';
   const router = useRouter();
   const supabase = createClient();
-
+  const { isPro } = useProStatus();
+  const [isLockModalOpen, setIsLockModalOpen] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<Region>(REGIONS[0]);
   
   // User Session & Spots
@@ -368,7 +371,13 @@ export default function RegionMapClient() {
             if (reg) setSelectedRegion(reg);
           }}
           fishingSpots={fishingSpots}
-          onSelectSpot={(spot) => setSelectedSpot(spot)}
+          onSelectSpot={(spot) => {
+            if (!isPro) {
+              setIsLockModalOpen(true);
+              return;
+            }
+            setSelectedSpot(spot);
+          }}
           isPickingLocation={isPickingLocation}
           onLocationPicked={handleLocationPickedOnMap}
           tempPickedLocation={tempPickedLocation}
@@ -688,6 +697,17 @@ export default function RegionMapClient() {
           </div>
         )}
       </AnimatePresence>
+      {/* PRO LOCK MODAL */}
+      <ProLockModal
+        isOpen={isLockModalOpen}
+        onClose={() => setIsLockModalOpen(false)}
+        title={isTr ? 'Gizli Mera Detayları & Derinlikler 🔒' : 'Secret Spot Details & Depth 🔒'}
+        description={
+          isTr
+            ? 'Detaylı mera bilgileri, gizli derinlik haritaları ve en avcı yem önerileri sadece oltaApp PRO üyelerine açıktır. Haritada gezinmek tamamen ücretsizdir!'
+            : 'Detailed spot info and depth maps are exclusive to oltaApp PRO members. Map browsing is 100% free!'
+        }
+      />
     </div>
   );
 }

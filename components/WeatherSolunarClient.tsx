@@ -9,7 +9,6 @@ import {
   Wind,
   Droplets,
   Gauge,
-  Navigation,
   Sun,
   Cloud,
   CloudRain,
@@ -18,9 +17,11 @@ import {
   CloudFog,
   Calendar,
   ChevronRight,
-  MapPin,
-  Loader2
+  Loader2,
+  Lock
 } from 'lucide-react';
+import { useProStatus } from '@/lib/useProStatus';
+import ProLockModal from '@/components/ProLockModal';
 
 interface CityWeatherSpot {
   id: string; // e.g. "34"
@@ -100,203 +101,147 @@ const TURKEY_PROVINCES: CityWeatherSpot[] = [
   { id: '65', plate: 65, nameTr: 'Van', nameEn: 'Van', lat: 38.489, lon: 43.409 },
   { id: '66', plate: 66, nameTr: 'Yozgat', nameEn: 'Yozgat', lat: 39.818, lon: 34.815 },
   { id: '67', plate: 67, nameTr: 'Zonguldak', nameEn: 'Zonguldak', lat: 41.456, lon: 31.799 },
-  { id: '68', plate: 68, nameTr: 'Aksaray', nameEn: 'Aksaray', lat: 38.369, lon: 34.037 },
+  { id: '68', plate: 68, nameTr: 'Aksaray', nameEn: 'Aksaray', lat: 38.368, lon: 34.037 },
   { id: '69', plate: 69, nameTr: 'Bayburt', nameEn: 'Bayburt', lat: 40.255, lon: 40.225 },
-  { id: '70', plate: 70, nameTr: 'Karaman', nameEn: 'Karaman', lat: 37.176, lon: 33.221 },
-  { id: '71', plate: 71, nameTr: 'Kırıkkale', nameEn: 'Kirikkale', lat: 39.845, lon: 33.506 },
+  { id: '70', plate: 70, nameTr: 'Karaman', nameEn: 'Karaman', lat: 37.176, lon: 33.215 },
+  { id: '71', plate: 71, nameTr: 'Kırıkkale', nameEn: 'Kirikkale', lat: 39.845, lon: 33.511 },
   { id: '72', plate: 72, nameTr: 'Batman', nameEn: 'Batman', lat: 37.887, lon: 41.132 },
   { id: '73', plate: 73, nameTr: 'Şırnak', nameEn: 'Sirnak', lat: 37.516, lon: 42.461 },
   { id: '74', plate: 74, nameTr: 'Bartın', nameEn: 'Bartin', lat: 41.636, lon: 32.337 },
   { id: '75', plate: 75, nameTr: 'Ardahan', nameEn: 'Ardahan', lat: 41.11, lon: 42.702 },
   { id: '76', plate: 76, nameTr: 'Iğdır', nameEn: 'Igdir', lat: 39.917, lon: 44.042 },
   { id: '77', plate: 77, nameTr: 'Yalova', nameEn: 'Yalova', lat: 40.655, lon: 29.277 },
-  { id: '78', plate: 78, nameTr: 'Karabük', nameEn: 'Karabuk', lat: 41.2, lon: 32.627 },
-  { id: '79', plate: 79, nameTr: 'Kilis', nameEn: 'Kilis', lat: 36.717, lon: 37.115 },
+  { id: '78', plate: 78, nameTr: 'Karabük', nameEn: 'Karabuk', lat: 41.206, lon: 32.62 },
+  { id: '79', plate: 79, nameTr: 'Kilis', nameEn: 'Kilis', lat: 36.718, lon: 37.115 },
   { id: '80', plate: 80, nameTr: 'Osmaniye', nameEn: 'Osmaniye', lat: 37.074, lon: 36.247 },
   { id: '81', plate: 81, nameTr: 'Düzce', nameEn: 'Duzce', lat: 40.844, lon: 31.156 }
 ];
 
-interface CurrentWeatherData {
-  temperature_2m: number;
-  relative_humidity_2m: number;
-  surface_pressure: number;
-  wind_speed_10m: number;
-  wind_direction_10m: number;
-  weather_code: number;
-}
-
-interface DailyForecastItem {
-  date: string;
-  dayName: string;
-  weatherCode: number;
-  tempMax: number;
-  tempMin: number;
-  windMax: number;
-}
-
 function parseWeatherCode(code: number, isTr: boolean) {
-  if (code === 0) return { text: isTr ? 'Açık / Güneşli' : 'Clear Sky', iconType: 'sun' };
-  if (code === 1 || code === 2) return { text: isTr ? 'Az Bulutlu' : 'Partly Cloudy', iconType: 'sun-cloud' };
-  if (code === 3) return { text: isTr ? 'Parçalı Bulutlu' : 'Overcast', iconType: 'cloud' };
-  if (code >= 45 && code <= 48) return { text: isTr ? 'Sisli' : 'Foggy', iconType: 'fog' };
+  if (code === 0) return { text: isTr ? 'Açık Güneşli' : 'Clear Sky', iconType: 'sun' };
+  if (code >= 1 && code <= 3) return { text: isTr ? 'Parçalı Bulutlu' : 'Partly Cloudy', iconType: 'cloud-sun' };
+  if (code === 45 || code === 48) return { text: isTr ? 'Sisli' : 'Foggy', iconType: 'fog' };
   if (code >= 51 && code <= 67) return { text: isTr ? 'Yağmurlu' : 'Rainy', iconType: 'rain' };
   if (code >= 71 && code <= 77) return { text: isTr ? 'Kar Yağışlı' : 'Snowy', iconType: 'snow' };
-  if (code >= 80 && code <= 82) return { text: isTr ? 'Sağanak Yağışlı' : 'Heavy Showers', iconType: 'rain' };
-  if (code >= 95 && code <= 99) return { text: isTr ? 'Gök Gürültülü Fırtına' : 'Thunderstorm', iconType: 'lightning' };
-  return { text: isTr ? 'Ilıman' : 'Mild', iconType: 'sun-cloud' };
+  if (code >= 80 && code <= 82) return { text: isTr ? 'Sağanak Yağış' : 'Heavy Rain', iconType: 'rain' };
+  if (code >= 95) return { text: isTr ? 'Fırtına / Yıldırım' : 'Thunderstorm', iconType: 'lightning' };
+  return { text: isTr ? 'Bulutlu' : 'Cloudy', iconType: 'cloud' };
+}
+
+function renderWeatherIcon(iconType: string, className = "w-8 h-8") {
+  switch (iconType) {
+    case 'sun':
+      return <Sun className={`${className} text-amber-400`} />;
+    case 'cloud-sun':
+      return <CloudSun className={`${className} text-amber-300`} />;
+    case 'fog':
+      return <CloudFog className={`${className} text-slate-300`} />;
+    case 'rain':
+      return <CloudRain className={`${className} text-cyan-400`} />;
+    case 'snow':
+      return <CloudSnow className={`${className} text-[#10B981]`} />;
+    case 'lightning':
+      return <CloudLightning className={`${className} text-amber-400 animate-pulse`} />;
+    default:
+      return <Cloud className={`${className} text-slate-300`} />;
+  }
 }
 
 export default function WeatherSolunarClient() {
   const locale = useLocale();
   const isTr = locale === 'tr';
+  const { isPro } = useProStatus();
 
-  const [selectedSpot, setSelectedSpot] = useState<CityWeatherSpot>(TURKEY_PROVINCES[33]); // Default Istanbul (34)
-  const [weatherData, setWeatherData] = useState<CurrentWeatherData | null>(null);
-  const [dailyForecast, setDailyForecast] = useState<DailyForecastItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [locating, setLocating] = useState<boolean>(false);
-  const [sortMode, setSortMode] = useState<'plate' | 'alpha'>('plate');
+  const [selectedSpot, setSelectedSpot] = useState<CityWeatherSpot>(
+    TURKEY_PROVINCES.find((p) => p.plate === 34) || TURKEY_PROVINCES[0]
+  );
 
-  const sortedProvinces = [...TURKEY_PROVINCES].sort((a, b) => {
-    if (sortMode === 'alpha') {
-      const nameA = isTr ? a.nameTr : a.nameEn;
-      const nameB = isTr ? b.nameTr : b.nameEn;
-      return nameA.localeCompare(nameB, isTr ? 'tr' : 'en');
-    }
-    return a.plate - b.plate;
-  });
+  const [weatherData, setWeatherData] = useState<any | null>(null);
+  const [dailyForecast, setDailyForecast] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isLockModalOpen, setIsLockModalOpen] = useState(false);
 
   useEffect(() => {
-    fetchWeatherForSpot(selectedSpot);
-  }, [selectedSpot]);
-
-  // Handle browser geolocation to find closest city
-  const handleDetectLocation = () => {
-    if (!navigator.geolocation) {
-      alert(isTr ? 'Cihazınız konum özelliğini desteklemiyor.' : 'Geolocation not supported.');
-      return;
-    }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        let closest = TURKEY_PROVINCES[0];
-        let minDistance = Infinity;
-
-        for (const spot of TURKEY_PROVINCES) {
-          const dist = Math.hypot(spot.lat - latitude, spot.lon - longitude);
-          if (dist < minDistance) {
-            minDistance = dist;
-            closest = spot;
-          }
+    async function fetchWeather() {
+      setLoading(true);
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${selectedSpot.lat}&longitude=${selectedSpot.lon}&current=temperature_2m,relative_humidity_2m,weather_code,surface_pressure,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data?.current) {
+          setWeatherData(data.current);
         }
-        setSelectedSpot(closest);
-        setLocating(false);
-      },
-      (_err) => {
-        alert(isTr ? 'Konum izni alınamadı. Lütfen listeden şehir seçiniz.' : 'Could not obtain location permission.');
-        setLocating(false);
-      },
-      { timeout: 8000 }
-    );
-  };
-
-  const fetchWeatherForSpot = async (spot: CityWeatherSpot) => {
-    setLoading(true);
-    try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${spot.lat}&longitude=${spot.lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max&timezone=auto`;
-      const res = await fetch(url);
-      const data = await res.json();
-
-      if (data && data.current) {
-        setWeatherData(data.current);
-      }
-
-      if (data && data.daily) {
-        const days: DailyForecastItem[] = [];
-        const dateStrings = data.daily.time || [];
-        for (let idx = 0; idx < Math.min(dateStrings.length, 5); idx++) {
-          const rawDate = new Date(dateStrings[idx]);
-          const dayName = rawDate.toLocaleDateString(isTr ? 'tr-TR' : 'en-US', { weekday: 'short' });
-          const weatherCode = data.daily.weather_code[idx];
-          const tempMax = Math.round(data.daily.temperature_2m_max[idx]);
-          const tempMin = Math.round(data.daily.temperature_2m_min[idx]);
-          const windMax = Math.round(data.daily.wind_speed_10m_max[idx]);
-
-          days.push({
-            date: dateStrings[idx],
-            dayName: idx === 0 ? (isTr ? 'Bugün' : 'Today') : dayName,
-            weatherCode,
-            tempMax,
-            tempMin,
-            windMax
+        if (data?.daily) {
+          const days = data.daily.time.slice(0, 7).map((t: string, idx: number) => {
+            const dateObj = new Date(t);
+            const dayName = idx === 0 
+              ? (isTr ? 'Bugün' : 'Today') 
+              : dateObj.toLocaleDateString(isTr ? 'tr-TR' : 'en-US', { weekday: 'short' });
+            return {
+              date: t,
+              dayName,
+              weatherCode: data.daily.weather_code[idx],
+              tempMax: Math.round(data.daily.temperature_2m_max[idx]),
+              tempMin: Math.round(data.daily.temperature_2m_min[idx])
+            };
           });
+          setDailyForecast(days);
         }
-        setDailyForecast(days);
+      } catch {
+        // Fallback static
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Weather fetch error:', err);
-    } finally {
-      setLoading(false);
     }
-  };
 
-  const renderWeatherIcon = (iconType: string, className: string = "w-6 h-6") => {
-    switch (iconType) {
-      case 'sun':
-        return <Sun className={`${className} text-amber-400`} />;
-      case 'sun-cloud':
-        return <CloudSun className={`${className} text-amber-400`} />;
-      case 'cloud':
-        return <Cloud className={`${className} text-slate-400`} />;
-      case 'rain':
-        return <CloudRain className={`${className} text-cyan-500`} />;
-      case 'lightning':
-        return <CloudLightning className={`${className} text-purple-500`} />;
-      case 'snow':
-        return <CloudSnow className={`${className} text-blue-300`} />;
-      case 'fog':
-        return <CloudFog className={`${className} text-slate-400`} />;
-      default:
-        return <CloudSun className={`${className} text-amber-400`} />;
-    }
-  };
+    fetchWeather();
+  }, [selectedSpot, isTr]);
 
-  const weatherDetails = weatherData ? parseWeatherCode(weatherData.weather_code, isTr) : { text: '', iconType: 'sun-cloud' };
+  const weatherDetails = parseWeatherCode(weatherData?.weather_code || 0, isTr);
+
+  const sortedProvinces = [...TURKEY_PROVINCES].sort((a, b) =>
+    (isTr ? a.nameTr : a.nameEn).localeCompare(isTr ? b.nameTr : b.nameEn, isTr ? 'tr' : 'en')
+  );
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5 pb-16 pt-2 px-4 sm:px-6">
-      {/* Compact City Dropdown & Geolocation Button */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Navigation className="w-4 h-4 text-emerald-600" />
-            <h2 className="text-xs font-extrabold text-[#0F172A] uppercase tracking-wider">
-              {isTr ? 'Şehir Seçiniz' : 'Select City'}
-            </h2>
-          </div>
+    <div className="max-w-4xl mx-auto space-y-6 pb-12 pt-4 px-4">
+      {/* Lock Modal */}
+      <ProLockModal
+        isOpen={isLockModalOpen}
+        onClose={() => setIsLockModalOpen(false)}
+        title={isTr ? '7 Günlük Solunar Takvimi 🔒' : '7-Day Solunar Calendar 🔒'}
+        description={
+          isTr
+            ? 'Gelecek günlere ait hava ve solunar takvim verisi sadece oltaApp PRO kullanıcılarına açıktır. PRO aboneliğe geçerek 7 günlük detaylı av tahminlerini açın!'
+            : 'Multi-day solunar forecast is exclusive to oltaApp PRO members. Upgrade to PRO to unlock 7-day fishing calendars!'
+        }
+      />
 
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={handleDetectLocation}
-              disabled={locating}
-              className="flex items-center space-x-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-xl text-xs font-bold transition-all"
-            >
-              {locating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MapPin className="w-3.5 h-3.5 text-emerald-600" />}
-              <span>{isTr ? 'Konumumu Bul' : 'My Location'}</span>
-            </button>
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm gap-3">
+        <div className="flex items-center space-x-3">
+          <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100">
+            <CloudSun className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-xl font-extrabold text-[#0F172A] tracking-tight">
+              {isTr ? 'Hava Durumu & Solunar' : 'Weather & Solunar'}
+            </h1>
+            <p className="text-xs font-semibold text-slate-500">
+              {isTr ? '81 İl Canlı Hava & Rüzgar Tahmini' : '81 Provinces Live Marine Weather'}
+            </p>
           </div>
         </div>
 
-        {/* Clean Dropdown without Plate Number Labels */}
-        <div className="relative">
+        {/* 81 Provinces Dropdown Selector */}
+        <div className="relative w-full sm:w-64">
           <select
             value={selectedSpot.id}
             onChange={(e) => {
-              const spot = TURKEY_PROVINCES.find((s) => s.id === e.target.value);
-              if (spot) setSelectedSpot(spot);
+              const found = TURKEY_PROVINCES.find((p) => p.id === e.target.value);
+              if (found) setSelectedSpot(found);
             }}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-extrabold text-[#0F172A] appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer shadow-xs"
+            className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-extrabold text-xs sm:text-sm rounded-2xl pl-3.5 pr-8 py-2.5 appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
           >
             {sortedProvinces.map((spot) => (
               <option key={spot.id} value={spot.id}>
@@ -372,28 +317,58 @@ export default function WeatherSolunarClient() {
             </div>
           </div>
 
-          {/* 5-DAY WEATHER FORECAST GRID (Compact fit for mobile) */}
+          {/* 7-DAY WEATHER FORECAST GRID (Day 1 Unlocked, Days 2-7 Glassmorphism Locked for FREE) */}
           {dailyForecast.length > 0 && (
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-              <div className="flex items-center space-x-2 border-b border-slate-100 pb-2">
-                <Calendar className="w-4 h-4 text-emerald-600" />
-                <h3 className="text-xs font-extrabold text-[#0F172A] uppercase tracking-wider">
-                  {isTr ? '5 Günlük Hava Tahmini' : '5-Day Forecast'}
-                </h3>
+            <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3 relative overflow-hidden">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <div className="flex items-center space-x-2">
+                  <Calendar className="w-4 h-4 text-emerald-600" />
+                  <h3 className="text-xs font-extrabold text-[#0F172A] uppercase tracking-wider">
+                    {isTr ? '7 Günlük Solunar & Hava Tahmini' : '7-Day Solunar Forecast'}
+                  </h3>
+                </div>
+
+                {!isPro && (
+                  <span
+                    onClick={() => setIsLockModalOpen(true)}
+                    className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full flex items-center space-x-1 cursor-pointer hover:bg-amber-100 transition-colors"
+                  >
+                    <Lock className="w-3 h-3 text-amber-600" />
+                    <span>{isTr ? 'ortaApp PRO ile 7 Günü Aç' : 'Unlock 7 Days with PRO'}</span>
+                  </span>
+                )}
               </div>
 
-              <div className="grid grid-cols-5 gap-1.5 w-full">
+              <div className="grid grid-cols-7 gap-1.5 w-full">
                 {dailyForecast.map((day, idx) => {
                   const parsed = parseWeatherCode(day.weatherCode, isTr);
+                  const isLockedDay = idx > 0 && !isPro;
+
                   return (
                     <div
                       key={day.date}
-                      className={`p-2 rounded-xl border transition-all flex flex-col items-center justify-between text-center ${
+                      onClick={() => {
+                        if (isLockedDay) {
+                          setIsLockModalOpen(true);
+                        }
+                      }}
+                      className={`p-2 rounded-2xl border transition-all flex flex-col items-center justify-between text-center relative ${
                         idx === 0 
                           ? 'bg-[#0F172A] text-white border-slate-800 shadow-xs' 
+                          : isLockedDay
+                          ? 'bg-slate-100/70 backdrop-blur-md opacity-60 border-slate-300 cursor-pointer select-none group hover:border-amber-400'
                           : 'bg-slate-50 text-slate-800 border-slate-200/80'
                       }`}
                     >
+                      {/* Lock Icon overlay for locked days */}
+                      {isLockedDay && (
+                        <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-[2px] rounded-2xl flex items-center justify-center text-slate-800 group-hover:scale-110 transition-transform">
+                          <div className="p-1 rounded-full bg-white/90 shadow-md border border-slate-200">
+                            <Lock className="w-3.5 h-3.5 text-amber-600" />
+                          </div>
+                        </div>
+                      )}
+
                       <div className="text-[11px] font-black tracking-tight">
                         {day.dayName}
                       </div>
