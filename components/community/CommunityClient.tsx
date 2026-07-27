@@ -172,8 +172,7 @@ export default function CommunityClient({
       };
 
       try {
-        await supabase.from('catches').insert({
-          id: catchId,
+        await supabase.from('catch_logs').insert({
           user_id: currentUser.id,
           image_url: newCatch.image_url,
           weight: newCatch.weight,
@@ -182,7 +181,7 @@ export default function CommunityClient({
           lure_used: newCatch.lure_used
         });
       } catch (e) {
-        console.warn('Catches table insert notice:', e);
+        console.warn('Catch logs insert notice:', e);
       }
 
       setCatchesList((prev: any[]) => [newCatch, ...prev]);
@@ -1751,46 +1750,53 @@ function CatchPostItem({
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return onRequireAuth();
-    if (!newComment.trim()) return;
+    const commentText = newComment.trim();
+    if (!commentText) return;
 
     setCommenting(true);
+    setNewComment('');
+
     const username = currentUserProfile?.full_name 
       || (currentUserProfile?.username ? `@${currentUserProfile.username}` : null) 
       || currentUser.user_metadata?.full_name 
       || currentUser.user_metadata?.username 
       || 'Oltapp Üyesi';
 
-    const { data, error } = await supabase
-      .from('catch_comments')
-      .insert({
-        catch_id: log.id,
-        user_id: currentUser.id,
-        username,
-        comment: newComment.trim()
-      })
-      .select(`*, profiles(username, full_name, avatar_url)`)
-      .single();
+    const tempId = `temp-${Date.now()}`;
+    const optimisticComment = {
+      id: tempId,
+      catch_id: log.id,
+      user_id: currentUser.id,
+      username,
+      comment: commentText,
+      created_at: new Date().toISOString(),
+      profiles: currentUserProfile || { username, full_name: username }
+    };
 
-    if (!error && data) {
-      setComments((prev) => [...prev, data]);
-      setNewComment('');
-    } else if (error) {
-      const fallbackRes = await supabase
+    setComments((prev) => [...prev, optimisticComment]);
+
+    try {
+      const { data, error } = await supabase
         .from('catch_comments')
         .insert({
           catch_id: log.id,
           user_id: currentUser.id,
           username,
-          comment: newComment.trim()
+          comment: commentText
         })
         .select('*')
         .single();
-      if (fallbackRes.data) {
-        setComments((prev) => [...prev, { ...fallbackRes.data, username, profiles: currentUserProfile }]);
-        setNewComment('');
+
+      if (error) {
+        console.warn('Comment insert notice:', error.message);
+      } else if (data) {
+        setComments((prev) => prev.map((c) => (c.id === tempId ? { ...data, profiles: currentUserProfile } : c)));
       }
+    } catch (err: any) {
+      console.error('Comment exception:', err);
+    } finally {
+      setCommenting(false);
     }
-    setCommenting(false);
   };
 
   const handleDeleteComment = async (commentId: string) => {
