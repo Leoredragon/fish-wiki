@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
-import { MapPin, BookOpen, Scale, Ruler, UserPlus, UserCheck, Loader2 } from 'lucide-react';
+import { MapPin, BookOpen, Scale, Ruler, UserPlus, UserCheck, Loader2, ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface PublicProfileClientProps {
@@ -43,11 +43,13 @@ export default function PublicProfileClient({
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
+  const [viewerId, setViewerId] = useState<string | null>(currentUserId);
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [followersCount, setFollowersCount] = useState(initialFollowersCount);
+  const [followingCount, setFollowingCount] = useState(initialFollowingCount);
   const [followLoading, setFollowLoading] = useState(false);
 
-  const isOwnProfile = Boolean(currentUserId && profile?.id && currentUserId === profile.id);
+  const isOwnProfile = Boolean(viewerId && profile?.id && viewerId === profile.id);
 
   const totalCatches = catches.length;
   const biggestCatch = catches.reduce((max, item) => {
@@ -56,8 +58,39 @@ export default function PublicProfileClient({
     return itemWeight > maxWeight ? item : max;
   }, catches[0] || null);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
+      if (cancelled) return;
+
+      setViewerId(user?.id || null);
+      if (user?.id && user.id !== profile.id) {
+        const [{ count }, { count: followers }, { count: following }] = await Promise.all([
+          supabase
+            .from('follows')
+            .select('follower_id', { head: true, count: 'exact' })
+            .eq('follower_id', user.id)
+            .eq('following_id', profile.id),
+          supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', profile.id),
+          supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', profile.id)
+        ]);
+        if (cancelled) return;
+        setIsFollowing(Boolean((count || 0) > 0));
+        setFollowersCount(followers || 0);
+        setFollowingCount(following || 0);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [profile.id, supabase]);
+
   const handleToggleFollow = async () => {
-    if (!currentUserId) {
+    if (!viewerId) {
       router.push(`/${locale}/login`);
       return;
     }
@@ -71,13 +104,13 @@ export default function PublicProfileClient({
         await supabase
           .from('follows')
           .delete()
-          .eq('follower_id', currentUserId)
+          .eq('follower_id', viewerId)
           .eq('following_id', profile.id);
       } else {
         setIsFollowing(true);
         setFollowersCount((prev) => prev + 1);
         await supabase.from('follows').insert({
-          follower_id: currentUserId,
+          follower_id: viewerId,
           following_id: profile.id
         });
       }
@@ -88,6 +121,17 @@ export default function PublicProfileClient({
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] md:pb-12 pt-3">
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="inline-flex items-center space-x-2 bg-white hover:bg-slate-100 text-[#0F172A] px-4 py-2.5 rounded-2xl text-xs font-bold border border-slate-200/80 shadow-sm transition-all active:scale-95"
+        >
+          <ArrowLeft className="w-4 h-4 text-emerald-600" />
+          <span>{isTr ? 'Geri Dön' : 'Back'}</span>
+        </button>
+      </div>
+
       <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-start gap-4">
           <div className="w-24 h-24 rounded-full overflow-hidden bg-[#0F172A] text-emerald-400 flex items-center justify-center text-3xl font-black relative shrink-0">
@@ -123,7 +167,7 @@ export default function PublicProfileClient({
                 {followersCount} {isTr ? 'Takipçi' : 'Followers'}
               </span>
               <span className="bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg">
-                {initialFollowingCount} {isTr ? 'Takip' : 'Following'}
+                {followingCount} {isTr ? 'Takip' : 'Following'}
               </span>
               <span className="bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg">
                 {totalCatches} {isTr ? 'Av' : 'Catches'}

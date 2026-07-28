@@ -29,10 +29,6 @@ export default async function PublicProfilePage({
   const decodedSlug = decodeURIComponent(slug);
 
   const supabase = await createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-
   const maybeUserId = parseUserIdFromSlug(decodedSlug);
 
   let profileQuery = supabase.from('profiles').select('id, username, full_name, avatar_url, city, bio');
@@ -50,26 +46,19 @@ export default async function PublicProfilePage({
     .select('id, image_url, weight, length, location_note, created_at')
     .eq('user_id', profile.id)
     .order('created_at', { ascending: false })
-    .limit(24);
+    .limit(12);
 
-  const [{ count: followersCount }, { count: followingCount }, followRelation] = await Promise.all([
+  const [{ count: followersCount }, { count: followingCount }] = await Promise.all([
     supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', profile.id),
-    supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', profile.id),
-    user
-      ? supabase
-          .from('follows')
-          .select('follower_id', { head: true, count: 'exact' })
-          .eq('follower_id', user.id)
-          .eq('following_id', profile.id)
-      : Promise.resolve({ count: 0 } as { count: number | null })
+    supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', profile.id)
   ]);
 
   return (
     <PublicProfileClient
       profile={profile}
       catches={catches || []}
-      currentUserId={user?.id || null}
-      initialIsFollowing={Boolean((followRelation.count || 0) > 0)}
+      currentUserId={null}
+      initialIsFollowing={false}
       initialFollowersCount={followersCount || 0}
       initialFollowingCount={followingCount || 0}
     />
