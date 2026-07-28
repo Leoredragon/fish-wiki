@@ -1,21 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Fish as FishType } from '@/lib/supabase';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import { Info, ArrowRight } from 'lucide-react';
+import { Info, ArrowRight, Anchor } from 'lucide-react';
 
 interface FishCardProps {
   fish: FishType;
+  priority?: boolean;
 }
 
-export default function FishCard({ fish }: FishCardProps) {
+export default function FishCard({ fish, priority = false }: FishCardProps) {
   const locale = useLocale();
   const t = useTranslations('FishCard');
   const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const isTr = locale === 'tr';
   const name = isTr ? fish.name_tr : fish.name_en;
@@ -23,9 +25,13 @@ export default function FishCard({ fish }: FishCardProps) {
     ? (fish.description_tr || fish.description_en)
     : (fish.description_en || fish.description_tr);
 
-  const defaultImage = "https://images.unsplash.com/photo-1524704654690-b56c05c78a00?auto=format&fit=crop&w=800&q=80";
-  const displayImage = (!fish.image_url || imageError) ? defaultImage : fish.image_url;
+  const displayImage = fish.image_url && !imageError ? fish.image_url : null;
   const targetId = fish.id || 'm1';
+
+  useEffect(() => {
+    setImageLoaded(false);
+    setImageError(false);
+  }, [fish.image_url]);
 
   return (
     <motion.div
@@ -37,14 +43,27 @@ export default function FishCard({ fish }: FishCardProps) {
       <Link href={`/fish/${targetId}`} className="flex-1 flex flex-col">
         {/* Clean Unobscured Image Container (Full Fish Body Fit) */}
         <div className="relative aspect-[16/10] w-full bg-[#0F172A] overflow-hidden flex items-center justify-center">
-          <Image
-            src={displayImage}
-            alt={name || 'Fish species'}
-            fill
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-            className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
-            onError={() => setImageError(true)}
-          />
+          {!imageLoaded && (
+            <div className="absolute inset-0 bg-slate-800 animate-pulse" />
+          )}
+          {displayImage ? (
+            <Image
+              src={displayImage}
+              alt={name || 'Fish species'}
+              fill
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              priority={priority}
+              className={`object-cover object-center group-hover:scale-105 transition-all duration-500 ${
+                imageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-emerald-400/40">
+              <Anchor className="w-8 h-8" />
+            </div>
+          )}
         </div>
 
         {/* Content Body with Fish Name below image */}

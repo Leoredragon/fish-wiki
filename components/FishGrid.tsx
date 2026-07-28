@@ -7,7 +7,7 @@ import FishCard from './FishCard';
 import SpotlightCarousel from './SpotlightCarousel';
 import { useTranslations, useLocale } from 'next-intl';
 import { useFavorites } from '@/lib/useFavorites';
-import { Filter, RefreshCw, AlertCircle, Heart, Sparkles, Anchor, Mountain, Waves } from 'lucide-react';
+import { Filter, AlertCircle, Heart, Sparkles, Anchor, Mountain, Waves } from 'lucide-react';
 import { triggerHapticLight } from '@/lib/capacitorUtils';
 
 export const RICH_MOCK_FISHES: Fish[] = [
@@ -146,24 +146,42 @@ export const RICH_MOCK_FISHES: Fish[] = [
 ];
 
 interface FishGridProps {
+  initialFishes?: Fish[];
   selectedCategory: string;
   onSelectCategory: (cat: string) => void;
   searchTerm: string;
 }
 
-export default function FishGrid({ selectedCategory, onSelectCategory, searchTerm }: FishGridProps) {
+export default function FishGrid({
+  initialFishes = [],
+  selectedCategory,
+  onSelectCategory,
+  searchTerm
+}: FishGridProps) {
   const t = useTranslations('Filters');
   const tCommon = useTranslations('Common');
   const locale = useLocale();
   const isTr = locale === 'tr';
   const { favorites } = useFavorites();
 
-  const [fishes, setFishes] = useState<Fish[]>(RICH_MOCK_FISHES);
-  const [loading, setLoading] = useState(false);
+  const [fishes, setFishes] = useState<Fish[]>(initialFishes);
+  const [loading, setLoading] = useState(initialFishes.length === 0);
+
+  useEffect(() => {
+    setFishes(initialFishes);
+    if (initialFishes.length > 0) {
+      setLoading(false);
+    }
+  }, [initialFishes]);
 
   useEffect(() => {
     let isSubscribed = true;
     async function loadData() {
+      if (initialFishes.length > 0) {
+        return;
+      }
+
+      setLoading(true);
       try {
         const orderColumn = locale === 'en' ? 'name_en' : 'name_tr';
         const { data, error } = await supabase
@@ -193,7 +211,7 @@ export default function FishGrid({ selectedCategory, onSelectCategory, searchTer
     return () => {
       isSubscribed = false;
     };
-  }, [locale]);
+  }, [locale, initialFishes.length]);
 
   const filteredFishes = fishes
     .filter((fish) => {
@@ -303,9 +321,20 @@ export default function FishGrid({ selectedCategory, onSelectCategory, searchTer
 
       {/* Main Fish Feed Grid */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <RefreshCw className="w-6 h-6 text-[#10B981] animate-spin mr-2" />
-          <span className="text-sm font-medium text-slate-600">{tCommon('loading')}</span>
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-6">
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <div
+              key={idx}
+              className="bg-white rounded-3xl border border-slate-200/90 overflow-hidden animate-pulse"
+            >
+              <div className="aspect-[16/10] w-full bg-slate-200" />
+              <div className="p-4 space-y-2">
+                <div className="h-4 bg-slate-200 rounded-lg w-3/4" />
+                <div className="h-3 bg-slate-100 rounded-lg w-full" />
+                <div className="h-8 bg-slate-200 rounded-xl w-full mt-2" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : filteredFishes.length === 0 ? (
         <div className="bg-white rounded-3xl p-12 text-center border border-slate-200 shadow-sm space-y-3">
@@ -318,8 +347,8 @@ export default function FishGrid({ selectedCategory, onSelectCategory, searchTer
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-6">
-          {filteredFishes.map((fish) => (
-            <FishCard key={fish.id || fish.name_tr} fish={fish} />
+          {filteredFishes.map((fish, index) => (
+            <FishCard key={fish.id || fish.name_tr} fish={fish} priority={index < 4} />
           ))}
         </div>
       )}

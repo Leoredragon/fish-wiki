@@ -3,8 +3,13 @@
 import { useState, useEffect } from 'react';
 import HeroSection from './HeroSection';
 import FishGrid from './FishGrid';
+import type { Fish } from '@/lib/supabase';
 
-export default function HomePageClient() {
+interface HomePageClientProps {
+  initialFishes?: Fish[];
+}
+
+export default function HomePageClient({ initialFishes = [] }: HomePageClientProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
@@ -24,6 +29,7 @@ export default function HomePageClient() {
 
       {/* Featured Spotlight & Filter Chips & Main Feed */}
       <FishGrid
+        initialFishes={initialFishes}
         selectedCategory={selectedCategory}
         onSelectCategory={setSelectedCategory}
         searchTerm={searchTerm}

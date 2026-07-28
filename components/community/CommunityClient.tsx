@@ -729,7 +729,7 @@ export default function CommunityClient({
         router.refresh();
       }}
     >
-      <div className="max-w-5xl mx-auto space-y-4 pb-14 pt-3 px-3 sm:px-6">
+      <div className="max-w-5xl mx-auto space-y-4 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] md:pb-14 pt-3 px-3 sm:px-6">
       {/* Compact community header */}
       <div className="flex items-center justify-between gap-3">
         <div>
@@ -985,10 +985,14 @@ export default function CommunityClient({
           </div>
 
           {visibleCount < filteredCatches.length && (
-            <div className="text-center pt-2">
+            <div className="pt-4 pb-2">
               <button
-                onClick={() => setVisibleCount((prev) => prev + 10)}
-                className="inline-flex items-center space-x-2 bg-white border border-slate-200 shadow-md text-[#0F172A] font-extrabold px-6 py-3 rounded-2xl transition-all hover:scale-105 active:scale-95 text-xs"
+                type="button"
+                onClick={() => {
+                  triggerHapticLight();
+                  setVisibleCount((prev) => prev + 10);
+                }}
+                className="w-full sm:w-auto sm:mx-auto flex items-center justify-center gap-2 bg-white border border-slate-200 shadow-md text-[#0F172A] font-extrabold px-6 py-3.5 min-h-[52px] rounded-2xl transition-all active:scale-[0.98] text-sm"
               >
                 <span>{isTr ? 'Daha Fazla Av Göster' : 'Load More'}</span>
                 <ChevronDown className="w-4 h-4 text-emerald-500" />
