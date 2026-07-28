@@ -90,7 +90,29 @@ html.is-native-app .native-hide {
   display: none !important;
 }
 
-html.is-native-app .native-auth-screen main {
-  padding-top: 0.5rem !important;
-  padding-bottom: 1rem !important;
+/* Full-screen auth (mobile web + APK): hide site header for login/register */
+html.auth-screen header {
+  display: none !important;
+}
+
+html.auth-screen main {
+  padding-top: 1.25rem !important;
+  padding-bottom: 1.5rem !important;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+html.is-native-app.auth-screen,
+html.is-native-app.auth-screen body,
+html.is-native-app.native-auth-screen,
+html.is-native-app.native-auth-screen body {
+  background-color: #0F172A;
+}
+
+html.is-native-app.auth-screen main,
+html.is-native-app.native-auth-screen main {
+  background: linear-gradient(180deg, #0F172A 0%, #1E293B 55%, #F8FAFC 55%);
+  padding-top: 0.75rem !important;
 }

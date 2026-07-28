@@ -37,7 +37,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { compressImageToWebP } from '@/lib/image_compression';
 import PullToRefresh from '@/components/PullToRefresh';
-import { pickPhotoNative, isNativeApp } from '@/lib/capacitorUtils';
+import { pickPhotoNative, isNativeApp, triggerHapticLight } from '@/lib/capacitorUtils';
 
 const STORIES_LIMIT = 50;
 
@@ -695,35 +695,30 @@ export default function CommunityClient({
 
   return (
     <PullToRefresh>
-      <div className="max-w-5xl mx-auto space-y-6 pb-16 pt-6 px-4 sm:px-6">
-      {/* Header Title */}
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center justify-center p-3 bg-emerald-50 border border-emerald-200 rounded-full mb-1 shadow-xs">
-          <Users className="w-6 h-6 text-emerald-600" />
-        </div>
-        <div className="flex items-center justify-center space-x-2">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0F172A] tracking-tight">
-            {isTr ? 'Oltapp Balıkçılık Topluluğu' : 'Oltapp Angling Community'}
+      <div className="max-w-5xl mx-auto space-y-4 pb-14 pt-3 px-3 sm:px-6">
+      {/* Compact community header */}
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-[#0F172A] tracking-tight">
+            {isTr ? 'Topluluk' : 'Community'}
           </h1>
-          {isAdmin && (
-            <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md flex items-center space-x-1 shadow-sm">
-              <ShieldCheck className="w-3 h-3" />
-              <span>ADMIN</span>
-            </span>
-          )}
+          <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
+            {isTr ? 'Av akışı · Forum · Pazar · İpuçları' : 'Feed · Forum · Market · Tips'}
+          </p>
         </div>
-        <p className="text-slate-500 font-medium max-w-xl mx-auto text-xs sm:text-sm leading-relaxed">
-          {isTr
-            ? 'Amatör balıkçıların av akışı, soru-cevap forumu, 2. el ekipman pazarı ve pratik bilgi paylaşım platformu.'
-            : 'Angler feed, Q&A forum, tackle marketplace, and pro tips platform.'}
-        </p>
+        {isAdmin && (
+          <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md flex items-center space-x-1 shadow-sm">
+            <ShieldCheck className="w-3 h-3" />
+            <span>ADMIN</span>
+          </span>
+        )}
       </div>
 
       {/* Modern Clean 4-Tab Navigation Bar (Grid fit for zero mobile scroll) */}
       <div className="bg-white p-1 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-4 gap-1 w-full">
         <button
-          onClick={() => setActiveTab('feed')}
-          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center ${
+          onClick={() => { triggerHapticLight(); setActiveTab('feed'); }}
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 ${
             activeTab === 'feed' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
@@ -732,8 +727,8 @@ export default function CommunityClient({
         </button>
 
         <button
-          onClick={() => setActiveTab('forum')}
-          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center ${
+          onClick={() => { triggerHapticLight(); setActiveTab('forum'); }}
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 ${
             activeTab === 'forum' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
@@ -742,8 +737,8 @@ export default function CommunityClient({
         </button>
 
         <button
-          onClick={() => setActiveTab('market')}
-          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center ${
+          onClick={() => { triggerHapticLight(); setActiveTab('market'); }}
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 ${
             activeTab === 'market' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
@@ -752,8 +747,8 @@ export default function CommunityClient({
         </button>
 
         <button
-          onClick={() => setActiveTab('tips')}
-          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center ${
+          onClick={() => { triggerHapticLight(); setActiveTab('tips'); }}
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 ${
             activeTab === 'tips' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
@@ -768,13 +763,13 @@ export default function CommunityClient({
       {activeTab === 'feed' && (
         <div className="space-y-4">
           {/* 📸 INSTAGRAM / SNAPCHAT STYLE 24H FISHING STORIES BAR */}
-          <div className="bg-white p-3 sm:p-4 rounded-3xl border border-slate-200/90 shadow-xs space-y-2">
-            <div className="flex items-center justify-between px-1">
+          <div className="bg-white/80 p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 space-y-2">
+            <div className="flex items-center justify-between px-0.5">
               <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                 {isTr ? 'Av Hikayeleri' : 'Fishing Stories'}
               </span>
               <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                {stories.length} {isTr ? 'Aktif Hikaye' : 'Active'}
+                {stories.length} {isTr ? 'Aktif' : 'Active'}
               </span>
             </div>
 

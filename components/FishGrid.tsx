@@ -8,6 +8,7 @@ import SpotlightCarousel from './SpotlightCarousel';
 import { useTranslations, useLocale } from 'next-intl';
 import { useFavorites } from '@/lib/useFavorites';
 import { Filter, RefreshCw, AlertCircle, Heart, Sparkles, Anchor, Mountain, Waves } from 'lucide-react';
+import { triggerHapticLight } from '@/lib/capacitorUtils';
 
 export const RICH_MOCK_FISHES: Fish[] = [
   {
@@ -249,8 +250,8 @@ export default function FishGrid({ selectedCategory, onSelectCategory, searchTer
         <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none snap-x">
           {/* All */}
           <button
-            onClick={() => onSelectCategory('all')}
-            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start ${
+            onClick={() => { triggerHapticLight(); onSelectCategory('all'); }}
+            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start active:scale-95 ${
               selectedCategory === 'all'
                 ? 'bg-[#0F172A] text-white shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -261,8 +262,8 @@ export default function FishGrid({ selectedCategory, onSelectCategory, searchTer
 
           {/* Freshwater */}
           <button
-            onClick={() => onSelectCategory('tatli')}
-            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start flex items-center space-x-1 ${
+            onClick={() => { triggerHapticLight(); onSelectCategory('tatli'); }}
+            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start flex items-center space-x-1 active:scale-95 ${
               selectedCategory === 'tatli'
                 ? 'bg-[#10B981] text-white shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -274,8 +275,8 @@ export default function FishGrid({ selectedCategory, onSelectCategory, searchTer
 
           {/* Saltwater */}
           <button
-            onClick={() => onSelectCategory('tuzlu')}
-            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start flex items-center space-x-1 ${
+            onClick={() => { triggerHapticLight(); onSelectCategory('tuzlu'); }}
+            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start flex items-center space-x-1 active:scale-95 ${
               selectedCategory === 'tuzlu'
                 ? 'bg-[#0F172A] text-white shadow-sm'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -287,8 +288,8 @@ export default function FishGrid({ selectedCategory, onSelectCategory, searchTer
 
           {/* Favorites */}
           <button
-            onClick={() => onSelectCategory('favorites')}
-            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start flex items-center space-x-1.5 ${
+            onClick={() => { triggerHapticLight(); onSelectCategory('favorites'); }}
+            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all snap-start flex items-center space-x-1.5 active:scale-95 ${
               selectedCategory === 'favorites'
                 ? 'bg-rose-500 text-white shadow-sm'
                 : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200/80'

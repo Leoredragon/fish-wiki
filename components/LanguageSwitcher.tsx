@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from '@/i18n/routing';
 import { useLocale } from 'next-intl';
 import { Globe } from 'lucide-react';
+import { triggerHapticLight } from '@/lib/capacitorUtils';
 
 export default function LanguageSwitcher() {
   const locale = useLocale();
@@ -11,6 +12,7 @@ export default function LanguageSwitcher() {
 
   const toggleLanguage = (newLocale: 'tr' | 'en') => {
     if (newLocale !== locale) {
+      triggerHapticLight();
       router.replace(pathname, { locale: newLocale });
     }
   };
