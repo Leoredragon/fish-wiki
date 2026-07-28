@@ -6,9 +6,10 @@ import '../globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
-import MobileBottomNav from '@/components/MobileBottomNav';
+import MobileBottomNavGate from '@/components/MobileBottomNavGate';
 import AppSplashScreen from '@/components/AppSplashScreen';
 import CapacitorInit from '@/components/CapacitorInit';
+import NativeChrome from '@/components/NativeChrome';
 import { Metadata, Viewport } from 'next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
@@ -60,6 +61,7 @@ export default async function LocaleLayout({
     <html lang={locale} className="h-full">
       <body className="flex min-h-full flex-col bg-[#F8FAFC] text-[#1E293B] antialiased">
         <NextIntlClientProvider messages={messages}>
+          <NativeChrome />
           <CapacitorInit />
           <AppSplashScreen />
           <Header />
@@ -67,8 +69,10 @@ export default async function LocaleLayout({
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">
             {children}
           </main>
-          <MobileBottomNav />
-          <Footer />
+          <MobileBottomNavGate />
+          <div className="native-hide">
+            <Footer />
+          </div>
           <SpeedInsights />
         </NextIntlClientProvider>
       </body>

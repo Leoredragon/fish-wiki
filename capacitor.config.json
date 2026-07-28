@@ -8,6 +8,7 @@
   },
   "android": {
     "allowMixedContent": false,
+    "backgroundColor": "#0F172A",
     "buildOptions": {
       "keystorePath": "",
       "keystorePassword": ""
@@ -15,13 +16,17 @@
   },
   "plugins": {
     "SplashScreen": {
-      "launchShowDuration": 2000,
+      "launchShowDuration": 1800,
       "backgroundColor": "#0F172A",
       "showSpinner": false
     },
     "StatusBar": {
-      "overlaysWebView": true,
-      "style": "DARK"
+      "overlaysWebView": false,
+      "style": "DARK",
+      "backgroundColor": "#0F172A"
+    },
+    "Keyboard": {
+      "resize": "body"
     }
   }
 }

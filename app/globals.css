@@ -12,10 +12,17 @@
   --foreground: #1E293B;
   --primary: #0F172A;
   --accent: #10B981;
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
 }
 
 * {
   box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
@@ -23,6 +30,7 @@ body {
   color: #1E293B;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -33,31 +41,59 @@ body {
 
 /* Safe Area Insets for Mobile Status Bar & Notch */
 .pt-safe {
-  padding-top: max(env(safe-area-inset-top, 0px), 8px);
+  padding-top: max(var(--sat), 0px);
 }
 
 .pb-safe {
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+  padding-bottom: max(var(--sab), 8px);
 }
 
 /* Native App Overrides */
-.is-native-app body {
+html.is-native-app,
+html.is-native-app body {
+  background-color: #0F172A;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+  overscroll-behavior: none;
+}
+
+html.is-native-app body > * {
+  /* Keep page surface light while status/nav chrome stays dark */
+}
+
+html.is-native-app main {
+  background-color: #F8FAFC;
+  min-height: 100%;
 }
 
 /* Allow text selection in inputs and textareas */
-.is-native-app input, 
-.is-native-app textarea {
+html.is-native-app input,
+html.is-native-app textarea,
+html.is-native-app [contenteditable="true"] {
   -webkit-user-select: auto;
   user-select: auto;
 }
 
-.is-native-app .pt-safe {
-  padding-top: 0px !important;
+/*
+  Status bar is opaque + overlaysWebView=false on Android,
+  so do NOT zero out safe padding. Keep a small fallback only if
+  the OS still reports insets (gesture/nav areas).
+*/
+html.is-native-app .pt-safe {
+  padding-top: max(var(--sat), 0px);
 }
 
-.is-native-app .pb-safe {
-  padding-bottom: 0px !important;
+html.is-native-app .pb-safe {
+  padding-bottom: max(var(--sab), 10px);
+}
+
+/* Hide web-only chrome inside native shell via class toggles */
+html.is-native-app .native-hide {
+  display: none !important;
+}
+
+html.is-native-app .native-auth-screen main {
+  padding-top: 0.5rem !important;
+  padding-bottom: 1rem !important;
 }

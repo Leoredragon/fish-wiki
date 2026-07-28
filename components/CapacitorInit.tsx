@@ -35,6 +35,7 @@ export default function CapacitorInit() {
     StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
     StatusBar.setBackgroundColor({ color: '#0F172A' }).catch(() => {});
     StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+    StatusBar.show().catch(() => {});
 
     Network.getStatus()
       .then((status) => {
