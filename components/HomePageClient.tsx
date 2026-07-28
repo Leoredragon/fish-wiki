@@ -15,7 +15,7 @@ export default function HomePageClient() {
   }, []);
 
   return (
-    <div className="space-y-8 pb-16">
+    <div className="space-y-4 sm:space-y-6 pb-10">
       {/* Hero Section with integrated Live Search input */}
       <HeroSection
         searchTerm={searchTerm}

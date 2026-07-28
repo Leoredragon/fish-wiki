@@ -18,7 +18,7 @@ export default function HeroSection({ searchTerm, onSearchChange }: HeroSectionP
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="relative overflow-hidden bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0F172A] rounded-3xl p-6 sm:p-10 text-white shadow-xl border border-slate-800 space-y-6"
+      className="relative overflow-hidden bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] rounded-2xl sm:rounded-3xl p-5 sm:p-10 text-white shadow-lg border border-slate-800/80 space-y-4 sm:space-y-6"
     >
       {/* Subtle background glow */}
       <div className="absolute top-0 right-0 -mt-12 -mr-12 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />

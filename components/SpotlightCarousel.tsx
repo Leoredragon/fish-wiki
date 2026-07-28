@@ -20,8 +20,8 @@ export default function SpotlightCarousel({ fishes }: { fishes: Fish[] }) {
     : fishes.slice(0, 5);
 
   return (
-    <div className="space-y-3 py-2">
-      <div className="flex items-center justify-between px-1">
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between px-0.5">
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
@@ -34,7 +34,7 @@ export default function SpotlightCarousel({ fishes }: { fishes: Fish[] }) {
       </div>
 
       {/* Swipeable Carousel */}
-      <div className="flex space-x-4 overflow-x-auto pb-4 pt-1 scrollbar-none snap-x snap-mandatory">
+      <div className="flex space-x-3 overflow-x-auto pb-1 pt-0.5 scrollbar-none snap-x snap-mandatory -mx-1 px-1">
         {spotlightFishes.map((fish, idx) => {
           const name = isTr ? fish.name_tr : fish.name_en;
           const shortInfo = isTr ? fish.short_info_tr : fish.short_info_en;

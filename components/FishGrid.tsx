@@ -233,12 +233,12 @@ export default function FishGrid({ selectedCategory, onSelectCategory, searchTer
     });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6">
       {/* Featured Spotlight Carousel */}
       <SpotlightCarousel fishes={fishes} />
 
       {/* Swipeable Quick Filter Chips Bar */}
-      <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/80 shadow-sm space-y-3">
+      <div className="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-sm space-y-3">
         <div className="flex items-center space-x-2">
           <Filter className="w-4 h-4 text-emerald-600 shrink-0" />
           <h2 className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
