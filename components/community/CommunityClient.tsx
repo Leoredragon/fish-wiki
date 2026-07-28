@@ -54,9 +54,9 @@ function isStoryOwner(story: Record<string, any>, userId?: string | null) {
 }
 
 function buildPublicProfilePath(locale: string, profileData: any, userId?: string | null) {
+  if (userId) return `/${locale}/u/id-${userId}`;
   const username = profileData?.username ? String(profileData.username).trim() : '';
   if (username) return `/${locale}/u/${encodeURIComponent(username)}`;
-  if (userId) return `/${locale}/u/id-${userId}`;
   return null;
 }
 

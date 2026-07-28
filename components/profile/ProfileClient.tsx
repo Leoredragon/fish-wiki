@@ -76,6 +76,8 @@ export default function ProfileClient({
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '');
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
   // Password Change State
   const [newPassword, setNewPassword] = useState('');
@@ -106,6 +108,34 @@ export default function ProfileClient({
     fetchTackleSets();
     fetchFavoriteSpots();
     fetchUserMarketItems();
+    fetchFollowStats();
+  }, [user.id]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`profile-follows-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'follows' },
+        (payload: any) => {
+          const newRow = payload.new || {};
+          const oldRow = payload.old || {};
+          if (
+            newRow.follower_id === user.id
+            || newRow.following_id === user.id
+            || oldRow.follower_id === user.id
+            || oldRow.following_id === user.id
+          ) {
+            fetchFollowStats();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user.id]);
 
   const fetchTackleSets = async () => {
@@ -136,6 +166,18 @@ export default function ProfileClient({
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       if (data) setUserMarketItems(data);
+    } catch {}
+  };
+
+  const fetchFollowStats = async () => {
+    try {
+      const supabase = createClient();
+      const [{ count: followers }, { count: following }] = await Promise.all([
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', user.id),
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', user.id)
+      ]);
+      setFollowersCount(followers || 0);
+      setFollowingCount(following || 0);
     } catch {}
   };
 
@@ -504,6 +546,12 @@ export default function ProfileClient({
                 <span>{city}</span>
               </span>
             )}
+            <span className="bg-slate-50 text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200">
+              {followersCount} {isTr ? 'Takipçi' : 'Followers'}
+            </span>
+            <span className="bg-slate-50 text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200">
+              {followingCount} {isTr ? 'Takip' : 'Following'}
+            </span>
             <span className="flex items-center space-x-1 bg-slate-50 text-slate-600 px-2.5 py-0.5 rounded-lg border border-slate-200">
               <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>
               OltaApp Pro
