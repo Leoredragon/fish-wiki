@@ -177,7 +177,7 @@ export default function WikiClient({ initialArticles = [] }: { initialArticles?:
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 mobile-scroll-pad">
       {/* Hero Header Banner (Matching Homepage Layout & Search) */}
       <div className="relative overflow-hidden bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0F172A] rounded-3xl p-5 sm:p-8 text-white shadow-xl border border-slate-800 space-y-4">
         {/* Background glow */}

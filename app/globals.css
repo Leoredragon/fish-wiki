@@ -64,6 +64,41 @@ html.is-native-app main {
   width: 100%;
 }
 
+/* Extra clearance above fixed bottom nav on native mobile */
+@media (max-width: 767px) {
+  html.is-native-app main {
+    padding-bottom: calc(6.75rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+/* Shared bottom padding for scrollable feed pages (home, wiki, community) */
+.mobile-scroll-pad {
+  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .mobile-scroll-pad {
+    padding-bottom: 2.5rem;
+  }
+}
+
+/* Weather page: fixed viewport on mobile — no vertical scroll */
+@media (max-width: 767px) {
+  main:has(.weather-fit-screen) {
+    overflow: hidden;
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .weather-fit-screen {
+    max-height: calc(100dvh - 7.5rem - env(safe-area-inset-bottom, 0px));
+    overflow: hidden;
+  }
+
+  html.is-native-app main:has(.weather-fit-screen) {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
 /* Allow text selection in inputs and textareas */
 html.is-native-app input,
 html.is-native-app textarea,

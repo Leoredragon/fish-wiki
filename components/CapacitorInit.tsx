@@ -21,6 +21,7 @@ export default function CapacitorInit() {
   const [isOffline, setIsOffline] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [isBackOnline, setIsBackOnline] = useState(false);
+  const [authGateLoading, setAuthGateLoading] = useState(false);
   const offlineRef = useRef(false);
   const loginRedirectDoneRef = useRef(false);
   const nativeBootedRef = useRef(false);
@@ -154,9 +155,11 @@ export default function CapacitorInit() {
     const ignoredPaths = ['/login', '/register', '/privacy', '/terms', '/about', '/faq'];
     if (ignoredPaths.some((segment) => pathname.includes(segment))) {
       loginRedirectDoneRef.current = true;
+      setAuthGateLoading(false);
       return;
     }
 
+    setAuthGateLoading(true);
     let cancelled = false;
     (async () => {
       try {
@@ -175,6 +178,10 @@ export default function CapacitorInit() {
       } catch {
         // Auth check failed — leave user on current page
         loginRedirectDoneRef.current = true;
+      } finally {
+        if (!cancelled) {
+          setAuthGateLoading(false);
+        }
       }
     })();
 
@@ -231,6 +238,14 @@ export default function CapacitorInit() {
     return (
       <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[999999] bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg">
         Bağlantı geri geldi
+      </div>
+    );
+  }
+
+  if (authGateLoading) {
+    return (
+      <div className="fixed inset-0 z-[999998] bg-[#0F172A] flex items-center justify-center select-none">
+        <div className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
       </div>
     );
   }

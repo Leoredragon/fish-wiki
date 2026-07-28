@@ -20,7 +20,7 @@ export default function HomePageClient({ initialFishes = [] }: HomePageClientPro
   }, []);
 
   return (
-    <div className="space-y-4 sm:space-y-6 pb-10">
+    <div className="space-y-4 sm:space-y-6 mobile-scroll-pad">
       {/* Hero Section with integrated Live Search input */}
       <HeroSection
         searchTerm={searchTerm}

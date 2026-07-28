@@ -148,6 +148,21 @@ function parseWeatherCode(code: number, isTr: boolean) {
   return { text: isTr ? 'Ilıman' : 'Mild', iconType: 'sun-cloud' };
 }
 
+function findClosestProvince(lat: number, lng: number): CityWeatherSpot {
+  let closest = TURKEY_PROVINCES[0];
+  let minDistance = Infinity;
+
+  for (const spot of TURKEY_PROVINCES) {
+    const dist = Math.hypot(spot.lat - lat, spot.lon - lng);
+    if (dist < minDistance) {
+      minDistance = dist;
+      closest = spot;
+    }
+  }
+
+  return closest;
+}
+
 export default function WeatherSolunarClient() {
   const locale = useLocale();
   const isTr = locale === 'tr';
@@ -158,6 +173,15 @@ export default function WeatherSolunarClient() {
   const [loading, setLoading] = useState<boolean>(true);
   const [locating, setLocating] = useState<boolean>(false);
   const [sortMode, setSortMode] = useState<'plate' | 'alpha'>('plate');
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   const sortedProvinces = [...TURKEY_PROVINCES].sort((a, b) => {
     if (sortMode === 'alpha') {
@@ -172,7 +196,31 @@ export default function WeatherSolunarClient() {
     fetchWeatherForSpot(selectedSpot);
   }, [selectedSpot]);
 
-  // Handle native / browser geolocation to find closest city
+  // Auto-detect location once per session (permission prompt on native / browser)
+  useEffect(() => {
+    const autoKey = 'oltaapp_weather_auto_loc_v1';
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(autoKey)) return;
+
+    let cancelled = false;
+
+    (async () => {
+      setLocating(true);
+      const coords = await getCurrentPositionNative();
+      if (cancelled) return;
+
+      if (coords) {
+        sessionStorage.setItem(autoKey, '1');
+        setSelectedSpot(findClosestProvince(coords.lat, coords.lng));
+      }
+
+      setLocating(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleDetectLocation = async () => {
     setLocating(true);
     const coords = await getCurrentPositionNative();
@@ -182,18 +230,7 @@ export default function WeatherSolunarClient() {
       return;
     }
 
-    const { lat, lng } = coords;
-    let closest = TURKEY_PROVINCES[0];
-    let minDistance = Infinity;
-
-    for (const spot of TURKEY_PROVINCES) {
-      const dist = Math.hypot(spot.lat - lat, spot.lon - lng);
-      if (dist < minDistance) {
-        minDistance = dist;
-        closest = spot;
-      }
-    }
-    setSelectedSpot(closest);
+    setSelectedSpot(findClosestProvince(coords.lat, coords.lng));
     setLocating(false);
   };
 
@@ -260,11 +297,10 @@ export default function WeatherSolunarClient() {
 
   const weatherDetails = weatherData ? parseWeatherCode(weatherData.weather_code, isTr) : { text: '', iconType: 'sun-cloud' };
 
-  return (
-    <PullToRefresh onRefresh={() => fetchWeatherForSpot(selectedSpot)}>
-      <div className="max-w-4xl mx-auto space-y-5 pb-16 pt-2 px-4 sm:px-6">
+  const pageContent = (
+    <div className="max-w-4xl mx-auto space-y-3 max-md:space-y-2.5 pt-1 px-3 sm:px-6 pb-4 md:pb-16 weather-fit-screen">
       {/* Compact City Dropdown & Geolocation Button */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3">
+      <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-2.5 sm:space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Navigation className="w-4 h-4 text-emerald-600" />
@@ -309,20 +345,20 @@ export default function WeatherSolunarClient() {
 
       {/* Main Weather Card (Integrated Temperature, Pressure, Wind & Humidity) */}
       {loading ? (
-        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-xs text-center space-y-2">
+        <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-xs text-center space-y-2">
           <Loader2 className="w-6 h-6 text-emerald-500 animate-spin mx-auto" />
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
             {isTr ? 'Canlı hava verileri alınıyor...' : 'Loading weather data...'}
           </p>
         </div>
       ) : (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-          <div className="bg-gradient-to-br from-[#0F172A] to-slate-900 text-white rounded-3xl p-5 sm:p-7 border border-slate-800 shadow-md relative overflow-hidden space-y-4">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3 max-md:space-y-2.5">
+          <div className="bg-gradient-to-br from-[#0F172A] to-slate-900 text-white rounded-3xl p-4 sm:p-7 border border-slate-800 shadow-md relative overflow-hidden space-y-3 sm:space-y-4">
             <div className="absolute top-0 right-0 -mt-8 -mr-8 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
             {/* Header: City Name & Date */}
-            <div className="flex justify-between items-center border-b border-slate-800/80 pb-3 relative z-10">
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            <div className="flex justify-between items-center border-b border-slate-800/80 pb-2 sm:pb-3 relative z-10">
+              <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight">
                 {isTr ? selectedSpot.nameTr : selectedSpot.nameEn}
               </h2>
               <div className="text-right text-xs font-semibold text-slate-400">
@@ -331,13 +367,13 @@ export default function WeatherSolunarClient() {
             </div>
 
             {/* Temp & Main Status */}
-            <div className="flex items-center justify-between py-2 relative z-10">
-              <div className="flex items-center space-x-3">
-                <div className="p-2.5 bg-slate-800/90 rounded-2xl border border-slate-700/80">
-                  {renderWeatherIcon(weatherDetails.iconType, "w-9 h-9")}
+            <div className="flex items-center justify-between py-1 sm:py-2 relative z-10">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="p-2 sm:p-2.5 bg-slate-800/90 rounded-2xl border border-slate-700/80">
+                  {renderWeatherIcon(weatherDetails.iconType, "w-7 h-7 sm:w-9 sm:h-9")}
                 </div>
                 <div>
-                  <div className="text-4xl sm:text-5xl font-black text-white tracking-tight">
+                  <div className="text-3xl sm:text-5xl font-black text-white tracking-tight">
                     {Math.round(weatherData?.temperature_2m || 0)}°C
                   </div>
                   <div className="text-xs font-bold text-emerald-400 capitalize mt-0.5">
@@ -347,7 +383,7 @@ export default function WeatherSolunarClient() {
               </div>
 
               {/* Integrated Compact Metrics Grid inside Main Card */}
-              <div className="grid grid-cols-3 gap-2 text-center text-xs font-semibold text-slate-200 bg-slate-800/50 p-3 rounded-2xl border border-slate-700/60">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center text-xs font-semibold text-slate-200 bg-slate-800/50 p-2 sm:p-3 rounded-2xl border border-slate-700/60">
                 <div className="flex flex-col items-center">
                   <Droplets className="w-4 h-4 text-cyan-400 mb-0.5" />
                   <span className="text-[10px] text-slate-400 font-bold uppercase">{isTr ? 'Nem' : 'Humidity'}</span>
@@ -371,7 +407,7 @@ export default function WeatherSolunarClient() {
 
           {/* 5-DAY WEATHER FORECAST GRID (Compact fit for mobile) */}
           {dailyForecast.length > 0 && (
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+            <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-2 sm:space-y-3">
               <div className="flex items-center space-x-2 border-b border-slate-100 pb-2">
                 <Calendar className="w-4 h-4 text-emerald-600" />
                 <h3 className="text-xs font-extrabold text-[#0F172A] uppercase tracking-wider">
@@ -410,7 +446,16 @@ export default function WeatherSolunarClient() {
           )}
         </motion.div>
       )}
-      </div>
+    </div>
+  );
+
+  if (isMobile) {
+    return pageContent;
+  }
+
+  return (
+    <PullToRefresh onRefresh={() => fetchWeatherForSpot(selectedSpot)}>
+      {pageContent}
     </PullToRefresh>
   );
 }
