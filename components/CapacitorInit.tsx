@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { App } from '@capacitor/app';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
 import { Dialog } from '@capacitor/dialog';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { PushNotifications } from '@capacitor/push-notifications';
 import { Network } from '@capacitor/network';
 import { useRouter, usePathname } from 'next/navigation';
 import { WifiOff, RefreshCw, Anchor } from 'lucide-react';
@@ -18,29 +17,32 @@ const NOTIFICATION_PROMPT_SHOWN_KEY = 'oltaapp_notification_prompt_shown_v1';
 export default function CapacitorInit() {
   const router = useRouter();
   const pathname = usePathname();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [isOffline, setIsOffline] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [isBackOnline, setIsBackOnline] = useState(false);
   const offlineRef = useRef(false);
   const loginRedirectDoneRef = useRef(false);
+  const nativeBootedRef = useRef(false);
 
+  // One-time native boot: status bar, network, notifications, back button
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
+    if (!Capacitor.isNativePlatform() || nativeBootedRef.current) return;
+    nativeBootedRef.current = true;
 
     document.documentElement.classList.add('is-native-app');
 
-    // 1. Instant Status Bar (no blocking delay)
     StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
     StatusBar.setBackgroundColor({ color: '#0F172A' }).catch(() => {});
     StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
 
-    // 2. Instant Network Status Check
-    Network.getStatus().then((status) => {
-      const offline = !status.connected;
-      offlineRef.current = offline;
-      setIsOffline(offline);
-    }).catch(() => {});
+    Network.getStatus()
+      .then((status) => {
+        const offline = !status.connected;
+        offlineRef.current = offline;
+        setIsOffline(offline);
+      })
+      .catch(() => {});
 
     const netListener = Network.addListener('networkStatusChange', (newStatus) => {
       const wasOffline = offlineRef.current;
@@ -48,115 +50,88 @@ export default function CapacitorInit() {
       offlineRef.current = nowOffline;
       setIsOffline(nowOffline);
       if (newStatus.connected && wasOffline) {
-        // Soft refresh keeps app-state loss lower than full reload.
         router.refresh();
         setIsBackOnline(true);
         setTimeout(() => setIsBackOnline(false), 2400);
       }
     });
 
-    const maybeRedirectToLogin = async () => {
-      if (loginRedirectDoneRef.current) return;
-      const ignoredPaths = ['/login', '/register', '/privacy', '/terms', '/about', '/faq'];
-      const isIgnored = ignoredPaths.some((segment) => pathname.includes(segment));
-      if (isIgnored) return;
-
-      const localeSegment = pathname.split('/')[1];
-      const locale = localeSegment === 'en' ? 'en' : 'tr';
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        loginRedirectDoneRef.current = true;
-        router.replace(`/${locale}/login`);
-      }
-    };
-
-    maybeRedirectToLogin().catch(() => {});
-
     const scheduleDefaultLocalNotifications = async () => {
-      const pending = await LocalNotifications.getPending();
-      if (pending.notifications.length > 0) {
-        await LocalNotifications.cancel(pending);
-      }
+      try {
+        const pending = await LocalNotifications.getPending();
+        if (pending.notifications.length > 0) {
+          await LocalNotifications.cancel(pending);
+        }
 
-      await LocalNotifications.schedule({
-        notifications: [
-          {
-            id: 101,
-            title: '🎣 Günaydın Balıkçı! (oltaApp)',
-            body: 'Bugün meralarda hava ve deniz koşulları harika! Balık iştah skorunu kontrol etmeyi unutma.',
-            schedule: {
-              on: { hour: 9, minute: 0 },
-              repeats: true,
-              every: 'day'
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: 101,
+              title: 'Günaydın Balıkçı! (oltaApp)',
+              body: 'Bugün meralarda hava ve deniz koşulları harika! Balık iştah skorunu kontrol etmeyi unutma.',
+              schedule: {
+                on: { hour: 9, minute: 0 },
+                repeats: true
+              },
+              smallIcon: 'ic_launcher',
+              actionTypeId: '',
+              extra: null
             },
-            sound: undefined,
-            smallIcon: 'ic_launcher',
-            actionTypeId: '',
-            extra: null
-          },
-          {
-            id: 102,
-            title: '🌊 Günün En Verimli Av Saati Geldi!',
-            body: 'Meralardan yeni av raporları var. Solunar tahminlerini incele, sahteni suya düşür!',
-            schedule: {
-              on: { hour: 17, minute: 0 },
-              repeats: true,
-              every: 'day'
-            },
-            sound: undefined,
-            smallIcon: 'ic_launcher',
-            actionTypeId: '',
-            extra: null
-          }
-        ]
-      });
+            {
+              id: 102,
+              title: 'Günün En Verimli Av Saati!',
+              body: 'Meralardan yeni av raporları var. Solunar tahminlerini incele.',
+              schedule: {
+                on: { hour: 17, minute: 0 },
+                repeats: true
+              },
+              smallIcon: 'ic_launcher',
+              actionTypeId: '',
+              extra: null
+            }
+          ]
+        });
+      } catch (e) {
+        console.warn('Local notification schedule skipped:', e);
+      }
     };
 
-    // 3. Defer notification setup and ask rationale first.
+    // Delay notification prompt; never call PushNotifications.register without Firebase
     const timer = setTimeout(async () => {
       try {
         const promptShown = localStorage.getItem(NOTIFICATION_PROMPT_SHOWN_KEY) === 'true';
         if (!promptShown) {
           const { value: allowNotifications } = await Dialog.confirm({
             title: 'Bildirim İzni',
-            message: 'Av saatleri ve topluluk güncellemeleri için bildirim izni vermek ister misiniz?',
+            message: 'Av saatleri hatırlatmaları için yerel bildirim izni vermek ister misiniz?',
             okButtonTitle: 'İzin Ver',
-            cancelButtonTitle: 'Şimdi Değil',
+            cancelButtonTitle: 'Şimdi Değil'
           });
 
           localStorage.setItem(NOTIFICATION_PROMPT_SHOWN_KEY, 'true');
-          if (!allowNotifications) {
-            return;
-          }
+          if (!allowNotifications) return;
         }
 
         const localPerm = await LocalNotifications.requestPermissions();
         if (localPerm.display === 'granted') {
           await scheduleDefaultLocalNotifications();
         }
-
-        const pushPerm = await PushNotifications.requestPermissions();
-        if (pushPerm.receive === 'granted') {
-          await PushNotifications.register();
-        }
+        // Firebase/FCM kurulana kadar PushNotifications.register() çağırma (native crash sebebi)
       } catch (e) {
-        console.error('Deferred notifications init failed', e);
+        console.warn('Notification init skipped:', e);
       }
-    }, 3500);
+    }, 5000);
 
-    // 4. Handle Hardware Back Button
     const backButtonListener = App.addListener('backButton', async () => {
-      if (pathname === '/' || pathname === '/tr' || pathname === '/en') {
+      const path = window.location.pathname;
+      if (path === '/' || path === '/tr' || path === '/en') {
         const { value } = await Dialog.confirm({
           title: 'Çıkış',
           message: 'Uygulamadan çıkmak istiyor musunuz?',
           okButtonTitle: 'Evet',
-          cancelButtonTitle: 'Hayır',
+          cancelButtonTitle: 'Hayır'
         });
-        
-        if (value) {
-          App.exitApp();
-        }
+        if (value) App.exitApp();
       } else {
         router.back();
       }
@@ -164,8 +139,46 @@ export default function CapacitorInit() {
 
     return () => {
       clearTimeout(timer);
-      netListener.then((l) => l.remove());
-      backButtonListener.then((l) => l.remove());
+      netListener.then((l) => l.remove()).catch(() => {});
+      backButtonListener.then((l) => l.remove()).catch(() => {});
+      nativeBootedRef.current = false;
+    };
+  }, [router]);
+
+  // Soft login gate (once): only redirect if not on auth/legal pages
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    if (loginRedirectDoneRef.current) return;
+
+    const ignoredPaths = ['/login', '/register', '/privacy', '/terms', '/about', '/faq'];
+    if (ignoredPaths.some((segment) => pathname.includes(segment))) {
+      loginRedirectDoneRef.current = true;
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const localeSegment = pathname.split('/')[1];
+        const locale = localeSegment === 'en' ? 'en' : 'tr';
+        const {
+          data: { user }
+        } = await supabase.auth.getUser();
+        if (cancelled) return;
+        if (!user) {
+          loginRedirectDoneRef.current = true;
+          router.replace(`/${locale}/login`);
+        } else {
+          loginRedirectDoneRef.current = true;
+        }
+      } catch {
+        // Auth check failed — leave user on current page
+        loginRedirectDoneRef.current = true;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
     };
   }, [pathname, router, supabase]);
 
@@ -216,7 +229,7 @@ export default function CapacitorInit() {
   if (isBackOnline) {
     return (
       <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[999999] bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg">
-        Baglanti geri geldi
+        Bağlantı geri geldi
       </div>
     );
   }
