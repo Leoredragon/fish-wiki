@@ -2,6 +2,8 @@ import { Capacitor } from '@capacitor/core';
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { Share } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Geolocation } from '@capacitor/geolocation';
 
 export const isNativeApp = () => Capacitor.isNativePlatform();
 
@@ -138,4 +140,73 @@ export const nativeShare = async (options: { title: string; text?: string; url?:
   }
 
   return false;
+};
+
+/**
+ * Native Camera & Photo Picker returning a JavaScript File object
+ */
+export const pickPhotoNative = async (promptSource: 'camera' | 'photos' | 'prompt' = 'prompt'): Promise<File | null> => {
+  if (!isNativeApp()) return null;
+
+  try {
+    const source = promptSource === 'camera' 
+      ? CameraSource.Camera 
+      : promptSource === 'photos' 
+        ? CameraSource.Photos 
+        : CameraSource.Prompt;
+
+    const photo = await Camera.getPhoto({
+      quality: 90,
+      allowEditing: false,
+      resultType: CameraResultType.Uri,
+      source: source,
+      correctOrientation: true
+    });
+
+    if (!photo.webPath) return null;
+
+    const response = await fetch(photo.webPath);
+    const blob = await response.blob();
+    const fileName = `oltaapp_photo_${Date.now()}.${photo.format || 'jpg'}`;
+
+    return new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+  } catch (e) {
+    console.log('[pickPhotoNative] User cancelled or error:', e);
+    return null;
+  }
+};
+
+/**
+ * Native GPS Geolocation getter with high accuracy fallback
+ */
+export const getCurrentPositionNative = async (): Promise<{ lat: number; lng: number } | null> => {
+  if (isNativeApp()) {
+    try {
+      const perm = await Geolocation.checkPermissions();
+      if (perm.location !== 'granted') {
+        await Geolocation.requestPermissions();
+      }
+      const pos = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 3000
+      });
+      return { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    } catch (e) {
+      console.error('[getCurrentPositionNative ERROR]:', e);
+    }
+  }
+
+  // Web Fallback
+  return new Promise((resolve) => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null),
+      { timeout: 8000 }
+    );
+  });
 };

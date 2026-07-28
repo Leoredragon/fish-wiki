@@ -61,6 +61,7 @@ export default async function LocaleLayout({
       <body className="flex min-h-full flex-col bg-[#F8FAFC] text-[#1E293B] antialiased">
         <NextIntlClientProvider messages={messages}>
           <CapacitorInit />
+          <AppSplashScreen />
           <Header />
           <PWAInstallBanner />
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 md:pb-8">

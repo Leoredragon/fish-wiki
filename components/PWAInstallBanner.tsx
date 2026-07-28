@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { Smartphone, Download, X, Sparkles } from 'lucide-react';
 import { useLocale } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Capacitor } from '@capacitor/core';
 
 export default function PWAInstallBanner() {
   const locale = useLocale();
@@ -15,6 +16,8 @@ export default function PWAInstallBanner() {
   const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
+    if (Capacitor.isNativePlatform()) return;
+
     // Check if user already dismissed banner in the last 7 days
     const dismissed = localStorage.getItem('oltapp_pwa_dismissed');
     if (dismissed) {

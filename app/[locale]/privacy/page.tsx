@@ -1,7 +1,8 @@
 import { setRequestLocale } from 'next-intl/server';
 import PrivacyClient from '@/components/privacy/PrivacyClient';
 
-export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   return {
     title: locale === 'tr' ? 'Gizlilik Politikası | Oltapp (Livar)' : 'Privacy Policy | Oltapp (Livar)',
     description: locale === 'tr' 
@@ -10,7 +11,8 @@ export async function generateMetadata({ params: { locale } }: { params: { local
   };
 }
 
-export default async function PrivacyPage({ params: { locale } }: { params: { locale: string } }) {
+export default async function PrivacyPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   setRequestLocale(locale);
   return <PrivacyClient />;
 }

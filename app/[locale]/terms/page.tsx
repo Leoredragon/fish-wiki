@@ -1,7 +1,8 @@
 import { setRequestLocale } from 'next-intl/server';
 import TermsClient from '@/components/terms/TermsClient';
 
-export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   return {
     title: locale === 'tr' ? 'Kullanım Koşulları | Oltapp (Livar)' : 'Terms of Service | Oltapp (Livar)',
     description: locale === 'tr' 
@@ -10,7 +11,8 @@ export async function generateMetadata({ params: { locale } }: { params: { local
   };
 }
 
-export default async function TermsPage({ params: { locale } }: { params: { locale: string } }) {
+export default async function TermsPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   setRequestLocale(locale);
   return <TermsClient />;
 }

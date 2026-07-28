@@ -20,18 +20,14 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
 
 export default function AdminUsersClient() {
   const locale = useLocale();
   const isTr = locale === 'tr';
-  const router = useRouter();
   const supabase = createClient();
 
-  // Admin Auth PIN state (Secret PIN protection)
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState(false);
+  // Access is now guarded server-side + middleware by profiles.is_admin.
+  const [isAuthenticated] = useState(true);
 
   // Data state
   const [loading, setLoading] = useState(true);
@@ -50,26 +46,8 @@ export default function AdminUsersClient() {
   const [loadingDetail, setLoadingDetail] = useState(false);
 
   useEffect(() => {
-    // Check if session pin is stored
-    const storedPin = sessionStorage.getItem('oltapp_admin_unlocked');
-    if (storedPin === 'true') {
-      setIsAuthenticated(true);
-      fetchAdminData();
-    }
+    fetchAdminData();
   }, []);
-
-  const handleUnlockPin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Default secret admin PIN is 1923 or admin
-    if (pinInput.trim() === '1923' || pinInput.trim().toLowerCase() === 'admin') {
-      sessionStorage.setItem('oltapp_admin_unlocked', 'true');
-      setIsAuthenticated(true);
-      setPinError(false);
-      fetchAdminData();
-    } else {
-      setPinError(true);
-    }
-  };
 
   const fetchAdminData = async () => {
     setLoading(true);
@@ -164,7 +142,7 @@ export default function AdminUsersClient() {
   // Extract unique cities for filter dropdown
   const uniqueCities = Array.from(new Set(users.map((u) => u.city).filter(Boolean)));
 
-  // If not unlocked with Secret PIN
+  // If access control changes in the future, keep a safe fallback UI.
   if (!isAuthenticated) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-4">
@@ -186,33 +164,25 @@ export default function AdminUsersClient() {
             </p>
           </div>
 
-          <form onSubmit={handleUnlockPin} className="space-y-4">
+          <form className="space-y-4">
             <div>
               <input
                 type="password"
                 maxLength={10}
                 required
-                value={pinInput}
-                onChange={(e) => {
-                  setPinInput(e.target.value);
-                  setPinError(false);
-                }}
-                placeholder={isTr ? 'Yönetici PIN Kodu (Örn: 1923)' : 'Admin PIN Code'}
+                value=""
+                readOnly
+                placeholder={isTr ? 'Yetki denetimi sunucu tarafında yapılıyor' : 'Server-side access check enabled'}
                 className="w-full text-center text-lg tracking-widest font-black bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
-              {pinError && (
-                <p className="text-xs text-red-500 font-bold mt-2">
-                  {isTr ? 'Hatalı PIN kodu! Lütfen tekrar deneyin.' : 'Incorrect PIN code! Please try again.'}
-                </p>
-              )}
             </div>
 
             <button
-              type="submit"
+              type="button"
               className="w-full bg-[#0F172A] hover:bg-slate-800 text-white font-extrabold py-3.5 rounded-2xl text-sm transition-all shadow-md flex items-center justify-center space-x-2"
             >
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>{isTr ? 'Paneli Aç' : 'Unlock Dashboard'}</span>
+              <span>{isTr ? 'Yetki Gerekli' : 'Authorization Required'}</span>
             </button>
           </form>
         </motion.div>

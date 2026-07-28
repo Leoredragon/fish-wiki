@@ -21,6 +21,8 @@ import {
   MapPin,
   Loader2
 } from 'lucide-react';
+import PullToRefresh from '@/components/PullToRefresh';
+import { getCurrentPositionNative } from '@/lib/capacitorUtils';
 
 interface CityWeatherSpot {
   id: string; // e.g. "34"
@@ -170,35 +172,29 @@ export default function WeatherSolunarClient() {
     fetchWeatherForSpot(selectedSpot);
   }, [selectedSpot]);
 
-  // Handle browser geolocation to find closest city
-  const handleDetectLocation = () => {
-    if (!navigator.geolocation) {
-      alert(isTr ? 'Cihazınız konum özelliğini desteklemiyor.' : 'Geolocation not supported.');
+  // Handle native / browser geolocation to find closest city
+  const handleDetectLocation = async () => {
+    setLocating(true);
+    const coords = await getCurrentPositionNative();
+    if (!coords) {
+      alert(isTr ? 'Konum izni alınamadı veya GPS kapalı. Lütfen listeden şehir seçiniz.' : 'Could not obtain location permission.');
+      setLocating(false);
       return;
     }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        let closest = TURKEY_PROVINCES[0];
-        let minDistance = Infinity;
 
-        for (const spot of TURKEY_PROVINCES) {
-          const dist = Math.hypot(spot.lat - latitude, spot.lon - longitude);
-          if (dist < minDistance) {
-            minDistance = dist;
-            closest = spot;
-          }
-        }
-        setSelectedSpot(closest);
-        setLocating(false);
-      },
-      (_err) => {
-        alert(isTr ? 'Konum izni alınamadı. Lütfen listeden şehir seçiniz.' : 'Could not obtain location permission.');
-        setLocating(false);
-      },
-      { timeout: 8000 }
-    );
+    const { lat, lng } = coords;
+    let closest = TURKEY_PROVINCES[0];
+    let minDistance = Infinity;
+
+    for (const spot of TURKEY_PROVINCES) {
+      const dist = Math.hypot(spot.lat - lat, spot.lon - lng);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closest = spot;
+      }
+    }
+    setSelectedSpot(closest);
+    setLocating(false);
   };
 
   const fetchWeatherForSpot = async (spot: CityWeatherSpot) => {
@@ -265,7 +261,8 @@ export default function WeatherSolunarClient() {
   const weatherDetails = weatherData ? parseWeatherCode(weatherData.weather_code, isTr) : { text: '', iconType: 'sun-cloud' };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5 pb-16 pt-2 px-4 sm:px-6">
+    <PullToRefresh onRefresh={() => fetchWeatherForSpot(selectedSpot)}>
+      <div className="max-w-4xl mx-auto space-y-5 pb-16 pt-2 px-4 sm:px-6">
       {/* Compact City Dropdown & Geolocation Button */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3">
         <div className="flex items-center justify-between">
@@ -413,6 +410,7 @@ export default function WeatherSolunarClient() {
           )}
         </motion.div>
       )}
-    </div>
+      </div>
+    </PullToRefresh>
   );
 }

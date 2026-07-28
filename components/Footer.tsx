@@ -3,10 +3,13 @@
 import { useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { Shield, FileText, HelpCircle, Info } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 
 export default function Footer() {
   const locale = useLocale();
   const isTr = locale === 'tr';
+
+  if (Capacitor.isNativePlatform()) return null;
 
   return (
     <footer className="bg-[#0F172A] border-t border-slate-800 text-slate-300 py-6 mt-auto">

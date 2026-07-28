@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { App } from '@capacitor/app';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Capacitor } from '@capacitor/core';
@@ -11,12 +11,19 @@ import { Network } from '@capacitor/network';
 import { useRouter, usePathname } from 'next/navigation';
 import { WifiOff, RefreshCw, Anchor } from 'lucide-react';
 import { triggerHapticLight } from '@/lib/capacitorUtils';
+import { createClient } from '@/lib/supabase/client';
+
+const NOTIFICATION_PROMPT_SHOWN_KEY = 'oltaapp_notification_prompt_shown_v1';
 
 export default function CapacitorInit() {
   const router = useRouter();
   const pathname = usePathname();
+  const supabase = createClient();
   const [isOffline, setIsOffline] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [isBackOnline, setIsBackOnline] = useState(false);
+  const offlineRef = useRef(false);
+  const loginRedirectDoneRef = useRef(false);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
@@ -30,58 +37,102 @@ export default function CapacitorInit() {
 
     // 2. Instant Network Status Check
     Network.getStatus().then((status) => {
-      setIsOffline(!status.connected);
+      const offline = !status.connected;
+      offlineRef.current = offline;
+      setIsOffline(offline);
     }).catch(() => {});
 
     const netListener = Network.addListener('networkStatusChange', (newStatus) => {
-      setIsOffline(!newStatus.connected);
-      if (newStatus.connected) {
-        window.location.reload();
+      const wasOffline = offlineRef.current;
+      const nowOffline = !newStatus.connected;
+      offlineRef.current = nowOffline;
+      setIsOffline(nowOffline);
+      if (newStatus.connected && wasOffline) {
+        // Soft refresh keeps app-state loss lower than full reload.
+        router.refresh();
+        setIsBackOnline(true);
+        setTimeout(() => setIsBackOnline(false), 2400);
       }
     });
 
-    // 3. DEFER heavy notification bridge calls by 3.5s so initial UI launch is 100% lag-free
+    const maybeRedirectToLogin = async () => {
+      if (loginRedirectDoneRef.current) return;
+      const ignoredPaths = ['/login', '/register', '/privacy', '/terms', '/about', '/faq'];
+      const isIgnored = ignoredPaths.some((segment) => pathname.includes(segment));
+      if (isIgnored) return;
+
+      const localeSegment = pathname.split('/')[1];
+      const locale = localeSegment === 'en' ? 'en' : 'tr';
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        loginRedirectDoneRef.current = true;
+        router.replace(`/${locale}/login`);
+      }
+    };
+
+    maybeRedirectToLogin().catch(() => {});
+
+    const scheduleDefaultLocalNotifications = async () => {
+      const pending = await LocalNotifications.getPending();
+      if (pending.notifications.length > 0) {
+        await LocalNotifications.cancel(pending);
+      }
+
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            id: 101,
+            title: '🎣 Günaydın Balıkçı! (oltaApp)',
+            body: 'Bugün meralarda hava ve deniz koşulları harika! Balık iştah skorunu kontrol etmeyi unutma.',
+            schedule: {
+              on: { hour: 9, minute: 0 },
+              repeats: true,
+              every: 'day'
+            },
+            sound: undefined,
+            smallIcon: 'ic_launcher',
+            actionTypeId: '',
+            extra: null
+          },
+          {
+            id: 102,
+            title: '🌊 Günün En Verimli Av Saati Geldi!',
+            body: 'Meralardan yeni av raporları var. Solunar tahminlerini incele, sahteni suya düşür!',
+            schedule: {
+              on: { hour: 17, minute: 0 },
+              repeats: true,
+              every: 'day'
+            },
+            sound: undefined,
+            smallIcon: 'ic_launcher',
+            actionTypeId: '',
+            extra: null
+          }
+        ]
+      });
+    };
+
+    // 3. Defer notification setup and ask rationale first.
     const timer = setTimeout(async () => {
       try {
+        const promptShown = localStorage.getItem(NOTIFICATION_PROMPT_SHOWN_KEY) === 'true';
+        if (!promptShown) {
+          const { value: allowNotifications } = await Dialog.confirm({
+            title: 'Bildirim İzni',
+            message: 'Av saatleri ve topluluk güncellemeleri için bildirim izni vermek ister misiniz?',
+            okButtonTitle: 'İzin Ver',
+            cancelButtonTitle: 'Şimdi Değil',
+          });
+
+          localStorage.setItem(NOTIFICATION_PROMPT_SHOWN_KEY, 'true');
+          if (!allowNotifications) {
+            return;
+          }
+        }
+
         const localPerm = await LocalNotifications.requestPermissions();
         if (localPerm.display === 'granted') {
-          const pending = await LocalNotifications.getPending();
-          if (pending.notifications.length > 0) {
-            await LocalNotifications.cancel(pending);
-          }
-
-          await LocalNotifications.schedule({
-            notifications: [
-              {
-                id: 101,
-                title: '🎣 Günaydın Balıkçı! (oltaApp)',
-                body: 'Bugün meralarda hava ve deniz koşulları harika! Balık iştah skorunu kontrol etmeyi unutma.',
-                schedule: {
-                  on: { hour: 9, minute: 0 },
-                  repeats: true,
-                  every: 'day'
-                },
-                sound: undefined,
-                smallIcon: 'ic_launcher',
-                actionTypeId: '',
-                extra: null
-              },
-              {
-                id: 102,
-                title: '🌊 Günün En Verimli Av Saati Geldi!',
-                body: 'Meralardan yeni av raporları var. Solunar tahminlerini incele, sahteni suya düşür!',
-                schedule: {
-                  on: { hour: 17, minute: 0 },
-                  repeats: true,
-                  every: 'day'
-                },
-                sound: undefined,
-                smallIcon: 'ic_launcher',
-                actionTypeId: '',
-                extra: null
-              }
-            ]
-          });
+          await scheduleDefaultLocalNotifications();
         }
 
         const pushPerm = await PushNotifications.requestPermissions();
@@ -116,7 +167,7 @@ export default function CapacitorInit() {
       netListener.then((l) => l.remove());
       backButtonListener.then((l) => l.remove());
     };
-  }, [pathname, router]);
+  }, [pathname, router, supabase]);
 
   const handleRetry = async () => {
     triggerHapticLight();
@@ -125,7 +176,9 @@ export default function CapacitorInit() {
       const status = await Network.getStatus();
       if (status.connected) {
         setIsOffline(false);
-        window.location.reload();
+        router.refresh();
+        setIsBackOnline(true);
+        setTimeout(() => setIsBackOnline(false), 2400);
       }
     } catch (e) {
       console.error('Retry status check failed', e);
@@ -156,6 +209,14 @@ export default function CapacitorInit() {
           <RefreshCw className={`w-4 h-4 ${retrying ? 'animate-spin' : ''}`} />
           <span>{retrying ? 'Kontrol Ediliyor...' : 'Tekrar Dene'}</span>
         </button>
+      </div>
+    );
+  }
+
+  if (isBackOnline) {
+    return (
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[999999] bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg">
+        Baglanti geri geldi
       </div>
     );
   }

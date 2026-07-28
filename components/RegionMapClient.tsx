@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { FishingSpot } from './MapComponent';
 import { compressImageToWebP } from '@/lib/image_compression';
+import PullToRefresh from './PullToRefresh';
 
 // Dynamically import Leaflet MapComponent with SSR disabled
 const MapComponent = dynamic(() => import('./MapComponent'), {
@@ -274,7 +275,8 @@ export default function RegionMapClient() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10 pb-24 relative">
+    <PullToRefresh onRefresh={fetchFishingSpots}>
+      <div className="max-w-6xl mx-auto space-y-10 pb-24 relative">
       
       {/* Hero Banner */}
       <motion.section
@@ -688,6 +690,7 @@ export default function RegionMapClient() {
           </div>
         )}
       </AnimatePresence>
-    </div>
+      </div>
+    </PullToRefresh>
   );
 }

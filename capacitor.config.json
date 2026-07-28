@@ -4,10 +4,10 @@
   "webDir": "public",
   "server": {
     "url": "https://www.oltaapp.com",
-    "cleartext": true
+    "cleartext": false
   },
   "android": {
-    "allowMixedContent": true,
+    "allowMixedContent": false,
     "buildOptions": {
       "keystorePath": "",
       "keystorePassword": ""

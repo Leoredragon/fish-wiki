@@ -3,18 +3,23 @@
 import { useEffect, useState } from 'react';
 import { Fish, Compass } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Capacitor } from '@capacitor/core';
 
 export default function AppSplashScreen() {
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(() => Capacitor.isNativePlatform());
 
   useEffect(() => {
+    if (!isVisible) {
+      return;
+    }
+
     // Hide splash screen smoothly after 1.8 seconds
     const timer = setTimeout(() => {
       setIsVisible(false);
     }, 1800);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [isVisible]);
 
   return (
     <AnimatePresence>

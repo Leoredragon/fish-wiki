@@ -1,7 +1,7 @@
 import LoginClient from '@/components/auth/LoginClient';
-import { getTranslations } from 'next-intl/server';
 
-export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   return {
     title: locale === 'tr' ? 'Giriş Yap | Oltapp' : 'Login | Oltapp',
   };

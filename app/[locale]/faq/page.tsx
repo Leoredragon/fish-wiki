@@ -1,7 +1,8 @@
-import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { setRequestLocale } from 'next-intl/server';
 import FaqClient from '@/components/faq/FaqClient';
 
-export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   return {
     title: locale === 'tr' ? 'Sıkça Sorulan Sorular | Oltapp (Livar)' : 'FAQ | Oltapp (Livar)',
     description: locale === 'tr' 
@@ -10,7 +11,8 @@ export async function generateMetadata({ params: { locale } }: { params: { local
   };
 }
 
-export default async function FaqPage({ params: { locale } }: { params: { locale: string } }) {
+export default async function FaqPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   setRequestLocale(locale);
   return <FaqClient />;
 }

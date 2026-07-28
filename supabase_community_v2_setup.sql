@@ -3,6 +3,26 @@
 -- Supabase SQL Editor alanına yapıştırıp "RUN" butonuna basınız.
 -- ====================================================================
 
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false;
+
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.profiles p
+    WHERE p.id = auth.uid()
+      AND COALESCE(p.is_admin, false) = true
+  );
+$$;
+
+REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
+
 -- 1. FORUM KONULARI (community_forum_posts)
 CREATE TABLE IF NOT EXISTS public.community_forum_posts (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -23,7 +43,7 @@ DROP POLICY IF EXISTS "Users insert own forum post" ON public.community_forum_po
 CREATE POLICY "Users insert own forum post" ON public.community_forum_posts FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users delete own or admin forum post" ON public.community_forum_posts;
-CREATE POLICY "Users delete own or admin forum post" ON public.community_forum_posts FOR DELETE USING (auth.uid() = user_id OR true);
+CREATE POLICY "Users delete own or admin forum post" ON public.community_forum_posts FOR DELETE USING (auth.uid() = user_id OR public.is_admin());
 
 
 -- 2. FORUM CEVAPLARI (community_forum_replies)
@@ -46,7 +66,7 @@ DROP POLICY IF EXISTS "Users insert own forum reply" ON public.community_forum_r
 CREATE POLICY "Users insert own forum reply" ON public.community_forum_replies FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users delete own or admin forum reply" ON public.community_forum_replies;
-CREATE POLICY "Users delete own or admin forum reply" ON public.community_forum_replies FOR DELETE USING (auth.uid() = user_id OR true);
+CREATE POLICY "Users delete own or admin forum reply" ON public.community_forum_replies FOR DELETE USING (auth.uid() = user_id OR public.is_admin());
 
 
 -- 3. 2. EL EKİPMAN PAZARI (community_marketplace_items)
@@ -74,10 +94,10 @@ DROP POLICY IF EXISTS "Users insert own marketplace item" ON public.community_ma
 CREATE POLICY "Users insert own marketplace item" ON public.community_marketplace_items FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users update own marketplace item" ON public.community_marketplace_items;
-CREATE POLICY "Users update own marketplace item" ON public.community_marketplace_items FOR UPDATE USING (auth.uid() = user_id OR true);
+CREATE POLICY "Users update own marketplace item" ON public.community_marketplace_items FOR UPDATE USING (auth.uid() = user_id OR public.is_admin());
 
 DROP POLICY IF EXISTS "Users delete own or admin marketplace item" ON public.community_marketplace_items;
-CREATE POLICY "Users delete own or admin marketplace item" ON public.community_marketplace_items FOR DELETE USING (auth.uid() = user_id OR true);
+CREATE POLICY "Users delete own or admin marketplace item" ON public.community_marketplace_items FOR DELETE USING (auth.uid() = user_id OR public.is_admin());
 
 
 -- 4. 2. EL PAZAR YORUMLARI (community_marketplace_comments)
@@ -100,7 +120,7 @@ DROP POLICY IF EXISTS "Users insert marketplace comment" ON public.community_mar
 CREATE POLICY "Users insert marketplace comment" ON public.community_marketplace_comments FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users delete marketplace comment" ON public.community_marketplace_comments;
-CREATE POLICY "Users delete marketplace comment" ON public.community_marketplace_comments FOR DELETE USING (auth.uid() = user_id OR true);
+CREATE POLICY "Users delete marketplace comment" ON public.community_marketplace_comments FOR DELETE USING (auth.uid() = user_id OR public.is_admin());
 
 
 -- 5. FAYDALI BİLGİLER VE TÜYOLAR (community_tips)
@@ -123,7 +143,7 @@ DROP POLICY IF EXISTS "Users insert own tip" ON public.community_tips;
 CREATE POLICY "Users insert own tip" ON public.community_tips FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users delete own or admin tip" ON public.community_tips;
-CREATE POLICY "Users delete own or admin tip" ON public.community_tips FOR DELETE USING (auth.uid() = user_id OR true);
+CREATE POLICY "Users delete own or admin tip" ON public.community_tips FOR DELETE USING (auth.uid() = user_id OR public.is_admin());
 
 
 -- 6. PÜF NOKTALARI YORUMLARI (community_tip_comments)
@@ -146,7 +166,7 @@ DROP POLICY IF EXISTS "Users insert tip comment" ON public.community_tip_comment
 CREATE POLICY "Users insert tip comment" ON public.community_tip_comments FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users delete tip comment" ON public.community_tip_comments;
-CREATE POLICY "Users delete tip comment" ON public.community_tip_comments FOR DELETE USING (auth.uid() = user_id OR true);
+CREATE POLICY "Users delete tip comment" ON public.community_tip_comments FOR DELETE USING (auth.uid() = user_id OR public.is_admin());
 
 
 -- ====================================================================

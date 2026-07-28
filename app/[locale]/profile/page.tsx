@@ -1,15 +1,16 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import ProfileClient from '@/components/profile/ProfileClient';
-import { getTranslations } from 'next-intl/server';
 
-export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   return {
     title: locale === 'tr' ? 'Dijital Livarım | Oltapp' : 'My Catch Log | Oltapp',
   };
 }
 
-export default async function ProfilePage({ params: { locale } }: { params: { locale: string } }) {
+export default async function ProfilePage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

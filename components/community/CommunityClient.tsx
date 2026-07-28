@@ -36,8 +36,10 @@ import CatchCardExport from './CatchCardExport';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { compressImageToWebP } from '@/lib/image_compression';
+import PullToRefresh from '@/components/PullToRefresh';
+import { pickPhotoNative, isNativeApp } from '@/lib/capacitorUtils';
 
-const ADMIN_EMAIL = 'mail@mail.com';
+const STORIES_LIMIT = 50;
 
 interface CommunityClientProps {
   catches: Record<string, any>[];
@@ -62,7 +64,7 @@ export default function CommunityClient({
   const [activeTab, setActiveTab] = useState<'feed' | 'forum' | 'market' | 'tips'>('feed');
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [currentUserProfile, setCurrentUserProfile] = useState<any | null>(null);
-  const isAdmin = currentUser?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  const isAdmin = Boolean(currentUserProfile?.is_admin);
 
   // Tab 1: Feed States
   const [catchesList, setCatchesList] = useState<any[]>(catches);
@@ -250,7 +252,8 @@ export default function CommunityClient({
         .from('community_stories')
         .select('*, profiles(username, full_name, avatar_url)')
         .gte('created_at', cutoff)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(STORIES_LIMIT);
 
       if (!error && data && data.length > 0) {
         dbStories = data;
@@ -379,7 +382,7 @@ export default function CommunityClient({
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('username, full_name, avatar_url')
+          .select('username, full_name, avatar_url, is_admin')
           .eq('id', user.id)
           .single();
         if (profile) setCurrentUserProfile(profile);
@@ -691,7 +694,8 @@ export default function CommunityClient({
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-16 pt-6 px-4 sm:px-6">
+    <PullToRefresh>
+      <div className="max-w-5xl mx-auto space-y-6 pb-16 pt-6 px-4 sm:px-6">
       {/* Header Title */}
       <div className="text-center space-y-2">
         <div className="inline-flex items-center justify-center p-3 bg-emerald-50 border border-emerald-200 rounded-full mb-1 shadow-xs">
@@ -1568,7 +1572,16 @@ export default function CommunityClient({
               <form onSubmit={handleAddStory} className="p-6 space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-1.5">{isTr ? 'Hikaye Fotoğrafı *' : 'Story Photo *'}</label>
-                  <label className="cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors">
+                  <label
+                    onClick={async (e) => {
+                      if (isNativeApp()) {
+                        e.preventDefault();
+                        const file = await pickPhotoNative('prompt');
+                        if (file) setStoryImageFile(file);
+                      }
+                    }}
+                    className="cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors"
+                  >
                     <Camera className="w-8 h-8 text-emerald-500 mb-2" />
                     <span className="text-xs font-bold text-slate-700">
                       {storyImageFile ? storyImageFile.name : (isTr ? 'Galeriden Seç veya Fotoğraf Çek' : 'Select Photo')}
@@ -1621,12 +1634,21 @@ export default function CommunityClient({
               <form onSubmit={handleAddCommunityCatch} className="p-6 space-y-4 text-xs font-medium max-h-[75vh] overflow-y-auto">
                 <div>
                   <label className="block text-slate-700 font-bold mb-1.5">{isTr ? 'Av Fotoğrafı *' : 'Catch Photo *'}</label>
-                  <label className="cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-5 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors">
+                  <label
+                    onClick={async (e) => {
+                      if (isNativeApp()) {
+                        e.preventDefault();
+                        const file = await pickPhotoNative('prompt');
+                        if (file) setCatchImageFile(file);
+                      }
+                    }}
+                    className="cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-5 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors"
+                  >
                     <Camera className="w-8 h-8 text-emerald-500 mb-2" />
                     <span className="text-xs font-bold text-slate-700">
                       {catchImageFile ? catchImageFile.name : (isTr ? 'Fotoğraf Seç veya Çek' : 'Select Photo')}
                     </span>
-                    <input type="file" accept="image/*" onChange={(e) => e.target.files && setCatchImageFile(e.target.files[0])} className="hidden" required />
+                    <input type="file" accept="image/*" onChange={(e) => e.target.files && setCatchImageFile(e.target.files[0])} className="hidden" />
                   </label>
                 </div>
 
@@ -1663,7 +1685,8 @@ export default function CommunityClient({
           </div>
         )}
       </AnimatePresence>
-    </div>
+      </div>
+    </PullToRefresh>
   );
 }
 

@@ -1,7 +1,8 @@
-import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { setRequestLocale } from 'next-intl/server';
 import AboutClient from '@/components/about/AboutClient';
 
-export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   return {
     title: locale === 'tr' ? 'Hakkımızda | Oltapp (Livar)' : 'About Us | Oltapp (Livar)',
     description: locale === 'tr' 
@@ -10,7 +11,8 @@ export async function generateMetadata({ params: { locale } }: { params: { local
   };
 }
 
-export default async function AboutPage({ params: { locale } }: { params: { locale: string } }) {
+export default async function AboutPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   setRequestLocale(locale);
   return <AboutClient />;
 }

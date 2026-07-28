@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS bio TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false;
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
@@ -28,6 +29,25 @@ CREATE POLICY "Users insert own profile" ON public.profiles FOR INSERT WITH CHEC
 
 DROP POLICY IF EXISTS "Users update own profile" ON public.profiles;
 CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+
+-- Merkezi admin kontrol fonksiyonu
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.profiles p
+    WHERE p.id = auth.uid()
+      AND COALESCE(p.is_admin, false) = true
+  );
+$$;
+
+REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
 
 -- Otomatik profil oluşturma tetikleyicisi
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -273,10 +293,10 @@ ALTER TABLE public.wiki_articles ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public select wiki_articles" ON public.wiki_articles;
 CREATE POLICY "Public select wiki_articles" ON public.wiki_articles FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Admin insert wiki_articles" ON public.wiki_articles;
-CREATE POLICY "Admin insert wiki_articles" ON public.wiki_articles FOR INSERT WITH CHECK (true);
+CREATE POLICY "Admin insert wiki_articles" ON public.wiki_articles FOR INSERT WITH CHECK (public.is_admin());
 DROP POLICY IF EXISTS "Admin update wiki_articles" ON public.wiki_articles;
-CREATE POLICY "Admin update wiki_articles" ON public.wiki_articles FOR UPDATE USING (true);
+CREATE POLICY "Admin update wiki_articles" ON public.wiki_articles FOR UPDATE USING (public.is_admin());
 DROP POLICY IF EXISTS "Admin delete wiki_articles" ON public.wiki_articles;
-CREATE POLICY "Admin delete wiki_articles" ON public.wiki_articles FOR DELETE USING (true);
+CREATE POLICY "Admin delete wiki_articles" ON public.wiki_articles FOR DELETE USING (public.is_admin());
 
 
