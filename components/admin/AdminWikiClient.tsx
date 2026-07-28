@@ -19,14 +19,13 @@ import {
   FileText
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { INITIAL_WIKI_ARTICLES } from '@/components/wiki/WikiClient';
 
 export default function AdminWikiClient() {
   const locale = useLocale();
   const isTr = locale === 'tr';
   const supabase = createClient();
 
-  const [articles, setArticles] = useState<any[]>(INITIAL_WIKI_ARTICLES);
+  const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -54,36 +53,13 @@ export default function AdminWikiClient() {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        // Auto-cleanup duplicate rows by title_tr in database if any exist
-        const seen = new Set<string>();
-        const idsToDelete: string[] = [];
-        const uniqueSupabaseData: any[] = [];
-
-        for (const item of data) {
-          const key = (item.title_tr || '').trim().toLowerCase();
-          if (seen.has(key)) {
-            if (item.id) idsToDelete.push(item.id);
-          } else {
-            seen.add(key);
-            uniqueSupabaseData.push(item);
-          }
-        }
-
-        if (idsToDelete.length > 0) {
-          supabase.from('wiki_articles').delete().in('id', idsToDelete).then(() => {});
-        }
-
-        const supabaseTitles = new Set(uniqueSupabaseData.map((item: any) => (item.title_tr || '').trim().toLowerCase()));
-        const remainingInitial = INITIAL_WIKI_ARTICLES.filter(
-          (item: any) => !supabaseTitles.has((item.title_tr || '').trim().toLowerCase())
-        );
-        setArticles([...uniqueSupabaseData, ...remainingInitial]);
+      if (!error && data) {
+        setArticles(data);
       } else {
-        setArticles(INITIAL_WIKI_ARTICLES);
+        setArticles([]);
       }
     } catch {
-      setArticles(INITIAL_WIKI_ARTICLES);
+      setArticles([]);
     } finally {
       setLoading(false);
     }
@@ -229,11 +205,15 @@ export default function AdminWikiClient() {
     }
   };
 
-  const filteredArticles = articles.filter(
-    (a) =>
-      (a.title_tr || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (a.short_desc_tr || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredArticles = articles.filter((a) => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return true;
+
+    return (a.title_tr || '').toLowerCase().includes(query)
+      || (a.title_en || '').toLowerCase().includes(query)
+      || (a.short_desc_tr || '').toLowerCase().includes(query)
+      || (a.short_desc_en || '').toLowerCase().includes(query);
+  });
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-16">
@@ -310,6 +290,7 @@ export default function AdminWikiClient() {
                 <option value="lines">Misinalar & Liderler (İp, FC vb.)</option>
                 <option value="lures">Sahte Yem Çeşitleri (Popper, Minnow, Silikon vb.)</option>
                 <option value="rigs">Rig & Montajlar (Texas Rig, Drop Shot vb.)</option>
+                <option value="knots">Balıkçılık Düğümleri (FG, Palomar, Clinch vb.)</option>
                 <option value="accessories">Aksesuarlar & İğne Türleri</option>
               </select>
             </div>
