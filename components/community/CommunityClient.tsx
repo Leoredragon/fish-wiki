@@ -53,6 +53,13 @@ function isStoryOwner(story: Record<string, any>, userId?: string | null) {
   return Boolean(userId && story.user_id && String(story.user_id) === String(userId));
 }
 
+function buildPublicProfilePath(locale: string, profileData: any, userId?: string | null) {
+  const username = profileData?.username ? String(profileData.username).trim() : '';
+  if (username) return `/${locale}/u/${encodeURIComponent(username)}`;
+  if (userId) return `/${locale}/u/id-${userId}`;
+  return null;
+}
+
 interface CommunityClientProps {
   catches: Record<string, any>[];
   initialStories?: Record<string, any>[];
@@ -85,11 +92,13 @@ export default function CommunityClient({
   }, [catches]);
   const [visibleCount, setVisibleCount] = useState<number>(10);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'trophy'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'trophy' | 'following'>('all');
+  const [followingUserIds, setFollowingUserIds] = useState<string[]>([]);
   const [selectedAuthorModal, setSelectedAuthorModal] = useState<{
     profile: Record<string, any>;
     tackleSet?: Record<string, any> | null;
     userCatches: Record<string, any>[];
+    userId?: string | null;
   } | null>(null);
 
   // Tab 2: Forum States
@@ -220,6 +229,7 @@ export default function CommunityClient({
   const [storyImageFile, setStoryImageFile] = useState<File | null>(null);
   const [storyCaption, setStoryCaption] = useState('');
   const [storySubmitting, setStorySubmitting] = useState(false);
+  const [storySuccessToast, setStorySuccessToast] = useState<string | null>(null);
 
   // Load & Sync Stories
   const loadStories = async () => {
@@ -278,6 +288,12 @@ export default function CommunityClient({
 
     setStories(Array.from(uniqueMap.values()));
   };
+
+  useEffect(() => {
+    if (!storySuccessToast) return;
+    const timer = setTimeout(() => setStorySuccessToast(null), 2200);
+    return () => clearTimeout(timer);
+  }, [storySuccessToast]);
 
   const handleAddStory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -347,7 +363,7 @@ export default function CommunityClient({
       setIsAddStoryModalOpen(false);
       setStoryImageFile(null);
       setStoryCaption('');
-      alert(isTr ? '🎉 Hikayeniz paylaşıldı (24 saat yayında kalacaktır)' : 'Story shared successfully!');
+      setStorySuccessToast(isTr ? 'Hikayeniz paylaşıldı' : 'Story shared');
     } catch (err: any) {
       alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
     } finally {
@@ -415,6 +431,16 @@ export default function CommunityClient({
           .eq('id', user.id)
           .single();
         if (profile) setCurrentUserProfile(profile);
+
+        try {
+          const { data: followingRows } = await supabase
+            .from('follows')
+            .select('following_id')
+            .eq('follower_id', user.id);
+          setFollowingUserIds((followingRows || []).map((row: any) => row.following_id).filter(Boolean));
+        } catch {
+          setFollowingUserIds([]);
+        }
       }
     });
   }, []);
@@ -431,6 +457,10 @@ export default function CommunityClient({
   const filteredCatches = useMemo(() => {
     return catchesList.filter((c) => {
       if (activeFilter === 'trophy' && (!c.weight || c.weight < 1.5)) return false;
+      if (activeFilter === 'following') {
+        if (!currentUser) return false;
+        if (!followingUserIds.includes(c.user_id)) return false;
+      }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const locationMatch = c.location_note?.toLowerCase().includes(q);
@@ -441,7 +471,7 @@ export default function CommunityClient({
       }
       return true;
     });
-  }, [catchesList, activeFilter, searchQuery]);
+  }, [catchesList, activeFilter, searchQuery, currentUser, followingUserIds]);
 
   const displayedCatches = filteredCatches.slice(0, visibleCount);
 
@@ -718,8 +748,17 @@ export default function CommunityClient({
     setSelectedAuthorModal({
       profile: profileData || { username: 'Oltapp Balıkçısı' },
       tackleSet: tackleSetData || null,
-      userCatches
+      userCatches,
+      userId
     });
+  };
+
+  const handleGoToPublicProfile = (profileData: any, userId?: string | null) => {
+    const path = buildPublicProfilePath(locale, profileData, userId);
+    if (!path) return;
+    setSelectedAuthorModal(null);
+    setActiveStoryIndex(null);
+    router.push(path);
   };
 
   return (
@@ -882,7 +921,7 @@ export default function CommunityClient({
                 {topTrophies.map((trophy, idx) => (
                   <div
                     key={trophy.id}
-                    onClick={() => handleOpenAuthorModal(trophy.profiles, trophy.tackle_sets, trophy.user_id)}
+                    onClick={() => handleGoToPublicProfile(trophy.profiles, trophy.user_id)}
                     className="bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 rounded-2xl p-2.5 flex items-center space-x-2.5 cursor-pointer transition-all shrink-0 min-w-[210px] snap-start"
                   >
                     <div className="relative w-11 h-11 rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-slate-700">
@@ -960,6 +999,19 @@ export default function CommunityClient({
                 <Trophy className="w-3.5 h-3.5 text-amber-400" />
                 <span>{isTr ? 'Trofe Avlar (>1.5kg)' : 'Trophy Catches'}</span>
               </button>
+
+              <button
+                onClick={() => {
+                  if (!currentUser) return router.push('/login');
+                  setActiveFilter('following');
+                }}
+                className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                  activeFilter === 'following' ? 'bg-[#0F172A] text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5 text-emerald-500" />
+                <span>{isTr ? 'Takip Ettiklerim' : 'Following'}</span>
+              </button>
             </div>
           </div>
 
@@ -978,7 +1030,7 @@ export default function CommunityClient({
                   isAdmin={isAdmin}
                   isTr={isTr}
                   onRequireAuth={() => router.push('/login')}
-                  onOpenAuthor={() => handleOpenAuthorModal(log.profiles, log.tackle_sets, log.user_id)}
+                  onOpenAuthor={() => handleGoToPublicProfile(log.profiles, log.user_id)}
                 />
               ))
             )}
@@ -1471,6 +1523,14 @@ export default function CommunityClient({
                     {selectedAuthorModal.profile.bio}
                   </div>
                 )}
+
+                <button
+                  type="button"
+                  onClick={() => handleGoToPublicProfile(selectedAuthorModal.profile, selectedAuthorModal.userId)}
+                  className="w-full bg-[#0F172A] hover:bg-slate-800 text-white font-bold py-3 rounded-2xl text-xs transition-all"
+                >
+                  {isTr ? 'Profili Görüntüle' : 'View Profile'}
+                </button>
               </div>
             </motion.div>
           </div>
@@ -1487,7 +1547,7 @@ export default function CommunityClient({
               className="relative w-full sm:max-w-md h-full sm:h-[780px] sm:max-h-[90vh] bg-slate-950 sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between"
             >
               {/* Top 10s Progress Bar */}
-              <div className="absolute top-3 left-3 right-3 z-30 flex gap-1">
+              <div className="absolute top-[calc(env(safe-area-inset-top,0px)+0.35rem)] left-3 right-3 z-30 flex gap-1">
                 <div className="h-1 bg-white/30 rounded-full w-full overflow-hidden">
                   <motion.div
                     key={activeStoryIndex}
@@ -1507,8 +1567,15 @@ export default function CommunityClient({
               </div>
 
               {/* Story Header (Author Profile & Controls) */}
-              <div className="absolute top-6 left-4 right-4 z-30 flex items-center justify-between text-white">
-                <div className="flex items-center space-x-2.5 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
+              <div className="absolute top-[calc(env(safe-area-inset-top,0px)+1rem)] left-4 right-4 z-30 flex items-center justify-between text-white">
+                <button
+                  type="button"
+                  onClick={() => handleGoToPublicProfile(
+                    stories[activeStoryIndex].profiles,
+                    stories[activeStoryIndex].user_id
+                  )}
+                  className="flex items-center space-x-2.5 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 text-left"
+                >
                   <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center font-bold text-xs overflow-hidden">
                     {stories[activeStoryIndex].profiles?.avatar_url ? (
                       <Image src={stories[activeStoryIndex].profiles.avatar_url} alt="Avatar" width={28} height={28} className="object-cover" />
@@ -1524,7 +1591,7 @@ export default function CommunityClient({
                       {new Date(stories[activeStoryIndex].created_at).toLocaleTimeString(isTr ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
-                </div>
+                </button>
 
                 <div className="flex items-center space-x-2">
                   {(isAdmin || isStoryOwner(stories[activeStoryIndex], currentUser?.id)) && (
@@ -1553,7 +1620,7 @@ export default function CommunityClient({
               </div>
 
               {/* Main Full-Screen Story Image */}
-              <div className="relative w-full h-full flex items-center justify-center bg-black">
+              <div className="relative w-full h-full pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] flex items-center justify-center bg-black">
                 <Image
                   src={stories[activeStoryIndex].image_url}
                   alt="Story content"
@@ -1615,7 +1682,7 @@ export default function CommunityClient({
                     onClick={async (e) => {
                       if (isNativeApp()) {
                         e.preventDefault();
-                        const file = await pickPhotoNative('prompt');
+                        const file = await pickPhotoNative('photos');
                         if (file) setStoryImageFile(file);
                       }
                     }}
@@ -1627,6 +1694,30 @@ export default function CommunityClient({
                     </span>
                     <input type="file" accept="image/*" onChange={(e) => e.target.files && setStoryImageFile(e.target.files[0])} className="hidden" />
                   </label>
+                  {isNativeApp() && (
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const file = await pickPhotoNative('photos');
+                          if (file) setStoryImageFile(file);
+                        }}
+                        className="rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-bold text-slate-700 py-2.5"
+                      >
+                        {isTr ? 'Galeriden Seç' : 'Pick from Gallery'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const file = await pickPhotoNative('camera');
+                          if (file) setStoryImageFile(file);
+                        }}
+                        className="rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-[11px] font-bold text-emerald-700 py-2.5"
+                      >
+                        {isTr ? 'Kamera ile Çek' : 'Use Camera'}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -1677,7 +1768,7 @@ export default function CommunityClient({
                     onClick={async (e) => {
                       if (isNativeApp()) {
                         e.preventDefault();
-                        const file = await pickPhotoNative('prompt');
+                        const file = await pickPhotoNative('photos');
                         if (file) setCatchImageFile(file);
                       }
                     }}
@@ -1689,6 +1780,30 @@ export default function CommunityClient({
                     </span>
                     <input type="file" accept="image/*" onChange={(e) => e.target.files && setCatchImageFile(e.target.files[0])} className="hidden" />
                   </label>
+                  {isNativeApp() && (
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const file = await pickPhotoNative('photos');
+                          if (file) setCatchImageFile(file);
+                        }}
+                        className="rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-bold text-slate-700 py-2.5"
+                      >
+                        {isTr ? 'Galeriden Seç' : 'Pick from Gallery'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const file = await pickPhotoNative('camera');
+                          if (file) setCatchImageFile(file);
+                        }}
+                        className="rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-[11px] font-bold text-emerald-700 py-2.5"
+                      >
+                        {isTr ? 'Kamera ile Çek' : 'Use Camera'}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -1722,6 +1837,18 @@ export default function CommunityClient({
               </form>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {storySuccessToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="fixed left-1/2 -translate-x-1/2 bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] z-[130] bg-[#0F172A] text-white px-4 py-2.5 rounded-2xl shadow-xl border border-slate-700 text-xs font-extrabold"
+          >
+            {storySuccessToast}
+          </motion.div>
         )}
       </AnimatePresence>
       </div>
