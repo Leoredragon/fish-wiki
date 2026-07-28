@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect, ReactNode } from 'react';
+import { useState, useRef, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, ArrowDown } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { triggerHapticLight } from '@/lib/capacitorUtils';
 
 interface PullToRefreshProps {
@@ -11,6 +12,7 @@ interface PullToRefreshProps {
 }
 
 export default function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
+  const router = useRouter();
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasTriggeredHaptic, setHasTriggeredHaptic] = useState(false);
@@ -65,7 +67,7 @@ export default function PullToRefresh({ children, onRefresh }: PullToRefreshProp
         if (onRefresh) {
           await onRefresh();
         } else {
-          window.location.reload();
+          router.refresh();
         }
       } catch (err) {
         console.error('Pull to refresh failed:', err);

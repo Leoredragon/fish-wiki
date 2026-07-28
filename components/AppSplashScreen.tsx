@@ -5,15 +5,29 @@ import { Fish, Compass } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Capacitor } from '@capacitor/core';
 
+const SPLASH_SESSION_KEY = 'oltaapp_splash_shown_v1';
+
+function shouldShowNativeSplash() {
+  if (!Capacitor.isNativePlatform()) return false;
+  try {
+    return sessionStorage.getItem(SPLASH_SESSION_KEY) !== 'true';
+  } catch {
+    return true;
+  }
+}
+
 export default function AppSplashScreen() {
-  const [isVisible, setIsVisible] = useState(() => Capacitor.isNativePlatform());
+  const [isVisible, setIsVisible] = useState(shouldShowNativeSplash);
 
   useEffect(() => {
     if (!isVisible) {
       return;
     }
 
-    // Hide splash screen smoothly after 1.8 seconds
+    try {
+      sessionStorage.setItem(SPLASH_SESSION_KEY, 'true');
+    } catch {}
+
     const timer = setTimeout(() => {
       setIsVisible(false);
     }, 1800);

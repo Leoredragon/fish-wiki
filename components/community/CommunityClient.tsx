@@ -40,6 +40,18 @@ import PullToRefresh from '@/components/PullToRefresh';
 import { pickPhotoNative, isNativeApp, triggerHapticLight } from '@/lib/capacitorUtils';
 
 const STORIES_LIMIT = 50;
+const LEGACY_MOCK_STORY_IDS = new Set(['story-1', 'story-2']);
+
+function normalizeStory(story: Record<string, any>) {
+  return {
+    ...story,
+    caption: story.caption || story.location_note || undefined,
+  };
+}
+
+function isStoryOwner(story: Record<string, any>, userId?: string | null) {
+  return Boolean(userId && story.user_id && String(story.user_id) === String(userId));
+}
 
 interface CommunityClientProps {
   catches: Record<string, any>[];
@@ -223,27 +235,18 @@ export default function CommunityClient({
     let localSavedStories: any[] = [];
     try {
       localSavedStories = JSON.parse(localStorage.getItem('oltaapp_user_stories') || '[]');
-    } catch {}
-
-    // Default mock initial stories
-    const initialMocks = [
-      {
-        id: 'story-1',
-        user_id: 'sample-1',
-        image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
-        caption: 'Sarayburnu Boğaz avında günün bereketi! 🎣',
-        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        profiles: { username: 'Mucahit', full_name: 'Mücahit Cengiz', avatar_url: '' }
-      },
-      {
-        id: 'story-2',
-        user_id: 'sample-2',
-        image_url: 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?auto=format&fit=crop&w=800&q=80',
-        caption: 'LRF ile sabah suyu trofe lezzeti! 🔥',
-        created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-        profiles: { username: 'Kaptan_Ahmet', full_name: 'Ahmet Yılmaz', avatar_url: '' }
+      const legacyIds = Array.from(LEGACY_MOCK_STORY_IDS);
+      const filteredLocal = localSavedStories.filter((s: any) => !LEGACY_MOCK_STORY_IDS.has(s.id));
+      if (filteredLocal.length !== localSavedStories.length) {
+        localStorage.setItem('oltaapp_user_stories', JSON.stringify(filteredLocal));
+        localSavedStories = filteredLocal;
       }
-    ];
+      const mergedDeleted = [...new Set([...deletedIds, ...legacyIds])];
+      if (mergedDeleted.length !== deletedIds.length) {
+        localStorage.setItem('oltaapp_deleted_story_ids', JSON.stringify(mergedDeleted));
+        deletedIds = mergedDeleted;
+      }
+    } catch {}
 
     // Try fetching from Supabase
     let dbStories: any[] = [];
@@ -255,21 +258,21 @@ export default function CommunityClient({
         .order('created_at', { ascending: false })
         .limit(STORIES_LIMIT);
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         dbStories = data;
       }
     } catch {}
 
-    // Combine & Deduplicate
-    const combined = [...dbStories, ...initialStories, ...localSavedStories, ...initialMocks];
+    // Combine & Deduplicate (no mock/demo stories)
+    const combined = [...dbStories, ...initialStories, ...localSavedStories];
     const uniqueMap = new Map();
 
     combined.forEach((st) => {
-      if (!st.id || deletedIds.includes(st.id)) return;
+      if (!st.id || LEGACY_MOCK_STORY_IDS.has(st.id) || deletedIds.includes(st.id)) return;
       // 24 hour cutoff check
       if (new Date(st.created_at).getTime() < Date.now() - 24 * 60 * 60 * 1000) return;
       if (!uniqueMap.has(st.id)) {
-        uniqueMap.set(st.id, st);
+        uniqueMap.set(st.id, normalizeStory(st));
       }
     });
 
@@ -353,14 +356,29 @@ export default function CommunityClient({
   };
 
   const handleDeleteStory = async (storyId: string) => {
+    if (!currentUser) return router.push('/login');
+    const story = stories.find((s) => s.id === storyId);
+    if (!story) return;
+    if (!isAdmin && !isStoryOwner(story, currentUser.id)) {
+      alert(isTr ? 'Bu hikayeyi silme yetkiniz yok.' : 'You cannot delete this story.');
+      return;
+    }
     if (!confirm(isTr ? 'Bu hikayeyi silmek istediğinize emin misiniz?' : 'Delete this story?')) return;
 
-    // 1. Try Supabase Delete
-    try {
-      await supabase.from('community_stories').delete().eq('id', storyId);
-    } catch {}
+    triggerHapticLight();
 
-    // 2. Save deleted ID to LocalStorage so it NEVER returns on refresh
+    let dbError: string | null = null;
+    try {
+      let query = supabase.from('community_stories').delete().eq('id', storyId);
+      if (!isAdmin) {
+        query = query.eq('user_id', currentUser.id);
+      }
+      const { error } = await query;
+      if (error) dbError = error.message;
+    } catch (err: any) {
+      dbError = err?.message || String(err);
+    }
+
     try {
       const deletedIds = JSON.parse(localStorage.getItem('oltaapp_deleted_story_ids') || '[]');
       if (!deletedIds.includes(storyId)) {
@@ -371,8 +389,19 @@ export default function CommunityClient({
       localStorage.setItem('oltaapp_user_stories', JSON.stringify(filteredLocal));
     } catch {}
 
-    setStories((prev) => prev.filter((s) => s.id !== storyId));
-    setActiveStoryIndex(null);
+    setStories((prev) => {
+      const next = prev.filter((s) => s.id !== storyId);
+      setActiveStoryIndex((idx) => {
+        if (idx === null) return null;
+        if (next.length === 0) return null;
+        return Math.min(idx, next.length - 1);
+      });
+      return next;
+    });
+
+    if (dbError) {
+      console.warn('community_stories delete notice:', dbError);
+    }
   };
 
   useEffect(() => {
@@ -694,7 +723,12 @@ export default function CommunityClient({
   };
 
   return (
-    <PullToRefresh>
+    <PullToRefresh
+      onRefresh={async () => {
+        await loadStories();
+        router.refresh();
+      }}
+    >
       <div className="max-w-5xl mx-auto space-y-4 pb-14 pt-3 px-3 sm:px-6">
       {/* Compact community header */}
       <div className="flex items-center justify-between gap-3">
@@ -1489,13 +1523,19 @@ export default function CommunityClient({
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  {(isAdmin || (currentUser && stories[activeStoryIndex].user_id === currentUser.id)) && (
+                  {(isAdmin || isStoryOwner(stories[activeStoryIndex], currentUser?.id)) && (
                     <button
-                      onClick={() => handleDeleteStory(stories[activeStoryIndex].id)}
-                      className="w-8 h-8 rounded-full bg-rose-600/80 hover:bg-rose-600 text-white flex items-center justify-center backdrop-blur-sm shadow-md"
-                      title="Hikayeyi Sil"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteStory(stories[activeStoryIndex].id);
+                      }}
+                      className="h-8 px-2.5 rounded-full bg-rose-600/90 hover:bg-rose-600 text-white flex items-center justify-center gap-1 backdrop-blur-sm shadow-md text-[10px] font-bold"
+                      title={isTr ? 'Hikayeyi Sil' : 'Delete story'}
+                      aria-label={isTr ? 'Hikayeyi Sil' : 'Delete story'}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>{isTr ? 'Sil' : 'Delete'}</span>
                     </button>
                   )}
 
@@ -1537,9 +1577,9 @@ export default function CommunityClient({
               </div>
 
               {/* Story Caption at Bottom */}
-              {stories[activeStoryIndex].caption && (
+              {(stories[activeStoryIndex].caption || stories[activeStoryIndex].location_note) && (
                 <div className="absolute bottom-6 left-4 right-4 z-30 bg-black/60 backdrop-blur-md p-4 rounded-2xl border border-white/20 text-white text-xs sm:text-sm font-semibold leading-relaxed text-center">
-                  {stories[activeStoryIndex].caption}
+                  {stories[activeStoryIndex].caption || stories[activeStoryIndex].location_note}
                 </div>
               )}
             </motion.div>
