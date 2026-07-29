@@ -92,16 +92,25 @@ export default function PullToRefresh({ children, onRefresh, disabled = false }:
       onTouchEnd={handleTouchEnd}
       className="relative min-h-full"
     >
-      {/* Pull Indicator Badge */}
+      {/* Pull Indicator — sit fully below sticky header (incl. safe-area), above header z */}
       <AnimatePresence>
         {(pullDistance > 10 || isRefreshing) && (
-          <div className="fixed top-16 left-0 right-0 z-40 flex justify-center pointer-events-none">
+          <div
+            className="fixed left-0 right-0 z-[60] flex justify-center pointer-events-none"
+            style={{
+              top: 'calc(4rem + env(safe-area-inset-top, 0px) + 0.5rem)'
+            }}
+          >
             <motion.div
-              initial={{ scale: 0.6, opacity: 0, y: -20 }}
-              animate={{ scale: 1, opacity: 1, y: pullDistance > 0 ? pullDistance * 0.4 : 10 }}
-              exit={{ scale: 0.6, opacity: 0, y: -20 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-              className="bg-[#0F172A] border border-emerald-500/40 text-emerald-400 p-2.5 rounded-full shadow-2xl flex items-center justify-center space-x-2"
+              initial={{ scale: 0.7, opacity: 0, y: -12 }}
+              animate={{
+                scale: 1,
+                opacity: 1,
+                y: isRefreshing ? 0 : Math.max(0, pullDistance * 0.25)
+              }}
+              exit={{ scale: 0.7, opacity: 0, y: -12 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+              className="bg-[#0F172A] border border-emerald-500/40 text-emerald-400 p-2.5 rounded-full shadow-2xl flex items-center justify-center"
             >
               {isRefreshing ? (
                 <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
