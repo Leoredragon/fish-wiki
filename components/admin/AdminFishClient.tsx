@@ -25,6 +25,7 @@ import {
   PlusCircle
 } from 'lucide-react';
 import BrandManager from '@/components/admin/BrandManager';
+import { compressImageToWebP } from '@/lib/image_compression';
 
 export default function AdminFishClient() {
   const t = useTranslations('Admin');
@@ -149,30 +150,81 @@ export default function AdminFishClient() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Allow re-selecting the same file later
+    e.target.value = '';
+
     setUploadingImage(true);
+    setNotification(null);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `fishes/${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+      const compressed = await compressImageToWebP(file, 1400, 0.82);
+      const fileName = `fishes/${Math.random().toString(36).substring(2)}_${Date.now()}.webp`;
 
       const { error: uploadError } = await supabase.storage
         .from('user_uploads')
-        .upload(fileName, file, { cacheControl: '3600', upsert: true });
+        .upload(fileName, compressed, {
+          contentType: 'image/webp',
+          cacheControl: '31536000',
+          upsert: false
+        });
 
       if (uploadError) {
         setNotification({ type: 'error', message: 'Fotoğraf yüklenemedi: ' + uploadError.message });
-        setUploadingImage(false);
-      } else {
-        const { data: publicUrlData } = supabase.storage
-          .from('user_uploads')
-          .getPublicUrl(fileName);
-
-        if (publicUrlData?.publicUrl) {
-          setFormData(prev => ({ ...prev, image_url: publicUrlData.publicUrl }));
-        }
-        setUploadingImage(false);
+        return;
       }
-    } catch (err: any) {
-      setNotification({ type: 'error', message: 'Beklenmeyen hata: ' + (err.message || 'Bilinmiyor') });
+
+      const { data: publicUrlData } = supabase.storage
+        .from('user_uploads')
+        .getPublicUrl(fileName);
+
+      const publicUrl = publicUrlData?.publicUrl;
+      if (!publicUrl) {
+        setNotification({ type: 'error', message: 'Fotoğraf yüklendi ama public URL alınamadı.' });
+        return;
+      }
+
+      setFormData((prev) => ({ ...prev, image_url: publicUrl }));
+
+      // Editing an existing fish: persist image_url immediately (upload alone used to leave DB null)
+      if (editingFishId) {
+        const { data, error: updateError } = await supabase
+          .from('fishes')
+          .update({ image_url: publicUrl })
+          .eq('id', editingFishId)
+          .select('id, image_url')
+          .maybeSingle();
+
+        if (updateError) {
+          setNotification({
+            type: 'error',
+            message: 'Fotoğraf yüklendi ama kayda yazılamadı: ' + updateError.message
+          });
+          return;
+        }
+        if (!data) {
+          setNotification({
+            type: 'error',
+            message: 'Fotoğraf yüklendi ama kayıt güncellenemedi (yetki/RLS). Admin hesabıyla giriş yaptığınızdan emin olun.'
+          });
+          return;
+        }
+
+        setFishes((prev) =>
+          prev.map((f) => (f.id === editingFishId ? { ...f, image_url: publicUrl } : f))
+        );
+        setNotification({
+          type: 'success',
+          message: 'Fotoğraf yüklendi ve balık kaydına kaydedildi.'
+        });
+      } else {
+        setNotification({
+          type: 'success',
+          message: 'Fotoğraf yüklendi. Kaydet’e basarak yeni balığı oluşturun.'
+        });
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Bilinmiyor';
+      setNotification({ type: 'error', message: 'Beklenmeyen hata: ' + msg });
+    } finally {
       setUploadingImage(false);
     }
   };
@@ -211,19 +263,24 @@ export default function AdminFishClient() {
 
     try {
       if (editingFishId) {
-        // UPDATE existing fish
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('fishes')
           .update(payload)
-          .eq('id', editingFishId);
+          .eq('id', editingFishId)
+          .select('id')
+          .maybeSingle();
 
         if (error) throw error;
+        if (!data) {
+          throw new Error('Kayıt güncellenemedi. Admin yetkisi veya oturum kontrol edin.');
+        }
         setNotification({ type: 'success', message: 'Balık türü bilgileri güncellendi.' });
       } else {
-        // INSERT new fish
         const { error } = await supabase
           .from('fishes')
-          .insert([payload]);
+          .insert([payload])
+          .select('id')
+          .maybeSingle();
 
         if (error) throw error;
         setNotification({ type: 'success', message: t('success') });
@@ -597,7 +654,7 @@ export default function AdminFishClient() {
 
                 <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
                   <input
-                    type="url"
+                    type="text"
                     name="image_url"
                     placeholder={t('imageUrlPlaceholder')}
                     value={formData.image_url || ''}
@@ -617,9 +674,26 @@ export default function AdminFishClient() {
                       accept="image/*"
                       onChange={handleImageFileUpload}
                       className="hidden"
+                      disabled={uploadingImage}
                     />
                   </label>
                 </div>
+
+                {formData.image_url ? (
+                  <div className="relative w-full max-w-xs overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={formData.image_url}
+                      alt={formData.name_tr || 'Balık görseli'}
+                      className="h-40 w-full object-cover"
+                    />
+                    <p className="px-3 py-2 text-[11px] text-slate-500 break-all">{formData.image_url}</p>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-400">
+                    Düzenleme modunda dosya seçince fotoğraf otomatik kaydedilir.
+                  </p>
+                )}
               </div>
 
               <div>
