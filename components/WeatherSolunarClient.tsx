@@ -363,7 +363,7 @@ export default function WeatherSolunarClient() {
         : 'text-rose-400';
 
   const pageContent = (
-    <div className="max-w-4xl mx-auto space-y-3 max-md:space-y-2.5 pt-1 px-3 sm:px-6 pb-4 md:pb-16 weather-fit-screen mobile-scroll-pad">
+    <div className="max-w-4xl mx-auto space-y-3 max-md:space-y-2.5 pt-1 px-3 sm:px-6 pb-4 md:pb-16 mobile-scroll-pad">
       {/* Compact City Dropdown & Geolocation Button */}
       <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-2.5 sm:space-y-3">
         <div className="flex items-center justify-between">

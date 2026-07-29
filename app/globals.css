@@ -82,22 +82,6 @@ html.is-native-app main {
   }
 }
 
-/* Weather page: allow scroll on mobile so forecast + score cards are not clipped */
-@media (max-width: 767px) {
-  main:has(.weather-fit-screen) {
-    overflow-y: auto;
-    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  .weather-fit-screen {
-    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
-  }
-
-  html.is-native-app main:has(.weather-fit-screen) {
-    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)) !important;
-  }
-}
-
 /* Allow text selection in inputs and textareas */
 html.is-native-app input,
 html.is-native-app textarea,
