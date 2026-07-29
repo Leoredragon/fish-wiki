@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -132,6 +132,12 @@ export default function RegionMapClient() {
   // Form State
   const [spotTitle, setSpotTitle] = useState('');
   const [spotDescription, setSpotDescription] = useState('');
+  const [spotProvince, setSpotProvince] = useState('');
+  const [spotWaterType, setSpotWaterType] = useState('Tatlı Su');
+  const [spotSpotType, setSpotSpotType] = useState('');
+  const [spotTargetSpeciesInput, setSpotTargetSpeciesInput] = useState('');
+  const [spotBestHours, setSpotBestHours] = useState('');
+  const [spotSeasonNote, setSpotSeasonNote] = useState('');
   const [savingSpot, setSavingSpot] = useState(false);
   const [fishRouteByName, setFishRouteByName] = useState<Record<string, string>>({});
 
@@ -249,7 +255,21 @@ export default function RegionMapClient() {
           description: spotDescription.trim(),
           lat: tempPickedLocation.lat,
           lng: tempPickedLocation.lng,
-          image_url: null
+          image_url: null,
+          province: spotProvince.trim() || null,
+          water_type: spotWaterType.trim() || null,
+          spot_type: spotSpotType.trim() || null,
+          target_species_tr: spotTargetSpeciesInput.trim()
+            ? spotTargetSpeciesInput
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean)
+            : null,
+          best_hours: spotBestHours.trim() || null,
+          season_note: spotSeasonNote.trim() || null,
+          confidence_score: null,
+          source_note: 'User added via app',
+          is_verified: false
         })
         .select()
         .single();
@@ -276,6 +296,12 @@ export default function RegionMapClient() {
   const resetAddForm = () => {
     setSpotTitle('');
     setSpotDescription('');
+    setSpotProvince('');
+    setSpotWaterType('Tatlı Su');
+    setSpotSpotType('');
+    setSpotTargetSpeciesInput('');
+    setSpotBestHours('');
+    setSpotSeasonNote('');
   };
 
   const cancelPickingMode = () => {
@@ -589,10 +615,10 @@ export default function RegionMapClient() {
                 {(selectedSpot.target_species_tr?.length || selectedSpot.best_hours || selectedSpot.season_note || selectedSpot.province || selectedSpot.spot_type || selectedSpot.water_type) && (
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold text-slate-700">
-                      {selectedSpot.province && <span>📍 {isTr ? 'İl' : 'Province'}: <strong>{selectedSpot.province}</strong></span>}
-                      {selectedSpot.water_type && <span>💧 {isTr ? 'Su Tipi' : 'Water'}: <strong>{selectedSpot.water_type}</strong></span>}
-                      {selectedSpot.spot_type && <span>🧭 {isTr ? 'Mera Tipi' : 'Spot Type'}: <strong>{selectedSpot.spot_type}</strong></span>}
-                      {selectedSpot.best_hours && <span>⏰ {isTr ? 'Verimli Saatler' : 'Best Hours'}: <strong>{selectedSpot.best_hours}</strong></span>}
+                      {selectedSpot.province && <span> {isTr ? 'İl' : 'Province'}: <strong>{selectedSpot.province}</strong></span>}
+                      {selectedSpot.water_type && <span> {isTr ? 'Su Tipi' : 'Water'}: <strong>{selectedSpot.water_type}</strong></span>}
+                      {selectedSpot.spot_type && <span> {isTr ? 'Mera Tipi' : 'Spot Type'}: <strong>{selectedSpot.spot_type}</strong></span>}
+                      {selectedSpot.best_hours && <span> {isTr ? 'Verimli Saatler' : 'Best Hours'}: <strong>{selectedSpot.best_hours}</strong></span>}
                     </div>
 
                     {selectedSpot.target_species_tr?.length ? (
@@ -640,8 +666,8 @@ export default function RegionMapClient() {
                     <Star className={`w-4 h-4 ${favoriteSpotIds.includes(selectedSpot.id) ? 'fill-amber-400 text-amber-500' : ''}`} />
                     <span>
                       {favoriteSpotIds.includes(selectedSpot.id) 
-                        ? (isTr ? 'Favorilerimde Kayıtlı ⭐' : 'Saved in Favorites') 
-                        : (isTr ? 'Favorilerime Ekle ⭐' : 'Add to Favorites')}
+                        ? (isTr ? 'Favorilerimde Kayıtlı' : 'Saved in Favorites') 
+                        : (isTr ? 'Favorilerime Ekle' : 'Add to Favorites')}
                     </span>
                   </button>
                 </div>
@@ -734,7 +760,75 @@ export default function RegionMapClient() {
                     ></textarea>
                   </div>
 
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-500 flex items-center justify-between">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">İl</label>
+                    <input
+                      type="text"
+                      value={spotProvince}
+                      onChange={e => setSpotProvince(e.target.value)}
+                      placeholder="Örn: Isparta"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Su Tipi</label>
+                    <select
+                      value={spotWaterType}
+                      onChange={e => setSpotWaterType(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-bold text-slate-800 focus:outline-none focus:border-emerald-500"
+                    >
+                      <option value="Tatlı Su">Tatlı Su</option>
+                      <option value="Tuzlu Su">Tuzlu Su</option>
+                      <option value="Karma">Karma</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Mera Tipi</label>
+                    <input
+                      type="text"
+                      value={spotSpotType}
+                      onChange={e => setSpotSpotType(e.target.value)}
+                      placeholder="Örn: Göl, Baraj, Sahil, Liman"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Hedef Türler (virgülle)</label>
+                    <input
+                      type="text"
+                      value={spotTargetSpeciesInput}
+                      onChange={e => setSpotTargetSpeciesInput(e.target.value)}
+                      placeholder="Örn: Turna, Sazan, Sudak"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Verimli Saatler</label>
+                    <input
+                      type="text"
+                      value={spotBestHours}
+                      onChange={e => setSpotBestHours(e.target.value)}
+                      placeholder="Örn: 06:00-09:00, 19:00-22:00"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Sezon Notu</label>
+                    <textarea
+                      rows={2}
+                      value={spotSeasonNote}
+                      onChange={e => setSpotSeasonNote(e.target.value)}
+                      placeholder="Kısa bir sezon notu yaz..."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm font-medium text-slate-800 focus:outline-none focus:border-emerald-500 resize-none"
+                    ></textarea>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-500 flex items-center justify-between"> 
                     <span>Seçilen Koordinat:</span>
                     <span className="font-bold text-emerald-600">{tempPickedLocation.lat.toFixed(4)}, {tempPickedLocation.lng.toFixed(4)}</span>
                   </div>
