@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,9 +9,10 @@ import { triggerHapticLight } from '@/lib/capacitorUtils';
 interface PullToRefreshProps {
   children: ReactNode;
   onRefresh?: () => Promise<void> | void;
+  disabled?: boolean;
 }
 
-export default function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
+export default function PullToRefresh({ children, onRefresh, disabled = false }: PullToRefreshProps) {
   const router = useRouter();
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -24,6 +25,8 @@ export default function PullToRefresh({ children, onRefresh }: PullToRefreshProp
   const MAX_PULL = 110;
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (disabled || isRefreshing) return;
+
     // Only trigger if page is scrolled to top
     if (window.scrollY <= 0) {
       startYRef.current = e.touches[0].clientY;
@@ -33,7 +36,7 @@ export default function PullToRefresh({ children, onRefresh }: PullToRefreshProp
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isPullingRef.current || isRefreshing) return;
+    if (disabled || !isPullingRef.current || isRefreshing) return;
     if (window.scrollY > 0) {
       isPullingRef.current = false;
       setPullDistance(0);
@@ -56,7 +59,7 @@ export default function PullToRefresh({ children, onRefresh }: PullToRefreshProp
   };
 
   const handleTouchEnd = async () => {
-    if (!isPullingRef.current || isRefreshing) return;
+    if (disabled || !isPullingRef.current || isRefreshing) return;
     isPullingRef.current = false;
 
     if (pullDistance >= PULL_THRESHOLD) {

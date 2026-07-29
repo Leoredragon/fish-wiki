@@ -336,7 +336,10 @@ export default function RegionMapClient() {
   };
 
   return (
-    <PullToRefresh onRefresh={fetchFishingSpots}>
+    <PullToRefresh
+      onRefresh={fetchFishingSpots}
+      disabled={Boolean(selectedSpot || isAddFormOpen || isGuestModalOpen)}
+    >
       <div className="max-w-6xl mx-auto space-y-10 pb-24 relative">
       
       {/* Hero Banner */}
