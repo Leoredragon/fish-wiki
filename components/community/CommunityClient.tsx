@@ -157,7 +157,7 @@ export default function CommunityClient({
 
   const handleAddCommunityCatch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return router.push('/login');
+    if (!currentUser) return router.push(`/${locale}/login`);
     if (!catchImageFile) return alert(isTr ? 'Lütfen bir av fotoğrafı seçin.' : 'Please select a catch photo.');
     if (!catchLocationNote.trim()) return alert(isTr ? 'Lütfen mera / konum notu girin.' : 'Please enter location note.');
 
@@ -297,7 +297,7 @@ export default function CommunityClient({
 
   const handleAddStory = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return router.push('/login');
+    if (!currentUser) return router.push(`/${locale}/login`);
     if (!storyImageFile) return alert(isTr ? 'Lütfen bir hikaye fotoğrafı seçin.' : 'Please select a photo.');
 
     setStorySubmitting(true);
@@ -372,7 +372,7 @@ export default function CommunityClient({
   };
 
   const handleDeleteStory = async (storyId: string) => {
-    if (!currentUser) return router.push('/login');
+    if (!currentUser) return router.push(`/${locale}/login`);
     const story = stories.find((s) => s.id === storyId);
     if (!story) return;
     if (!isAdmin && !isStoryOwner(story, currentUser.id)) {
@@ -478,7 +478,7 @@ export default function CommunityClient({
   // Forum Add Handler
   const handleAddForumPost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return router.push('/login');
+    if (!currentUser) return router.push(`/${locale}/login`);
     if (!forumTitle.trim() || !forumContent.trim()) return;
 
     setForumSubmitting(true);
@@ -537,7 +537,7 @@ export default function CommunityClient({
   // Marketplace Add Handler
   const handleAddMarketItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return router.push('/login');
+    if (!currentUser) return router.push(`/${locale}/login`);
     if (!itemTitle.trim() || !itemDesc.trim() || !itemPrice) return;
 
     setMarketSubmitting(true);
@@ -687,7 +687,7 @@ export default function CommunityClient({
   // Tip Add Handler
   const handleAddTip = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return router.push('/login');
+    if (!currentUser) return router.push(`/${locale}/login`);
     if (!tipTitle.trim() || !tipContent.trim()) return;
 
     setTipSubmitting(true);
@@ -850,7 +850,7 @@ export default function CommunityClient({
               {/* Add Story Circle Button (Instagram Style with User Avatar + Plus Badge) */}
               <div
                 onClick={() => {
-                  if (!currentUser) return router.push('/login');
+                  if (!currentUser) return router.push(`/${locale}/login`);
                   setIsAddStoryModalOpen(true);
                 }}
                 className="flex flex-col items-center space-y-1 cursor-pointer shrink-0 group"
@@ -969,7 +969,7 @@ export default function CommunityClient({
 
               <button
                 onClick={() => {
-                  if (!currentUser) return router.push('/login');
+                  if (!currentUser) return router.push(`/${locale}/login`);
                   setIsAddCatchModalOpen(true);
                 }}
                 className="w-full sm:w-auto bg-[#0F172A] hover:bg-slate-800 text-white px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-sm shrink-0"
@@ -1002,7 +1002,7 @@ export default function CommunityClient({
 
               <button
                 onClick={() => {
-                  if (!currentUser) return router.push('/login');
+                  if (!currentUser) return router.push(`/${locale}/login`);
                   setActiveFilter('following');
                 }}
                 className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
@@ -1029,7 +1029,7 @@ export default function CommunityClient({
                   currentUserProfile={currentUserProfile}
                   isAdmin={isAdmin}
                   isTr={isTr}
-                  onRequireAuth={() => router.push('/login')}
+                  onRequireAuth={() => router.push(`/${locale}/login`)}
                   onOpenAuthor={() => handleGoToPublicProfile(log.profiles, log.user_id)}
                 />
               ))
@@ -1066,7 +1066,7 @@ export default function CommunityClient({
             </div>
 
             <button
-              onClick={() => (currentUser ? setIsForumModalOpen(true) : router.push('/login'))}
+              onClick={() => (currentUser ? setIsForumModalOpen(true) : router.push(`/${locale}/login`))}
               className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-sm"
             >
               <Plus className="w-4 h-4" />
@@ -1107,7 +1107,7 @@ export default function CommunityClient({
                     isAdmin={isAdmin}
                     isTr={isTr}
                     onDelete={() => handleDeleteForumPost(post.id)}
-                    onRequireAuth={() => router.push('/login')}
+                    onRequireAuth={() => router.push(`/${locale}/login`)}
                   />
                 ))
             )}
@@ -1127,7 +1127,7 @@ export default function CommunityClient({
             </div>
 
             <button
-              onClick={() => (currentUser ? setIsMarketModalOpen(true) : router.push('/login'))}
+              onClick={() => (currentUser ? setIsMarketModalOpen(true) : router.push(`/${locale}/login`))}
               className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-sm"
             >
               <Plus className="w-4 h-4" />
@@ -1169,7 +1169,7 @@ export default function CommunityClient({
                     onToggleSold={() => handleToggleMarketItemSold(item)}
                     onEdit={() => openEditMarketItemModal(item)}
                     onDelete={() => handleDeleteMarketItem(item.id)}
-                    onRequireAuth={() => router.push('/login')}
+                    onRequireAuth={() => router.push(`/${locale}/login`)}
                   />
                 ))
             )}
@@ -1189,7 +1189,7 @@ export default function CommunityClient({
             </div>
 
             <button
-              onClick={() => (currentUser ? setIsTipModalOpen(true) : router.push('/login'))}
+              onClick={() => (currentUser ? setIsTipModalOpen(true) : router.push(`/${locale}/login`))}
               className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-sm"
             >
               <Plus className="w-4 h-4" />
@@ -1229,7 +1229,7 @@ export default function CommunityClient({
                     isAdmin={isAdmin}
                     isTr={isTr}
                     onDelete={() => handleDeleteTip(tip.id)}
-                    onRequireAuth={() => router.push('/login')}
+                    onRequireAuth={() => router.push(`/${locale}/login`)}
                   />
                 ))
             )}

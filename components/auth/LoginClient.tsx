@@ -5,10 +5,12 @@ import { motion } from 'framer-motion';
 import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Mail, Lock, LogIn, AlertCircle, Fish } from 'lucide-react';
+import { Mail, Lock, LogIn, AlertCircle, Fish, Compass } from 'lucide-react';
 import Link from 'next/link';
 import { Capacitor } from '@capacitor/core';
 import { triggerHapticLight, triggerHapticMedium, triggerHapticSuccess } from '@/lib/capacitorUtils';
+
+const GUEST_MODE_KEY = 'oltaapp_guest_mode';
 
 function readRememberedEmail() {
   if (typeof window === 'undefined') return '';
@@ -37,12 +39,23 @@ export default function LoginClient() {
     const supabase = createClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
+        try {
+          localStorage.removeItem(GUEST_MODE_KEY);
+        } catch {}
         router.replace(`/${locale}/community`);
       } else {
         setCheckingSession(false);
       }
     });
   }, [locale, router]);
+
+  const handleGuestContinue = () => {
+    triggerHapticLight();
+    try {
+      localStorage.setItem(GUEST_MODE_KEY, '1');
+    } catch {}
+    router.replace(`/${locale}`);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +81,10 @@ export default function LoginClient() {
       setLoading(false);
       return;
     }
+
+    try {
+      localStorage.removeItem(GUEST_MODE_KEY);
+    } catch {}
 
     await triggerHapticSuccess();
     router.push(`/${locale}/community`);
@@ -105,8 +122,8 @@ export default function LoginClient() {
           </h2>
           <p className="text-sm text-slate-500 font-medium">
             {isTr
-              ? 'Topluluk, livar ve meralara erişmek için giriş yapın.'
-              : 'Sign in to access community, catch log and spots.'}
+              ? 'Paylaşım ve profil işlemleri için giriş yapın. İsterseniz misafir olarak da gezebilirsiniz.'
+              : 'Sign in for sharing and profile actions, or continue as a guest to browse.'}
           </p>
         </div>
 
@@ -174,6 +191,29 @@ export default function LoginClient() {
             {loading ? (isTr ? 'Giriş Yapılıyor...' : 'Signing in...') : isTr ? 'Giriş Yap' : 'Sign In'}
           </button>
         </form>
+
+        <div className="relative flex items-center py-1">
+          <div className="flex-grow border-t border-slate-200" />
+          <span className="flex-shrink mx-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            {isTr ? 'veya' : 'or'}
+          </span>
+          <div className="flex-grow border-t border-slate-200" />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGuestContinue}
+          className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 text-sm font-bold transition-all active:scale-[0.98]"
+        >
+          <Compass className="w-4 h-4 text-emerald-600" />
+          <span>{isTr ? 'Misafir Olarak Devam Et' : 'Continue as Guest'}</span>
+        </button>
+
+        <p className="text-center text-[11px] text-slate-400 font-medium leading-relaxed px-2">
+          {isTr
+            ? 'Misafir olarak balıklar, wiki, harita ve havayı gezebilirsiniz. Paylaşım, takip ve livar için giriş gerekir.'
+            : 'Guests can browse fish, wiki, map and weather. Sharing, follow and catch log require sign-in.'}
+        </p>
 
         <div className="text-center">
           <p className="text-sm text-slate-500 font-medium">

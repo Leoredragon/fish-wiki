@@ -147,13 +147,24 @@ export default function CapacitorInit() {
     };
   }, [router]);
 
-  // Soft login gate (once): only redirect if not on auth/legal pages
+  // Soft login gate (once): guests may browse; only force login when no guest mode
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     if (loginRedirectDoneRef.current) return;
 
     const ignoredPaths = ['/login', '/register', '/privacy', '/terms', '/about', '/faq'];
     if (ignoredPaths.some((segment) => pathname.includes(segment))) {
+      loginRedirectDoneRef.current = true;
+      setAuthGateLoading(false);
+      return;
+    }
+
+    let isGuest = false;
+    try {
+      isGuest = localStorage.getItem('oltaapp_guest_mode') === '1';
+    } catch {}
+
+    if (isGuest) {
       loginRedirectDoneRef.current = true;
       setAuthGateLoading(false);
       return;
@@ -173,6 +184,9 @@ export default function CapacitorInit() {
           loginRedirectDoneRef.current = true;
           router.replace(`/${locale}/login`);
         } else {
+          try {
+            localStorage.removeItem('oltaapp_guest_mode');
+          } catch {}
           loginRedirectDoneRef.current = true;
         }
       } catch {
