@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocale } from 'next-intl';
-import { MapPin, Compass, Anchor, Sparkles, Loader2, Plus, AlertCircle, X, User, Calendar, ArrowRight, Star, Search } from 'lucide-react';
+import { MapPin, Compass, Anchor, Sparkles, Loader2, Plus, User, Calendar, Star, Search } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
 import { FishingSpot } from './MapComponent';
 import PullToRefresh from './PullToRefresh';
 import { Link } from '@/i18n/routing';
+import GuestAuthPrompt, { GuestAuthAction } from './GuestAuthPrompt';
 
 // Dynamically import Leaflet MapComponent with SSR disabled
 const MapComponent = dynamic(() => import('./MapComponent'), {
@@ -107,7 +107,6 @@ const REGIONS: Region[] = [
 export default function RegionMapClient() {
   const locale = useLocale();
   const isTr = locale === 'tr';
-  const router = useRouter();
   const supabase = createClient();
 
   const [selectedRegion, setSelectedRegion] = useState<Region>(REGIONS[0]);
@@ -119,7 +118,8 @@ export default function RegionMapClient() {
 
   // Modals & Interactivity State
   const [selectedSpot, setSelectedSpot] = useState<FishingSpot | null>(null); // Detail Modal
-  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false); // Guest Warning Modal
+  const [isGuestModalOpen, setIsGuestModalOpen] = useState(false);
+  const [guestAuthAction, setGuestAuthAction] = useState<GuestAuthAction>('generic');
   
   // Search & Filter State
   const [spotSearchQuery, setSpotSearchQuery] = useState('');
@@ -189,6 +189,7 @@ export default function RegionMapClient() {
 
   const toggleFavoriteSpot = async (spotId: string) => {
     if (!currentUser) {
+      setGuestAuthAction('favorite');
       setIsGuestModalOpen(true);
       return;
     }
@@ -213,6 +214,7 @@ export default function RegionMapClient() {
 
   const handleAddSpotClick = () => {
     if (!currentUser) {
+      setGuestAuthAction('add_spot');
       setIsGuestModalOpen(true);
     } else {
       setIsPickingLocation(true);
@@ -232,7 +234,7 @@ export default function RegionMapClient() {
       return;
     }
     if (!currentUser) {
-      alert('Mera eklemek için üye girişi yapmalısınız.');
+      setGuestAuthAction('add_spot');
       setIsGuestModalOpen(true);
       return;
     }
@@ -680,47 +682,11 @@ export default function RegionMapClient() {
         )}
       </AnimatePresence>
 
-      {/* GUEST WARNING MODAL */}
-      <AnimatePresence>
-        {isGuestModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl text-center space-y-4"
-            >
-              <div className="w-14 h-14 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto border border-amber-200">
-                <AlertCircle className="w-8 h-8" />
-              </div>
-
-              <div>
-                <h3 className="text-lg font-extrabold text-[#0F172A]">Üyelik Gereklidir</h3>
-                <p className="text-xs text-slate-500 mt-2 font-medium leading-relaxed">
-                  Mera eklemek için üye olmanız gerekmektedir.
-                </p>
-              </div>
-
-              <div className="pt-2 space-y-2">
-                <button
-                  onClick={() => router.push('/login')}
-                  className="w-full bg-[#0F172A] hover:bg-slate-800 text-white font-bold py-3 rounded-2xl transition-all shadow-md flex items-center justify-center space-x-2 text-sm"
-                >
-                  <span>Giriş Yap / Kayıt Ol</span>
-                  <ArrowRight className="w-4 h-4 text-emerald-400" />
-                </button>
-                
-                <button
-                  onClick={() => setIsGuestModalOpen(false)}
-                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-2xl transition-all text-xs"
-                >
-                  Kapat
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <GuestAuthPrompt
+        open={isGuestModalOpen}
+        action={guestAuthAction}
+        onClose={() => setIsGuestModalOpen(false)}
+      />
 
       {/* ADD SPOT FORM MODAL */}
       <AnimatePresence>

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -38,6 +38,7 @@ import Image from 'next/image';
 import { compressImageToWebP } from '@/lib/image_compression';
 import PullToRefresh from '@/components/PullToRefresh';
 import { pickPhotoNative, isNativeApp, triggerHapticLight } from '@/lib/capacitorUtils';
+import GuestAuthPrompt, { GuestAuthAction } from '@/components/GuestAuthPrompt';
 
 const STORIES_LIMIT = 50;
 const LEGACY_MOCK_STORY_IDS = new Set(['story-1', 'story-2']);
@@ -154,10 +155,17 @@ export default function CommunityClient({
   const [catchLureUsed, setCatchLureUsed] = useState('');
   const [catchLocationNote, setCatchLocationNote] = useState('');
   const [catchSubmitting, setCatchSubmitting] = useState(false);
+  const [guestAuthOpen, setGuestAuthOpen] = useState(false);
+  const [guestAuthAction, setGuestAuthAction] = useState<GuestAuthAction>('generic');
+
+  const requireAuth = (action: GuestAuthAction = 'generic') => {
+    setGuestAuthAction(action);
+    setGuestAuthOpen(true);
+  };
 
   const handleAddCommunityCatch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return router.push(`/${locale}/login`);
+    if (!currentUser) return requireAuth('share_catch');
     if (!catchImageFile) return alert(isTr ? 'Lütfen bir av fotoğrafı seçin.' : 'Please select a catch photo.');
     if (!catchLocationNote.trim()) return alert(isTr ? 'Lütfen mera / konum notu girin.' : 'Please enter location note.');
 
@@ -297,7 +305,7 @@ export default function CommunityClient({
 
   const handleAddStory = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return router.push(`/${locale}/login`);
+    if (!currentUser) return requireAuth('story');
     if (!storyImageFile) return alert(isTr ? 'Lütfen bir hikaye fotoğrafı seçin.' : 'Please select a photo.');
 
     setStorySubmitting(true);
@@ -372,7 +380,7 @@ export default function CommunityClient({
   };
 
   const handleDeleteStory = async (storyId: string) => {
-    if (!currentUser) return router.push(`/${locale}/login`);
+    if (!currentUser) return requireAuth('story');
     const story = stories.find((s) => s.id === storyId);
     if (!story) return;
     if (!isAdmin && !isStoryOwner(story, currentUser.id)) {
@@ -478,7 +486,7 @@ export default function CommunityClient({
   // Forum Add Handler
   const handleAddForumPost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return router.push(`/${locale}/login`);
+    if (!currentUser) return requireAuth('forum');
     if (!forumTitle.trim() || !forumContent.trim()) return;
 
     setForumSubmitting(true);
@@ -537,7 +545,7 @@ export default function CommunityClient({
   // Marketplace Add Handler
   const handleAddMarketItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return router.push(`/${locale}/login`);
+    if (!currentUser) return requireAuth('market');
     if (!itemTitle.trim() || !itemDesc.trim() || !itemPrice) return;
 
     setMarketSubmitting(true);
@@ -687,7 +695,7 @@ export default function CommunityClient({
   // Tip Add Handler
   const handleAddTip = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return router.push(`/${locale}/login`);
+    if (!currentUser) return requireAuth('tip');
     if (!tipTitle.trim() || !tipContent.trim()) return;
 
     setTipSubmitting(true);
@@ -850,7 +858,7 @@ export default function CommunityClient({
               {/* Add Story Circle Button (Instagram Style with User Avatar + Plus Badge) */}
               <div
                 onClick={() => {
-                  if (!currentUser) return router.push(`/${locale}/login`);
+                  if (!currentUser) return requireAuth('story');
                   setIsAddStoryModalOpen(true);
                 }}
                 className="flex flex-col items-center space-y-1 cursor-pointer shrink-0 group"
@@ -966,7 +974,7 @@ export default function CommunityClient({
 
               <button
                 onClick={() => {
-                  if (!currentUser) return router.push(`/${locale}/login`);
+                  if (!currentUser) return requireAuth('share_catch');
                   setIsAddCatchModalOpen(true);
                 }}
                 className="w-full sm:w-auto bg-[#0F172A] hover:bg-slate-800 text-white px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center space-x-1.5 transition-all shadow-sm shrink-0"
@@ -999,7 +1007,7 @@ export default function CommunityClient({
 
               <button
                 onClick={() => {
-                  if (!currentUser) return router.push(`/${locale}/login`);
+                  if (!currentUser) return requireAuth('follow');
                   setActiveFilter('following');
                 }}
                 className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
@@ -1026,7 +1034,7 @@ export default function CommunityClient({
                   currentUserProfile={currentUserProfile}
                   isAdmin={isAdmin}
                   isTr={isTr}
-                  onRequireAuth={() => router.push(`/${locale}/login`)}
+                  onRequireAuth={(action) => requireAuth(action || 'generic')}
                   onOpenAuthor={() => handleGoToPublicProfile(log.profiles, log.user_id)}
                 />
               ))
@@ -1063,7 +1071,7 @@ export default function CommunityClient({
             </div>
 
             <button
-              onClick={() => (currentUser ? setIsForumModalOpen(true) : router.push(`/${locale}/login`))}
+              onClick={() => (currentUser ? setIsForumModalOpen(true) : requireAuth('forum'))}
               className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-sm"
             >
               <Plus className="w-4 h-4" />
@@ -1104,7 +1112,7 @@ export default function CommunityClient({
                     isAdmin={isAdmin}
                     isTr={isTr}
                     onDelete={() => handleDeleteForumPost(post.id)}
-                    onRequireAuth={() => router.push(`/${locale}/login`)}
+                    onRequireAuth={(action) => requireAuth(action || 'generic')}
                   />
                 ))
             )}
@@ -1124,7 +1132,7 @@ export default function CommunityClient({
             </div>
 
             <button
-              onClick={() => (currentUser ? setIsMarketModalOpen(true) : router.push(`/${locale}/login`))}
+              onClick={() => (currentUser ? setIsMarketModalOpen(true) : requireAuth('market'))}
               className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-sm"
             >
               <Plus className="w-4 h-4" />
@@ -1166,7 +1174,7 @@ export default function CommunityClient({
                     onToggleSold={() => handleToggleMarketItemSold(item)}
                     onEdit={() => openEditMarketItemModal(item)}
                     onDelete={() => handleDeleteMarketItem(item.id)}
-                    onRequireAuth={() => router.push(`/${locale}/login`)}
+                    onRequireAuth={(action) => requireAuth(action || 'generic')}
                   />
                 ))
             )}
@@ -1186,7 +1194,7 @@ export default function CommunityClient({
             </div>
 
             <button
-              onClick={() => (currentUser ? setIsTipModalOpen(true) : router.push(`/${locale}/login`))}
+              onClick={() => (currentUser ? setIsTipModalOpen(true) : requireAuth('tip'))}
               className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-sm"
             >
               <Plus className="w-4 h-4" />
@@ -1226,13 +1234,19 @@ export default function CommunityClient({
                     isAdmin={isAdmin}
                     isTr={isTr}
                     onDelete={() => handleDeleteTip(tip.id)}
-                    onRequireAuth={() => router.push(`/${locale}/login`)}
+                    onRequireAuth={(action) => requireAuth(action || 'generic')}
                   />
                 ))
             )}
           </div>
         </div>
       )}
+
+      <GuestAuthPrompt
+        open={guestAuthOpen}
+        action={guestAuthAction}
+        onClose={() => setGuestAuthOpen(false)}
+      />
 
       {/* ========================================================================= */}
       {/* MODALS                                                                   */}
@@ -1872,7 +1886,7 @@ function CatchPostItem({
   currentUserProfile: any;
   isAdmin: boolean;
   isTr: boolean;
-  onRequireAuth: () => void;
+  onRequireAuth: (action?: import('@/components/GuestAuthPrompt').GuestAuthAction) => void;
   onOpenAuthor: () => void;
 }) {
   const supabase = createClient();
@@ -1917,7 +1931,7 @@ function CatchPostItem({
   };
 
   const handleToggleLike = async () => {
-    if (!currentUser) return onRequireAuth();
+    if (!currentUser) return onRequireAuth('like');
     if (likeLoading) return;
 
     setLikeLoading(true);
@@ -1935,7 +1949,7 @@ function CatchPostItem({
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return onRequireAuth();
+    if (!currentUser) return onRequireAuth('comment');
     const commentText = newComment.trim();
     if (!commentText) return;
 
@@ -2135,7 +2149,7 @@ function ForumPostItem({
   isAdmin: boolean;
   isTr: boolean;
   onDelete: () => void;
-  onRequireAuth: () => void;
+  onRequireAuth: (action?: import('@/components/GuestAuthPrompt').GuestAuthAction) => void;
 }) {
   const supabase = createClient();
   const [replies, setReplies] = useState<any[]>([]);
@@ -2165,7 +2179,7 @@ function ForumPostItem({
 
   const handleAddReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return onRequireAuth();
+    if (!currentUser) return onRequireAuth('forum');
     if (!newReply.trim()) return;
 
     setSubmittingReply(true);
@@ -2366,7 +2380,7 @@ function MarketplaceItemCard({
   onToggleSold: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  onRequireAuth: () => void;
+  onRequireAuth: (action?: import('@/components/GuestAuthPrompt').GuestAuthAction) => void;
 }) {
   const supabase = createClient();
   const [comments, setComments] = useState<any[]>([]);
@@ -2396,7 +2410,7 @@ function MarketplaceItemCard({
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return onRequireAuth();
+    if (!currentUser) return onRequireAuth('comment');
     if (!newComment.trim()) return;
 
     setSubmittingComment(true);
@@ -2619,7 +2633,7 @@ function TipCardItem({
   isAdmin: boolean;
   isTr: boolean;
   onDelete: () => void;
-  onRequireAuth: () => void;
+  onRequireAuth: (action?: import('@/components/GuestAuthPrompt').GuestAuthAction) => void;
 }) {
   const supabase = createClient();
   const [comments, setComments] = useState<any[]>([]);
@@ -2649,7 +2663,7 @@ function TipCardItem({
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return onRequireAuth();
+    if (!currentUser) return onRequireAuth('comment');
     if (!newComment.trim()) return;
 
     setSubmittingComment(true);
