@@ -27,13 +27,16 @@ import {
   CheckCircle2,
   X,
   PhoneCall,
-  Tag
+  Tag,
+  Globe,
+  ChevronRight
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import TackleBox from './TackleBox';
 import CatchCardExport from '../community/CatchCardExport';
+import LanguageSwitcher from '../LanguageSwitcher';
 import { getLegalMinSize } from '@/lib/fish_regulations';
 import { compressImageToWebP } from '@/lib/image_compression';
 
@@ -54,6 +57,7 @@ export default function ProfileClient({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [favoriteSpots, setFavoriteSpots] = useState<any[]>([]);
+  const [highlightCatchId, setHighlightCatchId] = useState<string | null>(null);
 
   // User Marketplace Listings State
   const [userMarketItems, setUserMarketItems] = useState<any[]>([]);
@@ -507,8 +511,27 @@ export default function ProfileClient({
   const biggestCatch = initialCatches.reduce((max, log) => (log.weight > (max.weight || 0) ? log : max), initialCatches[0] || null);
   const totalWeight = initialCatches.reduce((sum, log) => sum + (log.weight || 0), 0);
 
+  const goToCatch = (catchId?: string | null) => {
+    if (!catchId) return;
+    setHighlightCatchId(catchId);
+    setActiveTab('log');
+  };
+
+  useEffect(() => {
+    if (activeTab !== 'log' || !highlightCatchId) return;
+    const timer = window.setTimeout(() => {
+      const el = document.getElementById(`catch-card-${highlightCatchId}`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 120);
+    const clearHighlight = window.setTimeout(() => setHighlightCatchId(null), 2600);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearTimeout(clearHighlight);
+    };
+  }, [activeTab, highlightCatchId]);
+
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-16 pt-6">
+    <div className="max-w-5xl mx-auto space-y-8 pt-6 mobile-scroll-pad">
       {/* Profile Header */}
       <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6 text-center sm:text-left">
         <div className="relative group shrink-0">
@@ -647,7 +670,15 @@ export default function ProfileClient({
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {initialCatches.map((log: Record<string, any>) => (
-                  <div key={log.id} className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm flex flex-col">
+                  <div
+                    key={log.id}
+                    id={`catch-card-${log.id}`}
+                    className={`bg-white rounded-3xl overflow-hidden border shadow-sm flex flex-col transition-all duration-500 ${
+                      highlightCatchId === log.id
+                        ? 'border-amber-400 ring-2 ring-amber-300/70 shadow-amber-100'
+                        : 'border-slate-200'
+                    }`}
+                  >
                     <div className="aspect-[4/3] bg-slate-100 relative group">
                       <Image src={log.image_url} alt="Catch" fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover" />
                     </div>
@@ -857,14 +888,29 @@ export default function ProfileClient({
                 <div className="text-4xl font-black text-[#0F172A]">{totalCatches}</div>
               </div>
 
-              <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center space-y-2">
+              <button
+                type="button"
+                onClick={() => goToCatch(biggestCatch?.id)}
+                disabled={!biggestCatch?.id}
+                className={`bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center space-y-2 transition-all ${
+                  biggestCatch?.id
+                    ? 'hover:border-amber-300 hover:shadow-md cursor-pointer active:scale-[0.99]'
+                    : 'opacity-80 cursor-default'
+                }`}
+              >
                 <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mb-2">
                   <Scale className="w-6 h-6" />
                 </div>
                 <div className="text-sm font-bold text-slate-400 uppercase tracking-wide">{isTr ? 'En Büyük Trofe' : 'Biggest Trophy'}</div>
                 <div className="text-4xl font-black text-[#0F172A]">{biggestCatch?.weight ? `${biggestCatch.weight} kg` : '-'}</div>
                 <div className="text-xs font-semibold text-slate-500">{biggestCatch?.location_note}</div>
-              </div>
+                {biggestCatch?.id && (
+                  <div className="flex items-center gap-1 text-[11px] font-bold text-amber-600 pt-1">
+                    <span>{isTr ? 'Ava git' : 'View catch'}</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </div>
+                )}
+              </button>
 
               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center space-y-2">
                 <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center mb-2">
@@ -973,6 +1019,28 @@ export default function ProfileClient({
                   </button>
                 </div>
               </form>
+            </div>
+
+            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5">
+              <div className="border-b border-slate-100 pb-4 flex items-center space-x-3">
+                <div className="w-10 h-10 bg-slate-50 text-slate-700 rounded-2xl flex items-center justify-center">
+                  <Globe className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-[#0F172A]">{isTr ? 'Görüntüleme Dili' : 'Display Language'}</h3>
+                  <p className="text-xs text-slate-500">
+                    {isTr
+                      ? 'Uygulama arayüzünün dilini buradan değiştirebilirsiniz.'
+                      : 'Change the language used across the app interface.'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm font-semibold text-slate-600">
+                  {isTr ? 'Aktif dil' : 'Active language'}
+                </span>
+                <LanguageSwitcher />
+              </div>
             </div>
           </motion.div>
         )}

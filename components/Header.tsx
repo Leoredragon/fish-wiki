@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
 import { useTranslations, useLocale } from 'next-intl';
-import LanguageSwitcher from './LanguageSwitcher';
-import { Shield, Calendar, CloudSun, MapPin, Compass, Users, ChevronRight, LogIn, User, LogOut, BookOpen } from 'lucide-react';
+import { Calendar, CloudSun, MapPin, Compass, Users, LogIn, User, LogOut, BookOpen } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import OltaAppLogo from './OltaAppLogo';
 
@@ -93,8 +92,6 @@ export default function Header() {
 
           {/* Right controls */}
           <div className="flex items-center space-x-2 sm:space-x-3">
-            <LanguageSwitcher />
-
             {sessionUser && <NotificationCenter userId={sessionUser.id} />}
 
             {sessionUser ? (
