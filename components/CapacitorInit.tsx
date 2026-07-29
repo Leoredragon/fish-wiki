@@ -75,7 +75,9 @@ export default function CapacitorInit() {
                 on: { hour: 9, minute: 0 },
                 repeats: true
               },
-              smallIcon: 'ic_launcher',
+              smallIcon: 'ic_stat_oltaapp',
+              largeIcon: 'ic_notification',
+              iconColor: '#10B981',
               actionTypeId: '',
               extra: null
             },
@@ -87,7 +89,9 @@ export default function CapacitorInit() {
                 on: { hour: 17, minute: 0 },
                 repeats: true
               },
-              smallIcon: 'ic_launcher',
+              smallIcon: 'ic_stat_oltaapp',
+              largeIcon: 'ic_notification',
+              iconColor: '#10B981',
               actionTypeId: '',
               extra: null
             }
