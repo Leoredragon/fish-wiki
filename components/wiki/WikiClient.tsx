@@ -24,11 +24,14 @@ import Image from 'next/image';
 function matchesWikiSubCategory(item: any, selectedSubCategory: string) {
   if (selectedSubCategory === 'all') return true;
 
+  // Prefer explicit DB subcategory when present
+  if (item.sub_category) {
+    return item.sub_category === selectedSubCategory;
+  }
+
   const titleLower = (item.title_tr || '').toLowerCase();
   const titleEnLower = (item.title_en || '').toLowerCase();
   const combinedTitle = `${titleLower} ${titleEnLower}`;
-
-  if (item.sub_category === selectedSubCategory) return true;
 
   switch (selectedSubCategory) {
     case 'rod':
@@ -77,7 +80,26 @@ function matchesWikiSubCategory(item: any, selectedSubCategory: string) {
   }
 }
 
-export default function WikiClient({ initialArticles = [] }: { initialArticles?: any[] }) {
+const FALLBACK_CATEGORIES = [
+  { id: 'all', label_tr: 'Tüm Rehberler', label_en: 'All Guides', sort_order: 0 },
+  { id: 'disciplines', label_tr: 'Stiller & Disiplinler', label_en: 'Angling Styles', sort_order: 10 },
+  { id: 'tackles', label_tr: 'Kamış & Makine', label_en: 'Rods & Reels', sort_order: 20 },
+  { id: 'lines', label_tr: 'Misinalar & Liderler', label_en: 'Fishing Lines', sort_order: 30 },
+  { id: 'lures', label_tr: 'Sahte Yemler', label_en: 'Lures & Baits', sort_order: 40 },
+  { id: 'rigs', label_tr: 'Rig & Takımlar', label_en: 'Rigs & Assemblies', sort_order: 50 },
+  { id: 'knots', label_tr: 'Balıkçılık Düğümleri', label_en: 'Fishing Knots', sort_order: 60 },
+  { id: 'accessories', label_tr: 'Aksesuarlar', label_en: 'Accessories', sort_order: 70 }
+];
+
+export default function WikiClient({
+  initialArticles = [],
+  initialCategories = [],
+  initialSubcategories = []
+}: {
+  initialArticles?: any[];
+  initialCategories?: any[];
+  initialSubcategories?: any[];
+}) {
   const locale = useLocale();
   const isTr = locale === 'tr';
 
@@ -92,64 +114,41 @@ export default function WikiClient({ initialArticles = [] }: { initialArticles?:
     setArticles(initialArticles || []);
   }, [initialArticles]);
 
-  const categories = [
-    { id: 'all', label_tr: 'Tüm Rehberler', label_en: 'All Guides' },
-    { id: 'disciplines', label_tr: 'Stiller & Disiplinler', label_en: 'Angling Styles' },
-    { id: 'tackles', label_tr: 'Kamış & Makine', label_en: 'Rods & Reels' },
-    { id: 'lines', label_tr: 'Misinalar & Liderler', label_en: 'Fishing Lines' },
-    { id: 'lures', label_tr: 'Sahte Yemler', label_en: 'Lures & Baits' },
-    { id: 'rigs', label_tr: 'Rig & Takımlar', label_en: 'Rigs & Assemblies' },
-    { id: 'knots', label_tr: 'Balıkçılık Düğümleri', label_en: 'Fishing Knots' },
-    { id: 'accessories', label_tr: 'Aksesuarlar', label_en: 'Accessories' }
-  ];
+  const categories = useMemo(() => {
+    const dbCats = (initialCategories || []).map((c) => ({
+      id: c.id,
+      label_tr: c.label_tr,
+      label_en: c.label_en,
+      sort_order: c.sort_order ?? 0
+    }));
+    const base = dbCats.length
+      ? [{ id: 'all', label_tr: 'Tüm Rehberler', label_en: 'All Guides', sort_order: 0 }, ...dbCats]
+      : FALLBACK_CATEGORIES;
+    return [...base].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  }, [initialCategories]);
 
-  const subCategoriesMap: Record<string, { id: string; label_tr: string; label_en: string }[]> = {
-    tackles: [
-      { id: 'all', label_tr: 'Tümü (Kamış & Makine)', label_en: 'All Tackle' },
-      { id: 'reel', label_tr: 'Makineler', label_en: 'Reels' },
-      { id: 'rod', label_tr: 'Kamışlar', label_en: 'Rods' }
-    ],
-    lines: [
-      { id: 'all', label_tr: 'Tüm Misinalar', label_en: 'All Lines' },
-      { id: 'braid', label_tr: 'Örgü İp (PE Braid)', label_en: 'Braided Lines' },
-      { id: 'fluorocarbon', label_tr: 'Fluorocarbon (FC)', label_en: 'Fluorocarbon' },
-      { id: 'monofilament', label_tr: 'Monofilament (Naylon)', label_en: 'Monofilament' },
-      { id: 'leader', label_tr: 'Şok Lider (Shock Leader)', label_en: 'Shock Leader' }
-    ],
-    lures: [
-      { id: 'all', label_tr: 'Tüm Sahte Yemler', label_en: 'All Lures' },
-      { id: 'minnow', label_tr: 'Minnow & Maketler', label_en: 'Hard Minnows' },
-      { id: 'surface', label_tr: 'Su Üstü (Popper / WTD)', label_en: 'Topwater' },
-      { id: 'silicone', label_tr: 'Silikon Yemler & Jighead', label_en: 'Soft Plastics' },
-      { id: 'spoon', label_tr: 'Metal Kaşık & Shore Jig', label_en: 'Spoons & Jigs' },
-      { id: 'egi', label_tr: 'Kalamar Zokası (EGI)', label_en: 'Squid EGI' },
-      { id: 'vibration', label_tr: 'Metal Vibrasyon', label_en: 'Metal Vibs' }
-    ],
-    rigs: [
-      { id: 'all', label_tr: 'Tüm Rigler', label_en: 'All Rigs' },
-      { id: 'carp_rig', label_tr: 'Sazan Rigleri', label_en: 'Carp Rigs' },
-      { id: 'sea_rig', label_tr: 'Tuzlu Su & LRF Rigleri', label_en: 'Saltwater Rigs' }
-    ],
-    knots: [
-      { id: 'all', label_tr: 'Tüm Düğümler', label_en: 'All Knots' },
-      { id: 'line_join', label_tr: 'Misina Birleştirme (FG / Alberto)', label_en: 'Line Join Knots' },
-      { id: 'terminal', label_tr: 'Kanca & Klips Bağlama', label_en: 'Terminal Knots' }
-    ]
-  };
+  const currentSubCategories = useMemo(() => {
+    if (selectedCategory === 'all') return [];
+    return (initialSubcategories || [])
+      .filter((s) => s.category_id === selectedCategory)
+      .map((s) => ({
+        id: s.id,
+        label_tr: s.label_tr,
+        label_en: s.label_en
+      }));
+  }, [initialSubcategories, selectedCategory]);
 
   const handleCategorySelect = (catId: string) => {
     setSelectedCategory(catId);
     setSelectedSubCategory('all');
   };
 
-  const currentSubCategories = subCategoriesMap[selectedCategory] || [];
-
   const visibleCategories = useMemo(() => {
     return categories.filter((cat) => {
       if (cat.id === 'all') return true;
       return articles.some((item) => item.category === cat.id);
     });
-  }, [articles]);
+  }, [articles, categories]);
 
   const filteredArticles = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -242,13 +241,13 @@ export default function WikiClient({ initialArticles = [] }: { initialArticles?:
         </div>
 
         {/* 2nd Level Sub-category Horizontal Scroll Pills (Excluding 'Tümü') */}
-        {currentSubCategories.filter(s => s.id !== 'all').length > 0 && (
+        {currentSubCategories.length > 0 && (
           <div className="flex items-center space-x-2 overflow-x-auto pb-1.5 scrollbar-none pt-2 border-t border-dashed border-slate-200">
             <div className="flex items-center text-slate-400 space-x-1 shrink-0 text-xs font-bold mr-1">
               <Filter className="w-3.5 h-3.5 text-emerald-600" />
               <span>{isTr ? 'Alt Filtre:' : 'Sub-filter:'}</span>
             </div>
-            {currentSubCategories.filter(s => s.id !== 'all').map((sub) => (
+            {currentSubCategories.map((sub) => (
               <button
                 key={sub.id}
                 onClick={() => setSelectedSubCategory(selectedSubCategory === sub.id ? 'all' : sub.id)}
