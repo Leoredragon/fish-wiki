@@ -59,6 +59,15 @@ export interface FishingSpot {
   lng: number;
   image_url?: string;
   created_at: string;
+  province?: string | null;
+  water_type?: string | null;
+  spot_type?: string | null;
+  target_species_tr?: string[] | null;
+  best_hours?: string | null;
+  season_note?: string | null;
+  confidence_score?: number | null;
+  source_note?: string | null;
+  is_verified?: boolean | null;
 }
 
 interface Region {

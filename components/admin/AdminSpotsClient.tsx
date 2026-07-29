@@ -132,7 +132,7 @@ export default function AdminSpotsClient() {
       description: description.trim(),
       lat: parseFloat(lat),
       lng: parseFloat(lng),
-      image_url: imageUrl.trim() || 'https://images.unsplash.com/photo-1541432901042-2d8bd64b4a9b?auto=format&fit=crop&w=800&q=80'
+      image_url: imageUrl.trim() || null
     };
 
     try {

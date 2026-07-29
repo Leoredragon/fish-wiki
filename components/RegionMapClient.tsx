@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocale } from 'next-intl';
-import { MapPin, Compass, Anchor, Sparkles, Loader2, Plus, AlertCircle, X, Camera, User, Calendar, ArrowRight, Star, Search } from 'lucide-react';
+import { MapPin, Compass, Anchor, Sparkles, Loader2, Plus, AlertCircle, X, User, Calendar, ArrowRight, Star, Search } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { FishingSpot } from './MapComponent';
-import { compressImageToWebP } from '@/lib/image_compression';
 import PullToRefresh from './PullToRefresh';
+import { Link } from '@/i18n/routing';
 
 // Dynamically import Leaflet MapComponent with SSR disabled
 const MapComponent = dynamic(() => import('./MapComponent'), {
@@ -132,8 +132,8 @@ export default function RegionMapClient() {
   // Form State
   const [spotTitle, setSpotTitle] = useState('');
   const [spotDescription, setSpotDescription] = useState('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [savingSpot, setSavingSpot] = useState(false);
+  const [fishRouteByName, setFishRouteByName] = useState<Record<string, string>>({});
 
   useEffect(() => {
     // 1. Get Session User
@@ -144,7 +144,32 @@ export default function RegionMapClient() {
 
     // 2. Fetch User Fishing Spots
     fetchFishingSpots();
+    fetchFishRoutes();
   }, []);
+
+  const normalizeSpeciesName = (input: string) =>
+    input
+      .toLocaleLowerCase('tr-TR')
+      .replace(/ı/g, 'i')
+      .replace(/ğ/g, 'g')
+      .replace(/ü/g, 'u')
+      .replace(/ş/g, 's')
+      .replace(/ö/g, 'o')
+      .replace(/ç/g, 'c')
+      .replace(/[^\w\s]/g, '')
+      .trim();
+
+  const fetchFishRoutes = async () => {
+    const { data } = await supabase.from('fishes').select('id,name_tr,name_en').eq('is_active', true);
+    if (!data) return;
+
+    const map: Record<string, string> = {};
+    data.forEach((fish) => {
+      if (fish.name_tr) map[normalizeSpeciesName(fish.name_tr)] = fish.id;
+      if (fish.name_en) map[normalizeSpeciesName(fish.name_en)] = fish.id;
+    });
+    setFishRouteByName(map);
+  };
 
   const fetchFavoriteSpotIds = async (userId: string) => {
     try {
@@ -213,20 +238,6 @@ export default function RegionMapClient() {
     setSavingSpot(true);
 
     try {
-      let image_url = null;
-      if (imageFile) {
-        const compressed = await compressImageToWebP(imageFile);
-        const fileName = `spots/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.webp`;
-        const { error: uploadError } = await supabase.storage.from('user_uploads').upload(fileName, compressed, { contentType: 'image/webp', cacheControl: '31536000' });
-        if (uploadError) {
-          console.warn('Storage upload warning:', uploadError);
-          alert(`Mera görseli yüklenemedi: ${uploadError.message}. Mera görselsiz olarak kaydedilecek.`);
-        } else {
-          const { data: publicUrlData } = supabase.storage.from('user_uploads').getPublicUrl(fileName);
-          image_url = publicUrlData?.publicUrl || null;
-        }
-      }
-
       const creator_name = currentUser?.user_metadata?.username || currentUser?.email?.split('@')[0] || 'Oltapp Üyesi';
 
       const { data, error } = await supabase
@@ -238,7 +249,7 @@ export default function RegionMapClient() {
           description: spotDescription.trim(),
           lat: tempPickedLocation.lat,
           lng: tempPickedLocation.lng,
-          image_url
+          image_url: null
         })
         .select()
         .single();
@@ -265,13 +276,37 @@ export default function RegionMapClient() {
   const resetAddForm = () => {
     setSpotTitle('');
     setSpotDescription('');
-    setImageFile(null);
   };
 
   const cancelPickingMode = () => {
     setIsPickingLocation(false);
     setTempPickedLocation(null);
     setIsAddFormOpen(false);
+  };
+
+  const buildRecommendedStyle = (spot: FishingSpot) => {
+    const water = spot.water_type?.toLocaleLowerCase('tr-TR') || '';
+    const type = spot.spot_type?.toLocaleLowerCase('tr-TR') || '';
+    const species = (spot.target_species_tr || []).join(', ').toLocaleLowerCase('tr-TR');
+
+    if (water.includes('tatlı') && (species.includes('sudak') || species.includes('turna'))) {
+      return isTr
+        ? 'Av tipi: Spin + silikon/shad. Gün doğumu ve gün batımı kısa at-çek serileri önerilir.'
+        : 'Style: Spinning with soft shads. Use short retrieve sets around dawn and dusk.';
+    }
+    if (type.includes('liman') || type.includes('mendirek') || species.includes('istavrit')) {
+      return isTr
+        ? 'Av tipi: LRF/çapari + hafif spin. Akıntı kenarında katman taraması yap.'
+        : 'Style: LRF/sabiki + light spinning. Scan depth layers along current edges.';
+    }
+    if (type.includes('sahil') || type.includes('kayalık') || species.includes('levrek')) {
+      return isTr
+        ? 'Av tipi: Surfcasting veya kıyı spin. Dalga kırığı ve geçiş hatlarını hedefle.'
+        : 'Style: Surfcasting or shore spin. Focus on breakers and transition lanes.';
+    }
+    return isTr
+      ? 'Av tipi: Karma kıyı yaklaşımı. Önce hafif spin ile ara, ardından yemli dip takımına dön.'
+      : 'Style: Hybrid shore approach. Start with light spin, then switch to bottom bait rigs.';
   };
 
   return (
@@ -501,29 +536,27 @@ export default function RegionMapClient() {
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
               className="bg-white rounded-t-[32px] sm:rounded-[32px] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"
             >
-              {/* Cover Image */}
-              {selectedSpot.image_url ? (
-                <div className="relative aspect-video bg-slate-100 overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={selectedSpot.image_url} alt={selectedSpot.title} className="w-full h-full object-cover" />
-                  <button 
-                    onClick={() => setSelectedSpot(null)}
-                    className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-900/60 text-white flex items-center justify-center backdrop-blur-sm hover:bg-slate-900 transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              ) : (
-                <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-white">
-                  <span className="text-xs font-extrabold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg uppercase">MERA DETAYI</span>
-                  <button onClick={() => setSelectedSpot(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500">✕</button>
-                </div>
-              )}
+              <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-white">
+                <span className="text-xs font-extrabold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg uppercase">MERA DETAYI</span>
+                <button onClick={() => setSelectedSpot(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500">✕</button>
+              </div>
 
               {/* Content Body */}
               <div className="p-6 space-y-4 overflow-y-auto flex-1">
                 <div>
-                  <h3 className="text-2xl font-black text-[#0F172A]">{selectedSpot.title}</h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-2xl font-black text-[#0F172A]">{selectedSpot.title}</h3>
+                    {selectedSpot.is_verified && (
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        {isTr ? 'Doğrulandı' : 'Verified'}
+                      </span>
+                    )}
+                    {selectedSpot.confidence_score ? (
+                      <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                        {isTr ? 'Güven' : 'Confidence'}: %{selectedSpot.confidence_score}
+                      </span>
+                    ) : null}
+                  </div>
                   
                   {/* Creator and Date Info */}
                   <div className="mt-3 flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-500 border-b border-slate-100 pb-3">
@@ -545,6 +578,49 @@ export default function RegionMapClient() {
                     {selectedSpot.description}
                   </p>
                 </div>
+
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
+                  <p className="text-[11px] font-black uppercase tracking-wider text-slate-500">{isTr ? 'Av Tipi Önerisi' : 'Recommended Style'}</p>
+                  <p className="text-xs font-semibold text-slate-700 leading-relaxed">
+                    {buildRecommendedStyle(selectedSpot)}
+                  </p>
+                </div>
+
+                {(selectedSpot.target_species_tr?.length || selectedSpot.best_hours || selectedSpot.season_note || selectedSpot.province || selectedSpot.spot_type || selectedSpot.water_type) && (
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold text-slate-700">
+                      {selectedSpot.province && <span>📍 {isTr ? 'İl' : 'Province'}: <strong>{selectedSpot.province}</strong></span>}
+                      {selectedSpot.water_type && <span>💧 {isTr ? 'Su Tipi' : 'Water'}: <strong>{selectedSpot.water_type}</strong></span>}
+                      {selectedSpot.spot_type && <span>🧭 {isTr ? 'Mera Tipi' : 'Spot Type'}: <strong>{selectedSpot.spot_type}</strong></span>}
+                      {selectedSpot.best_hours && <span>⏰ {isTr ? 'Verimli Saatler' : 'Best Hours'}: <strong>{selectedSpot.best_hours}</strong></span>}
+                    </div>
+
+                    {selectedSpot.target_species_tr?.length ? (
+                      <div className="space-y-1">
+                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-500">{isTr ? 'Hedef Türler' : 'Target Species'}</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {selectedSpot.target_species_tr.map((s) => {
+                            const fishId = fishRouteByName[normalizeSpeciesName(s)];
+                            if (!fishId) {
+                              return <span key={s} className="px-2 py-1 rounded-lg text-[11px] font-bold bg-white border border-slate-200 text-slate-700">{s}</span>;
+                            }
+                            return (
+                              <Link key={s} href={`/fish/${fishId}`} className="px-2 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100 transition-colors">
+                                {s}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {selectedSpot.season_note && (
+                      <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                        <strong>{isTr ? 'Sezon Notu:' : 'Season Note:'}</strong> {selectedSpot.season_note}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div className="text-[11px] font-semibold text-slate-400 flex items-center space-x-1">
                   <MapPin className="w-3.5 h-3.5 text-emerald-500" />
@@ -656,17 +732,6 @@ export default function RegionMapClient() {
                       placeholder="Örn: Akıntılı meradır, ağır kurşun arkası rapala çalışır..."
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm font-medium text-slate-800 focus:outline-none focus:border-emerald-500 resize-none"
                     ></textarea>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Mera Görseli (Opsiyonel)</label>
-                    <label className="cursor-pointer border-2 border-dashed border-slate-300 rounded-2xl p-4 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors">
-                      <Camera className="w-6 h-6 text-emerald-500 mb-1" />
-                      <span className="text-xs font-semibold text-slate-600">
-                        {imageFile ? imageFile.name : 'Fotoğraf Yükle'}
-                      </span>
-                      <input type="file" accept="image/*" onChange={e => e.target.files && setImageFile(e.target.files[0])} className="hidden" />
-                    </label>
                   </div>
 
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-500 flex items-center justify-between">

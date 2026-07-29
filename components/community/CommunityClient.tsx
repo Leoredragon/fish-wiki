@@ -904,16 +904,13 @@ export default function CommunityClient({
           {/* 🏆 COMPACT HORIZONTAL TROPHY CATCHES SLIDER */}
           {topTrophies.length > 0 && (
             <div className="bg-gradient-to-r from-[#0F172A] via-slate-900 to-[#0F172A] text-white rounded-3xl p-4 shadow-md border border-slate-800 space-y-2.5">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <div className="flex items-center border-b border-slate-800 pb-2">
                 <div className="flex items-center space-x-2">
                   <Trophy className="w-4 h-4 text-amber-400" />
                   <h2 className="font-extrabold text-xs text-white uppercase tracking-wider">
                     {isTr ? 'Ayın Trofe Avları' : 'Trophy Leaderboard'}
                   </h2>
                 </div>
-                <span className="text-[10px] text-amber-400 font-bold">
-                  {isTr ? 'Yatay Kayan Liderler' : 'Top Catches'}
-                </span>
               </div>
 
               {/* Horizontal Scroll Track */}
