@@ -18,8 +18,8 @@ export const metadata: Metadata = {
   description: 'Türkiye Amatör Balıkçılık Topluluğu, Meralar, Hava Durumu ve Dijital Livar.',
   manifest: '/manifest.json',
   icons: {
-    icon: '/icon.svg',
-    apple: '/icon.svg'
+    icon: '/olta-app-icon.png',
+    apple: '/olta-app-icon.png'
   },
   appleWebApp: {
     capable: true,

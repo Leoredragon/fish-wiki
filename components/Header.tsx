@@ -58,7 +58,7 @@ export default function Header() {
         <div className="flex items-center justify-between h-16 min-h-[4rem] shrink-0">
           {/* Logo & Title */}
           <Link href="/" className="flex items-center space-x-3 group shrink-0">
-            <OltaAppLogo className="w-10 h-10 rounded-xl shadow-lg group-hover:scale-105 transition-transform" />
+            <OltaAppLogo className="w-10 h-10 rounded-xl shadow-lg ring-1 ring-white/10 group-hover:scale-105 transition-transform" />
             <div>
               <span className="text-xl font-bold tracking-tight text-white group-hover:text-emerald-400 transition-colors">
                 {t('title')}

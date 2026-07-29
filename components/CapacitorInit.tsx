@@ -264,8 +264,8 @@ export default function CapacitorInit() {
   if (authGateLoading) {
     return (
       <div className="fixed inset-0 z-[999998] bg-[#0F172A] flex flex-col items-center justify-center select-none">
-        <div className="animate-spin">
-          <OltaAppLogo className="w-14 h-14" />
+        <div className="animate-pulse">
+          <OltaAppLogo className="w-16 h-16 rounded-2xl shadow-xl shadow-emerald-500/20" />
         </div>
       </div>
     );
