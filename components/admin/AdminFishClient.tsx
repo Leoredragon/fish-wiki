@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase, Fish } from '@/lib/supabase';
+import type { Fish } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import {
@@ -29,6 +30,7 @@ import { compressImageToWebP } from '@/lib/image_compression';
 
 export default function AdminFishClient() {
   const t = useTranslations('Admin');
+  const supabase = createClient();
 
   // Form State
   const initialFormState: Partial<Fish> = {
