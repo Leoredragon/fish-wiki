@@ -8,9 +8,10 @@ import { Dialog } from '@capacitor/dialog';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Network } from '@capacitor/network';
 import { useRouter, usePathname } from 'next/navigation';
-import { WifiOff, RefreshCw, Anchor } from 'lucide-react';
+import { WifiOff, RefreshCw } from 'lucide-react';
 import { triggerHapticLight } from '@/lib/capacitorUtils';
 import { createClient } from '@/lib/supabase/client';
+import OltaAppLogo from './OltaAppLogo';
 
 const NOTIFICATION_PROMPT_SHOWN_KEY = 'oltaapp_notification_prompt_shown_v1';
 
@@ -233,7 +234,7 @@ export default function CapacitorInit() {
           <WifiOff className="w-10 h-10 text-emerald-400" />
         </div>
         <div className="inline-flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full mb-3">
-          <Anchor className="w-3.5 h-3.5 text-emerald-400" />
+          <OltaAppLogo className="w-4 h-4" />
           <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">oltaApp Mobil</span>
         </div>
         <h2 className="text-2xl font-black text-white mb-2">İnternet Bağlantısı Yok</h2>
@@ -262,8 +263,10 @@ export default function CapacitorInit() {
 
   if (authGateLoading) {
     return (
-      <div className="fixed inset-0 z-[999998] bg-[#0F172A] flex items-center justify-center select-none">
-        <div className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+      <div className="fixed inset-0 z-[999998] bg-[#0F172A] flex flex-col items-center justify-center select-none">
+        <div className="animate-spin">
+          <OltaAppLogo className="w-14 h-14" />
+        </div>
       </div>
     );
   }

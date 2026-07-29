@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
 import { useTranslations, useLocale } from 'next-intl';
 import LanguageSwitcher from './LanguageSwitcher';
-import { Shield, Fish, Calendar, CloudSun, MapPin, Compass, Users, ChevronRight, LogIn, User, LogOut, BookOpen } from 'lucide-react';
+import { Shield, Calendar, CloudSun, MapPin, Compass, Users, ChevronRight, LogIn, User, LogOut, BookOpen } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import OltaAppLogo from './OltaAppLogo';
 
 import { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -57,9 +58,7 @@ export default function Header() {
         <div className="flex items-center justify-between h-16 min-h-[4rem] shrink-0">
           {/* Logo & Title */}
           <Link href="/" className="flex items-center space-x-3 group shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-              <Fish className="w-6 h-6 text-[#0F172A]" />
-            </div>
+            <OltaAppLogo className="w-10 h-10 rounded-xl shadow-lg group-hover:scale-105 transition-transform" />
             <div>
               <span className="text-xl font-bold tracking-tight text-white group-hover:text-emerald-400 transition-colors">
                 {t('title')}
