@@ -18,8 +18,8 @@ const FAQ_ITEMS: FaqItem[] = [
     id: 'free',
     questionTr: 'Oltapp tamamen ücretsiz mi?',
     questionEn: 'Is Oltapp completely free to use?',
-    answerTr: 'Evet, Oltapp amatör balıkçılığı desteklemek amacıyla tasarlanmıştır ve tüm temel özellikleri (Balık Rehberi, İnteraktif Av Meraları Haritası, Av Günlüğü, Solunar Takvim ve Malzeme Çantası) tamamen ücretsizdir.',
-    answerEn: 'Yes, Oltapp is designed to support amateur angling, and all core features (Fish Wiki, Interactive Spot Map, Catch Log, Solunar Calendar, and Tackle Box) are 100% free.'
+    answerTr: 'Evet, Oltapp amatör balıkçılığı desteklemek amacıyla tasarlanmıştır ve tüm temel özellikleri (Balık Rehberi, İnteraktif Av Meraları Haritası, Av Günlüğü, Hava Durumu ve Malzeme Çantası) tamamen ücretsizdir.',
+    answerEn: 'Yes, Oltapp is designed to support amateur angling, and all core features (Fish Wiki, Interactive Spot Map, Catch Log, Weather, and Tackle Box) are 100% free.'
   },
   {
     id: 'map_access',

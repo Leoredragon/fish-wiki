@@ -70,7 +70,7 @@ export default function CapacitorInit() {
             {
               id: 101,
               title: 'Günaydın Balıkçı! (oltaApp)',
-              body: 'Bugün meralarda hava ve deniz koşulları harika! Balık iştah skorunu kontrol etmeyi unutma.',
+              body: 'Bugünkü hava koşullarına göre av planını yap. Hava Durumu modülünden av koşulu skorunu kontrol et.',
               schedule: {
                 on: { hour: 9, minute: 0 },
                 repeats: true
@@ -84,7 +84,7 @@ export default function CapacitorInit() {
             {
               id: 102,
               title: 'Günün En Verimli Av Saati!',
-              body: 'Meralardan yeni av raporları var. Solunar tahminlerini incele.',
+              body: 'Akşam saatleri yaklaşıyor. Hava durumu ve av koşulu skoruna göz at.',
               schedule: {
                 on: { hour: 17, minute: 0 },
                 repeats: true

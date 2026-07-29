@@ -1,7 +1,7 @@
 {
   "name": "Oltapp - Dijital Balıkçılık & Livar",
   "short_name": "Oltapp",
-  "description": "Türkiye Amatör Balıkçılık Topluluğu, Meralar, Solunar Tahmini ve Dijital Livar",
+  "description": "Türkiye Amatör Balıkçılık Topluluğu, Meralar, Hava Durumu ve Dijital Livar",
   "start_url": "/tr",
   "scope": "/",
   "display": "standalone",
@@ -41,9 +41,9 @@
       "description": "Balık meralarını incele ve yeni mera ekle"
     },
     {
-      "name": "Hava & Solunar",
+      "name": "Hava Durumu",
       "url": "/tr/weather",
-      "description": "Balık iştah skorunu ve 5 günlük tahmini gör"
+      "description": "Av koşulu skoru ve 5 günlük hava tahmini"
     }
   ]
 }

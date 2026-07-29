@@ -94,7 +94,7 @@ export default function AboutClient() {
           </div>
           <h3 className="text-base font-extrabold text-[#0F172A]">{isTr ? 'Akıllı Dijital Asistan' : 'Smart Digital Assistant'}</h3>
           <p className="text-xs text-slate-500 font-medium leading-relaxed">
-            {isTr ? 'Hava durumu, rüzgar yönü, solunar beslenme saatleri ve meraya uygun takım tavsiyeleri.' : 'Weather, wind direction, solunar activity hours, and spot-specific tackle recommendations.'}
+            {isTr ? 'Hava durumu, rüzgar, basınç ve av koşulu skoru ile meraya uygun takım tavsiyeleri.' : 'Weather, wind, pressure, fishing condition score, and spot-specific tackle recommendations.'}
           </p>
         </motion.div>
 

@@ -23,6 +23,10 @@ import {
 } from 'lucide-react';
 import PullToRefresh from '@/components/PullToRefresh';
 import { getCurrentPositionNative } from '@/lib/capacitorUtils';
+import {
+  computeFishingConditionScore,
+  FishingConditionResult
+} from '@/lib/fishingConditionScore';
 
 interface CityWeatherSpot {
   id: string; // e.g. "34"
@@ -148,6 +152,21 @@ function parseWeatherCode(code: number, isTr: boolean) {
   return { text: isTr ? 'Ilıman' : 'Mild', iconType: 'sun-cloud' };
 }
 
+function todayDateString(): string {
+  const t = new Date();
+  const y = t.getFullYear();
+  const m = String(t.getMonth() + 1).padStart(2, '0');
+  const d = String(t.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function findTodayDailyIndex(dateStrings: string[]): number {
+  const today = todayDateString();
+  const idx = dateStrings.findIndex((d) => d === today);
+  if (idx >= 0) return idx;
+  return dateStrings.length > 1 ? 1 : 0;
+}
+
 function findClosestProvince(lat: number, lng: number): CityWeatherSpot {
   let closest = TURKEY_PROVINCES[0];
   let minDistance = Infinity;
@@ -170,6 +189,7 @@ export default function WeatherSolunarClient() {
   const [selectedSpot, setSelectedSpot] = useState<CityWeatherSpot>(TURKEY_PROVINCES[33]); // Default Istanbul (34)
   const [weatherData, setWeatherData] = useState<CurrentWeatherData | null>(null);
   const [dailyForecast, setDailyForecast] = useState<DailyForecastItem[]>([]);
+  const [fishingCondition, setFishingCondition] = useState<FishingConditionResult | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [locating, setLocating] = useState<boolean>(false);
   const [sortMode, setSortMode] = useState<'plate' | 'alpha'>('plate');
@@ -237,18 +257,50 @@ export default function WeatherSolunarClient() {
   const fetchWeatherForSpot = async (spot: CityWeatherSpot) => {
     setLoading(true);
     try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${spot.lat}&longitude=${spot.lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max&timezone=auto`;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${spot.lat}&longitude=${spot.lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,wind_direction_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,surface_pressure_max,sunrise,sunset&past_days=1&timezone=auto`;
       const res = await fetch(url);
       const data = await res.json();
 
       if (data && data.current) {
         setWeatherData(data.current);
+
+        const dailyTimes: string[] = data.daily?.time || [];
+        const todayIdx = findTodayDailyIndex(dailyTimes);
+        const yesterdayIdx = todayIdx > 0 ? todayIdx - 1 : -1;
+
+        const pressureYesterday =
+          yesterdayIdx >= 0 ? data.daily?.surface_pressure_max?.[yesterdayIdx] : null;
+        const pressureChange24h =
+          pressureYesterday != null
+            ? data.current.surface_pressure - pressureYesterday
+            : null;
+
+        const sunriseIso =
+          todayIdx >= 0 ? data.daily?.sunrise?.[todayIdx] : null;
+        const sunsetIso =
+          todayIdx >= 0 ? data.daily?.sunset?.[todayIdx] : null;
+
+        setFishingCondition(
+          computeFishingConditionScore({
+            weatherCode: data.current.weather_code,
+            windSpeedKmh: data.current.wind_speed_10m,
+            tempC: data.current.temperature_2m,
+            pressureHpa: data.current.surface_pressure,
+            pressureChange24h,
+            sunriseIso,
+            sunsetIso
+          })
+        );
+      } else {
+        setFishingCondition(null);
       }
 
       if (data && data.daily) {
         const days: DailyForecastItem[] = [];
         const dateStrings = data.daily.time || [];
-        for (let idx = 0; idx < Math.min(dateStrings.length, 5); idx++) {
+        const startIdx = findTodayDailyIndex(dateStrings);
+        for (let i = 0; i < 5 && startIdx + i < dateStrings.length; i++) {
+          const idx = startIdx + i;
           const rawDate = new Date(dateStrings[idx]);
           const dayName = rawDate.toLocaleDateString(isTr ? 'tr-TR' : 'en-US', { weekday: 'short' });
           const weatherCode = data.daily.weather_code[idx];
@@ -258,7 +310,7 @@ export default function WeatherSolunarClient() {
 
           days.push({
             date: dateStrings[idx],
-            dayName: idx === 0 ? (isTr ? 'Bugün' : 'Today') : dayName,
+            dayName: i === 0 ? (isTr ? 'Bugün' : 'Today') : dayName,
             weatherCode,
             tempMax,
             tempMin,
@@ -269,6 +321,7 @@ export default function WeatherSolunarClient() {
       }
     } catch (err) {
       console.error('Weather fetch error:', err);
+      setFishingCondition(null);
     } finally {
       setLoading(false);
     }
@@ -296,6 +349,18 @@ export default function WeatherSolunarClient() {
   };
 
   const weatherDetails = weatherData ? parseWeatherCode(weatherData.weather_code, isTr) : { text: '', iconType: 'sun-cloud' };
+
+  const conditionLabel = fishingCondition
+    ? isTr
+      ? fishingCondition.labelTr
+      : fishingCondition.labelEn
+    : '';
+  const conditionColor =
+    fishingCondition?.label === 'good'
+      ? 'text-emerald-400'
+      : fishingCondition?.label === 'moderate'
+        ? 'text-amber-400'
+        : 'text-rose-400';
 
   const pageContent = (
     <div className="max-w-4xl mx-auto space-y-3 max-md:space-y-2.5 pt-1 px-3 sm:px-6 pb-4 md:pb-16 weather-fit-screen">
@@ -404,6 +469,65 @@ export default function WeatherSolunarClient() {
               </div>
             </div>
           </div>
+
+          {fishingCondition && (
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+                    {isTr ? 'Av Koşulu Skoru' : 'Fishing Condition Score'}
+                  </p>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    {isTr ? 'Hava koşullarına göre (bilgi amaçlı)' : 'Based on weather (informational)'}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className={`text-3xl font-black ${conditionColor}`}>
+                    {fishingCondition.score}
+                    <span className="text-sm text-slate-400 font-bold">/100</span>
+                  </div>
+                  <p className={`text-xs font-extrabold uppercase ${conditionColor}`}>{conditionLabel}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {fishingCondition.factors.map((factor) => (
+                  <div key={factor.key} className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600">
+                      <span>{isTr ? factor.textTr : factor.textEn}</span>
+                      <span>{factor.points}/{factor.maxPoints}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-emerald-500 transition-all"
+                        style={{ width: `${Math.round((factor.points / factor.maxPoints) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {(isTr ? fishingCondition.goldenHourNoteTr : fishingCondition.goldenHourNoteEn) && (
+                <p className="text-xs font-medium text-slate-600 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2">
+                  {isTr ? fishingCondition.goldenHourNoteTr : fishingCondition.goldenHourNoteEn}
+                </p>
+              )}
+
+              {(isTr ? fishingCondition.tipsTr : fishingCondition.tipsEn).length > 0 && (
+                <ul className="text-xs text-slate-500 space-y-1 list-disc pl-4">
+                  {(isTr ? fishingCondition.tipsTr : fishingCondition.tipsEn).map((tip) => (
+                    <li key={tip}>{tip}</li>
+                  ))}
+                </ul>
+              )}
+
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                {isTr
+                  ? 'Bu skor hava koşullarına göre hesaplanır; balık aktivitesini garanti etmez.'
+                  : 'This score reflects weather conditions only and does not guarantee fish activity.'}
+              </p>
+            </div>
+          )}
 
           {/* 5-DAY WEATHER FORECAST GRID (Compact fit for mobile) */}
           {dailyForecast.length > 0 && (

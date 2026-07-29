@@ -15,7 +15,7 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
   title: 'Oltapp - Dijital Balıkçılık & Livar',
-  description: 'Türkiye Amatör Balıkçılık Topluluğu, Meralar, Solunar Tahmini ve Dijital Livar.',
+  description: 'Türkiye Amatör Balıkçılık Topluluğu, Meralar, Hava Durumu ve Dijital Livar.',
   manifest: '/manifest.json',
   icons: {
     icon: '/icon.svg',
