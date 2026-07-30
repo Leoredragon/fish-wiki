@@ -20,6 +20,7 @@ import {
   Filter
 } from 'lucide-react';
 import Image from 'next/image';
+import { getOptimizedSupabaseImageUrl } from '@/lib/supabaseImage';
 
 function matchesWikiSubCategory(item: any, selectedSubCategory: string) {
   if (selectedSubCategory === 'all') return true;
@@ -109,6 +110,7 @@ export default function WikiClient({
   const [selectedWaterType, setSelectedWaterType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeArticle, setActiveArticle] = useState<any | null>(null);
+  const [visibleArticleCount, setVisibleArticleCount] = useState(12);
 
   useEffect(() => {
     setArticles(initialArticles || []);
@@ -169,6 +171,12 @@ export default function WikiClient({
       return matchesCategory && matchesSub && matchesWater && matchesSearch;
     });
   }, [articles, selectedCategory, selectedSubCategory, selectedWaterType, searchQuery, isTr]);
+
+  const displayedArticles = filteredArticles.slice(0, visibleArticleCount);
+
+  useEffect(() => {
+    setVisibleArticleCount(12);
+  }, [selectedCategory, selectedSubCategory, selectedWaterType, searchQuery]);
 
   const getCategoryLabel = (catId: string) => {
     const found = categories.find((c) => c.id === catId);
@@ -283,7 +291,7 @@ export default function WikiClient({
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-6">
-          {filteredArticles.map((article: any, idx: number) => (
+          {displayedArticles.map((article: any, idx: number) => (
             <div
               key={article.id || idx}
               onClick={() => setActiveArticle(article)}
@@ -292,7 +300,7 @@ export default function WikiClient({
               <div className="relative aspect-[16/10] w-full bg-[#0F172A] overflow-hidden">
                 {article.image_url ? (
                   <Image
-                    src={article.image_url}
+                    src={getOptimizedSupabaseImageUrl(article.image_url, { width: 700, quality: 76 })}
                     alt={article.title_tr || ''}
                     fill
                     sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
@@ -341,6 +349,18 @@ export default function WikiClient({
         </div>
       )}
 
+      {filteredArticles.length > visibleArticleCount && (
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={() => setVisibleArticleCount((prev) => prev + 12)}
+            className="w-full sm:w-auto sm:mx-auto block bg-white border border-slate-200 shadow-sm text-[#0F172A] font-bold px-5 py-3 rounded-2xl text-sm hover:bg-slate-50 transition-all"
+          >
+            {isTr ? 'Daha Fazla Rehber Göster' : 'Load More Guides'}
+          </button>
+        </div>
+      )}
+
       {/* Article Detail Modal */}
       <AnimatePresence>
         {activeArticle && (
@@ -354,7 +374,13 @@ export default function WikiClient({
               {/* Modal Cover Image */}
               <div className="relative h-56 sm:h-72 bg-slate-900 overflow-hidden">
                 {activeArticle.image_url && (
-                  <Image src={activeArticle.image_url} alt="" fill sizes="100vw" className="object-cover" />
+                  <Image
+                    src={getOptimizedSupabaseImageUrl(activeArticle.image_url, { width: 1280, quality: 82 })}
+                    alt=""
+                    fill
+                    sizes="100vw"
+                    className="object-cover"
+                  />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
 

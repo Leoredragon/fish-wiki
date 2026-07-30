@@ -19,6 +19,7 @@ import {
   Compass
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { compressImageToWebP } from '@/lib/image_compression';
 
 export default function AdminSpotsClient() {
   const locale = useLocale();
@@ -88,30 +89,38 @@ export default function AdminSpotsClient() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Allow selecting the same file again if needed
+    e.target.value = '';
+
     setUploadingImage(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `spots/${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+      const compressed = await compressImageToWebP(file, 1400, 0.82);
+      const fileName = `spots/${Math.random().toString(36).substring(2)}_${Date.now()}.webp`;
 
       const { error: uploadError } = await supabase.storage
         .from('user_uploads')
-        .upload(fileName, file, { cacheControl: '3600', upsert: true });
+        .upload(fileName, compressed, {
+          contentType: 'image/webp',
+          cacheControl: '31536000',
+          upsert: false
+        });
 
       if (uploadError) {
         setNotification({ type: 'error', message: 'Fotoğraf yüklenemedi: ' + uploadError.message });
-        setUploadingImage(false);
-      } else {
-        const { data: publicUrlData } = supabase.storage
-          .from('user_uploads')
-          .getPublicUrl(fileName);
+        return;
+      }
 
-        if (publicUrlData?.publicUrl) {
-          setImageUrl(publicUrlData.publicUrl);
-        }
-        setUploadingImage(false);
+      const { data: publicUrlData } = supabase.storage
+        .from('user_uploads')
+        .getPublicUrl(fileName);
+
+      if (publicUrlData?.publicUrl) {
+        setImageUrl(publicUrlData.publicUrl);
+        setNotification({ type: 'success', message: 'Görsel sıkıştırılarak yüklendi.' });
       }
     } catch (err: any) {
       setNotification({ type: 'error', message: 'Beklenmeyen hata: ' + (err.message || 'Bilinmiyor') });
+    } finally {
       setUploadingImage(false);
     }
   };

@@ -165,6 +165,7 @@ export default function FishGrid({
 
   const [fishes, setFishes] = useState<Fish[]>(initialFishes);
   const [loading, setLoading] = useState(initialFishes.length === 0);
+  const [visibleFishCount, setVisibleFishCount] = useState(12);
 
   useEffect(() => {
     setFishes(initialFishes);
@@ -249,6 +250,12 @@ export default function FishGrid({
       const nameB = locale === 'tr' ? b.name_tr : b.name_en;
       return nameA.localeCompare(nameB, locale === 'tr' ? 'tr' : 'en');
     });
+
+  const displayedFishes = filteredFishes.slice(0, visibleFishCount);
+
+  useEffect(() => {
+    setVisibleFishCount(12);
+  }, [selectedCategory, searchTerm]);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -343,9 +350,24 @@ export default function FishGrid({
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-6">
-          {filteredFishes.map((fish, index) => (
+          {displayedFishes.map((fish, index) => (
             <FishCard key={fish.id || fish.name_tr} fish={fish} priority={index < 4} />
           ))}
+        </div>
+      )}
+
+      {!loading && filteredFishes.length > visibleFishCount && (
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={() => {
+              triggerHapticLight();
+              setVisibleFishCount((prev) => prev + 12);
+            }}
+            className="w-full sm:w-auto sm:mx-auto block bg-white border border-slate-200 shadow-sm text-[#0F172A] font-bold px-5 py-3 rounded-2xl text-sm hover:bg-slate-50 transition-all"
+          >
+            {isTr ? 'Daha Fazla Balık Göster' : 'Load More Fish'}
+          </button>
         </div>
       )}
     </div>

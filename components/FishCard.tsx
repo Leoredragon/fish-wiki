@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Fish as FishType } from '@/lib/supabase';
+import { getOptimizedSupabaseImageUrl } from '@/lib/supabaseImage';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { Info, ArrowRight, Anchor } from 'lucide-react';
@@ -25,7 +26,9 @@ export default function FishCard({ fish, priority = false }: FishCardProps) {
     ? (fish.description_tr || fish.description_en)
     : (fish.description_en || fish.description_tr);
 
-  const displayImage = fish.image_url && !imageError ? fish.image_url : null;
+  const displayImage = fish.image_url && !imageError
+    ? getOptimizedSupabaseImageUrl(fish.image_url, { width: 700, quality: 76 })
+    : null;
   const targetId = fish.id || 'm1';
 
   useEffect(() => {
