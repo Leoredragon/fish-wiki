@@ -41,6 +41,8 @@ import { pickPhotoNative, isNativeApp, triggerHapticLight } from '@/lib/capacito
 import GuestAuthPrompt, { GuestAuthAction } from '@/components/GuestAuthPrompt';
 
 const STORIES_LIMIT = 50;
+const PAGE_SIZE = 20;
+const VISIBLE_STEP = 10;
 const LEGACY_MOCK_STORY_IDS = new Set(['story-1', 'story-2']);
 
 function normalizeStory(story: Record<string, any>) {
@@ -88,10 +90,14 @@ export default function CommunityClient({
 
   // Tab 1: Feed States
   const [catchesList, setCatchesList] = useState<any[]>(catches);
+  const [visibleCount, setVisibleCount] = useState<number>(VISIBLE_STEP);
+  const [feedHasMore, setFeedHasMore] = useState(catches.length >= PAGE_SIZE);
+  const [feedLoadingMore, setFeedLoadingMore] = useState(false);
   useEffect(() => {
     setCatchesList(catches);
+    setFeedHasMore(catches.length >= PAGE_SIZE);
+    setVisibleCount(VISIBLE_STEP);
   }, [catches]);
-  const [visibleCount, setVisibleCount] = useState<number>(10);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'trophy' | 'following'>('all');
   const [followingUserIds, setFollowingUserIds] = useState<string[]>([]);
@@ -104,6 +110,9 @@ export default function CommunityClient({
 
   // Tab 2: Forum States
   const [forumPosts, setForumPosts] = useState<any[]>(initialForumPosts);
+  const [forumVisible, setForumVisible] = useState(VISIBLE_STEP);
+  const [forumHasMore, setForumHasMore] = useState(initialForumPosts.length >= PAGE_SIZE);
+  const [forumLoadingMore, setForumLoadingMore] = useState(false);
   const [forumCategory, setForumCategory] = useState<string>('all');
   const [isForumModalOpen, setIsForumModalOpen] = useState(false);
   const [forumTitle, setForumTitle] = useState('');
@@ -114,6 +123,9 @@ export default function CommunityClient({
 
   // Tab 3: Marketplace States
   const [marketItems, setMarketItems] = useState<any[]>(initialMarketplaceItems);
+  const [marketVisible, setMarketVisible] = useState(VISIBLE_STEP);
+  const [marketHasMore, setMarketHasMore] = useState(initialMarketplaceItems.length >= PAGE_SIZE);
+  const [marketLoadingMore, setMarketLoadingMore] = useState(false);
   const [marketCategory, setMarketCategory] = useState<string>('all');
   const [isMarketModalOpen, setIsMarketModalOpen] = useState(false);
   const [itemTitle, setItemTitle] = useState('');
@@ -139,6 +151,9 @@ export default function CommunityClient({
 
   // Tab 4: Tips States
   const [tips, setTips] = useState<any[]>(initialCommunityTips);
+  const [tipsVisible, setTipsVisible] = useState(VISIBLE_STEP);
+  const [tipsHasMore, setTipsHasMore] = useState(initialCommunityTips.length >= PAGE_SIZE);
+  const [tipsLoadingMore, setTipsLoadingMore] = useState(false);
   const [tipsCategory, setTipsCategory] = useState<string>('all');
   const [isTipModalOpen, setIsTipModalOpen] = useState(false);
   const [tipTitle, setTipTitle] = useState('');
@@ -482,6 +497,194 @@ export default function CommunityClient({
   }, [catchesList, activeFilter, searchQuery, currentUser, followingUserIds]);
 
   const displayedCatches = filteredCatches.slice(0, visibleCount);
+
+  const filteredForumPosts = useMemo(
+    () => forumPosts.filter((p) => forumCategory === 'all' || p.category === forumCategory),
+    [forumPosts, forumCategory]
+  );
+  const displayedForumPosts = filteredForumPosts.slice(0, forumVisible);
+
+  const filteredMarketItems = useMemo(
+    () => marketItems.filter((i) => marketCategory === 'all' || i.item_type === marketCategory),
+    [marketItems, marketCategory]
+  );
+  const displayedMarketItems = filteredMarketItems.slice(0, marketVisible);
+
+  const filteredTips = useMemo(
+    () => tips.filter((t) => tipsCategory === 'all' || t.category === tipsCategory),
+    [tips, tipsCategory]
+  );
+  const displayedTips = filteredTips.slice(0, tipsVisible);
+
+  useEffect(() => {
+    setForumPosts(initialForumPosts);
+    setForumHasMore(initialForumPosts.length >= PAGE_SIZE);
+    setForumVisible(VISIBLE_STEP);
+  }, [initialForumPosts]);
+
+  useEffect(() => {
+    setMarketItems(initialMarketplaceItems);
+    setMarketHasMore(initialMarketplaceItems.length >= PAGE_SIZE);
+    setMarketVisible(VISIBLE_STEP);
+  }, [initialMarketplaceItems]);
+
+  useEffect(() => {
+    setTips(initialCommunityTips);
+    setTipsHasMore(initialCommunityTips.length >= PAGE_SIZE);
+    setTipsVisible(VISIBLE_STEP);
+  }, [initialCommunityTips]);
+
+  useEffect(() => {
+    setVisibleCount(VISIBLE_STEP);
+  }, [activeFilter, searchQuery]);
+
+  useEffect(() => {
+    setForumVisible(VISIBLE_STEP);
+    setForumHasMore(true);
+  }, [forumCategory]);
+
+  useEffect(() => {
+    setMarketVisible(VISIBLE_STEP);
+    setMarketHasMore(true);
+  }, [marketCategory]);
+
+  useEffect(() => {
+    setTipsVisible(VISIBLE_STEP);
+    setTipsHasMore(true);
+  }, [tipsCategory]);
+
+  const appendUniqueById = (prev: any[], next: any[]) => {
+    const seen = new Set(prev.map((item) => String(item.id)));
+    return [...prev, ...next.filter((item) => !seen.has(String(item.id)))];
+  };
+
+  const loadMoreFeed = async () => {
+    triggerHapticLight();
+    if (visibleCount < filteredCatches.length) {
+      setVisibleCount((prev) => prev + VISIBLE_STEP);
+      return;
+    }
+    if (!feedHasMore || feedLoadingMore) return;
+    setFeedLoadingMore(true);
+    try {
+      const from = catchesList.length;
+      const to = from + PAGE_SIZE - 1;
+      const { data, error } = await supabase
+        .from('catch_logs')
+        .select(`
+          *,
+          profiles (username, full_name, avatar_url, bio, city),
+          tackle_sets (id, name, rod, reel, line, lure)
+        `)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+      if (error || !data) {
+        setFeedHasMore(false);
+        return;
+      }
+      setCatchesList((prev) => appendUniqueById(prev, data));
+      setFeedHasMore(data.length >= PAGE_SIZE);
+      setVisibleCount((prev) => prev + VISIBLE_STEP);
+    } finally {
+      setFeedLoadingMore(false);
+    }
+  };
+
+  const loadMoreForum = async () => {
+    triggerHapticLight();
+    if (forumVisible < filteredForumPosts.length) {
+      setForumVisible((prev) => prev + VISIBLE_STEP);
+      return;
+    }
+    if (!forumHasMore || forumLoadingMore) return;
+    setForumLoadingMore(true);
+    try {
+      const from = forumCategory === 'all' ? forumPosts.length : filteredForumPosts.length;
+      const to = from + PAGE_SIZE - 1;
+      let query = supabase
+        .from('community_forum_posts')
+        .select(`*, profiles(username, full_name, avatar_url, city)`)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+      if (forumCategory !== 'all') {
+        query = query.eq('category', forumCategory);
+      }
+      const { data, error } = await query;
+      if (error || !data) {
+        setForumHasMore(false);
+        return;
+      }
+      setForumPosts((prev) => appendUniqueById(prev, data));
+      setForumHasMore(data.length >= PAGE_SIZE);
+      setForumVisible((prev) => prev + VISIBLE_STEP);
+    } finally {
+      setForumLoadingMore(false);
+    }
+  };
+
+  const loadMoreMarket = async () => {
+    triggerHapticLight();
+    if (marketVisible < filteredMarketItems.length) {
+      setMarketVisible((prev) => prev + VISIBLE_STEP);
+      return;
+    }
+    if (!marketHasMore || marketLoadingMore) return;
+    setMarketLoadingMore(true);
+    try {
+      const from = marketCategory === 'all' ? marketItems.length : filteredMarketItems.length;
+      const to = from + PAGE_SIZE - 1;
+      let query = supabase
+        .from('community_marketplace_items')
+        .select(`*, profiles(username, full_name, avatar_url, city)`)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+      if (marketCategory !== 'all') {
+        query = query.eq('item_type', marketCategory);
+      }
+      const { data, error } = await query;
+      if (error || !data) {
+        setMarketHasMore(false);
+        return;
+      }
+      setMarketItems((prev) => appendUniqueById(prev, data));
+      setMarketHasMore(data.length >= PAGE_SIZE);
+      setMarketVisible((prev) => prev + VISIBLE_STEP);
+    } finally {
+      setMarketLoadingMore(false);
+    }
+  };
+
+  const loadMoreTips = async () => {
+    triggerHapticLight();
+    if (tipsVisible < filteredTips.length) {
+      setTipsVisible((prev) => prev + VISIBLE_STEP);
+      return;
+    }
+    if (!tipsHasMore || tipsLoadingMore) return;
+    setTipsLoadingMore(true);
+    try {
+      const from = tipsCategory === 'all' ? tips.length : filteredTips.length;
+      const to = from + PAGE_SIZE - 1;
+      let query = supabase
+        .from('community_tips')
+        .select(`*, profiles(username, full_name, avatar_url, city)`)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+      if (tipsCategory !== 'all') {
+        query = query.eq('category', tipsCategory);
+      }
+      const { data, error } = await query;
+      if (error || !data) {
+        setTipsHasMore(false);
+        return;
+      }
+      setTips((prev) => appendUniqueById(prev, data));
+      setTipsHasMore(data.length >= PAGE_SIZE);
+      setTipsVisible((prev) => prev + VISIBLE_STEP);
+    } finally {
+      setTipsLoadingMore(false);
+    }
+  };
 
   // Forum Add Handler
   const handleAddForumPost = async (e: React.FormEvent) => {
@@ -1041,21 +1244,23 @@ export default function CommunityClient({
             )}
           </div>
 
-          {visibleCount < filteredCatches.length && (
+          {visibleCount < filteredCatches.length || feedHasMore ? (
             <div className="pt-4 pb-2">
               <button
                 type="button"
-                onClick={() => {
-                  triggerHapticLight();
-                  setVisibleCount((prev) => prev + 10);
-                }}
-                className="w-full sm:w-auto sm:mx-auto flex items-center justify-center gap-2 bg-white border border-slate-200 shadow-md text-[#0F172A] font-extrabold px-6 py-3.5 min-h-[52px] rounded-2xl transition-all active:scale-[0.98] text-sm"
+                onClick={loadMoreFeed}
+                disabled={feedLoadingMore}
+                className="w-full sm:w-auto sm:mx-auto flex items-center justify-center gap-2 bg-white border border-slate-200 shadow-md text-[#0F172A] font-extrabold px-6 py-3.5 min-h-[52px] rounded-2xl transition-all active:scale-[0.98] text-sm disabled:opacity-70"
               >
+                {feedLoadingMore ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-emerald-500" />
+                )}
                 <span>{isTr ? 'Daha Fazla Av Göster' : 'Load More'}</span>
-                <ChevronDown className="w-4 h-4 text-emerald-500" />
               </button>
             </div>
-          )}
+          ) : null}
         </div>
       )}
 
@@ -1094,29 +1299,45 @@ export default function CommunityClient({
           </div>
 
           <div className="space-y-4">
-            {forumPosts.filter((p) => forumCategory === 'all' || p.category === forumCategory).length === 0 ? (
+            {filteredForumPosts.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200 text-slate-400 space-y-2">
                 <MessageSquare className="w-10 h-10 text-slate-300 mx-auto" />
                 <p className="font-bold text-slate-600">{isTr ? 'Henüz bu kategoride soru açılmamış.' : 'No topics yet.'}</p>
                 <p className="text-xs">{isTr ? 'İlk soruyu siz sorun!' : 'Be the first to ask a question!'}</p>
               </div>
             ) : (
-              forumPosts
-                .filter((p) => forumCategory === 'all' || p.category === forumCategory)
-                .map((post) => (
-                  <ForumPostItem
-                    key={post.id}
-                    post={post}
-                    currentUser={currentUser}
-                    currentUserProfile={currentUserProfile}
-                    isAdmin={isAdmin}
-                    isTr={isTr}
-                    onDelete={() => handleDeleteForumPost(post.id)}
-                    onRequireAuth={(action) => requireAuth(action || 'generic')}
-                  />
-                ))
+              displayedForumPosts.map((post) => (
+                <ForumPostItem
+                  key={post.id}
+                  post={post}
+                  currentUser={currentUser}
+                  currentUserProfile={currentUserProfile}
+                  isAdmin={isAdmin}
+                  isTr={isTr}
+                  onDelete={() => handleDeleteForumPost(post.id)}
+                  onRequireAuth={(action) => requireAuth(action || 'generic')}
+                />
+              ))
             )}
           </div>
+
+          {(forumVisible < filteredForumPosts.length || forumHasMore) && (
+            <div className="pt-2 pb-2">
+              <button
+                type="button"
+                onClick={loadMoreForum}
+                disabled={forumLoadingMore}
+                className="w-full sm:w-auto sm:mx-auto flex items-center justify-center gap-2 bg-white border border-slate-200 shadow-md text-[#0F172A] font-extrabold px-6 py-3.5 min-h-[52px] rounded-2xl transition-all active:scale-[0.98] text-sm disabled:opacity-70"
+              >
+                {forumLoadingMore ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-emerald-500" />
+                )}
+                <span>{isTr ? 'Daha Fazla Konu Göster' : 'Load More Topics'}</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1155,30 +1376,46 @@ export default function CommunityClient({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {marketItems.filter((i) => marketCategory === 'all' || i.item_type === marketCategory).length === 0 ? (
+            {filteredMarketItems.length === 0 ? (
               <div className="col-span-full text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200 text-slate-400 space-y-2">
                 <ShoppingBag className="w-10 h-10 text-slate-300 mx-auto" />
                 <p className="font-bold text-slate-600">{isTr ? 'Henüz bu kategoride ilan bulunmuyor.' : 'No marketplace items yet.'}</p>
               </div>
             ) : (
-              marketItems
-                .filter((i) => marketCategory === 'all' || i.item_type === marketCategory)
-                .map((item) => (
-                  <MarketplaceItemCard
-                    key={item.id}
-                    item={item}
-                    currentUser={currentUser}
-                    currentUserProfile={currentUserProfile}
-                    isAdmin={isAdmin}
-                    isTr={isTr}
-                    onToggleSold={() => handleToggleMarketItemSold(item)}
-                    onEdit={() => openEditMarketItemModal(item)}
-                    onDelete={() => handleDeleteMarketItem(item.id)}
-                    onRequireAuth={(action) => requireAuth(action || 'generic')}
-                  />
-                ))
+              displayedMarketItems.map((item) => (
+                <MarketplaceItemCard
+                  key={item.id}
+                  item={item}
+                  currentUser={currentUser}
+                  currentUserProfile={currentUserProfile}
+                  isAdmin={isAdmin}
+                  isTr={isTr}
+                  onToggleSold={() => handleToggleMarketItemSold(item)}
+                  onEdit={() => openEditMarketItemModal(item)}
+                  onDelete={() => handleDeleteMarketItem(item.id)}
+                  onRequireAuth={(action) => requireAuth(action || 'generic')}
+                />
+              ))
             )}
           </div>
+
+          {(marketVisible < filteredMarketItems.length || marketHasMore) && (
+            <div className="pt-2 pb-2">
+              <button
+                type="button"
+                onClick={loadMoreMarket}
+                disabled={marketLoadingMore}
+                className="w-full sm:w-auto sm:mx-auto flex items-center justify-center gap-2 bg-white border border-slate-200 shadow-md text-[#0F172A] font-extrabold px-6 py-3.5 min-h-[52px] rounded-2xl transition-all active:scale-[0.98] text-sm disabled:opacity-70"
+              >
+                {marketLoadingMore ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-emerald-500" />
+                )}
+                <span>{isTr ? 'Daha Fazla İlan Göster' : 'Load More Listings'}</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1217,28 +1454,44 @@ export default function CommunityClient({
           </div>
 
           <div className="space-y-4">
-            {tips.filter((t) => tipsCategory === 'all' || t.category === tipsCategory).length === 0 ? (
+            {filteredTips.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200 text-slate-400 space-y-2">
                 <BookOpen className="w-10 h-10 text-slate-300 mx-auto" />
                 <p className="font-bold text-slate-600">{isTr ? 'Henüz bu kategoride püf noktası paylaşılmamış.' : 'No tips shared yet.'}</p>
               </div>
             ) : (
-              tips
-                .filter((t) => tipsCategory === 'all' || t.category === tipsCategory)
-                .map((tip) => (
-                  <TipCardItem
-                    key={tip.id}
-                    tip={tip}
-                    currentUser={currentUser}
-                    currentUserProfile={currentUserProfile}
-                    isAdmin={isAdmin}
-                    isTr={isTr}
-                    onDelete={() => handleDeleteTip(tip.id)}
-                    onRequireAuth={(action) => requireAuth(action || 'generic')}
-                  />
-                ))
+              displayedTips.map((tip) => (
+                <TipCardItem
+                  key={tip.id}
+                  tip={tip}
+                  currentUser={currentUser}
+                  currentUserProfile={currentUserProfile}
+                  isAdmin={isAdmin}
+                  isTr={isTr}
+                  onDelete={() => handleDeleteTip(tip.id)}
+                  onRequireAuth={(action) => requireAuth(action || 'generic')}
+                />
+              ))
             )}
           </div>
+
+          {(tipsVisible < filteredTips.length || tipsHasMore) && (
+            <div className="pt-2 pb-2">
+              <button
+                type="button"
+                onClick={loadMoreTips}
+                disabled={tipsLoadingMore}
+                className="w-full sm:w-auto sm:mx-auto flex items-center justify-center gap-2 bg-white border border-slate-200 shadow-md text-[#0F172A] font-extrabold px-6 py-3.5 min-h-[52px] rounded-2xl transition-all active:scale-[0.98] text-sm disabled:opacity-70"
+              >
+                {tipsLoadingMore ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-emerald-500" />
+                )}
+                <span>{isTr ? 'Daha Fazla Tüyo Göster' : 'Load More Tips'}</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 

@@ -3,11 +3,12 @@ import CommunityClient from '@/components/community/CommunityClient';
 
 export const revalidate = 60;
 
-const COMMUNITY_FEED_LIMIT = 60;
+/** First page size — client loads more via "Daha fazla" */
+const COMMUNITY_FEED_LIMIT = 20;
 const STORIES_LIMIT = 50;
-const FORUM_LIMIT = 80;
-const MARKET_LIMIT = 80;
-const TIPS_LIMIT = 80;
+const FORUM_LIMIT = 20;
+const MARKET_LIMIT = 20;
+const TIPS_LIMIT = 20;
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

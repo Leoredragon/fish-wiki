@@ -96,9 +96,9 @@ export default function AppSplashScreen() {
 
           <div className="w-44 h-1.5 bg-slate-800 rounded-full mt-8 overflow-hidden relative border border-slate-700/60 shadow-inner">
             <motion.div
-              initial={{ x: '-100%' }}
-              animate={{ x: '0%' }}
-              transition={{ duration: 1.6, ease: 'easeOut' }}
+              initial={{ width: '8%' }}
+              animate={{ width: '100%' }}
+              transition={{ duration: 1.55, ease: [0.4, 0, 0.2, 1] }}
               className="h-full bg-gradient-to-r from-emerald-500 to-teal-300 rounded-full"
             />
           </div>
