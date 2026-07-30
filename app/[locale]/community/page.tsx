@@ -21,9 +21,10 @@ export default async function CommunityPage() {
   const supabase = await createClient();
 
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const meetupFrom = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
 
   // Run all queries concurrently in parallel (4x speed boost)
-  const [catchLogsRes, storiesRes, forumRes, marketRes, tipsRes] = await Promise.all([
+  const [catchLogsRes, storiesRes, forumRes, marketRes, tipsRes, meetupsRes] = await Promise.all([
     supabase
       .from('catch_logs')
       .select(`
@@ -57,7 +58,14 @@ export default async function CommunityPage() {
       .from('community_tips')
       .select(`*, profiles(username, full_name, avatar_url, city)`)
       .order('created_at', { ascending: false })
-      .limit(TIPS_LIMIT)
+      .limit(TIPS_LIMIT),
+    supabase
+      .from('community_meetups')
+      .select(`*, profiles(username, full_name, avatar_url, city), community_meetup_joins(user_id)`)
+      .neq('status', 'cancelled')
+      .gte('meetup_at', meetupFrom)
+      .order('meetup_at', { ascending: true })
+      .limit(30)
   ]);
 
   return (
@@ -67,6 +75,7 @@ export default async function CommunityPage() {
       initialForumPosts={forumRes.data || []}
       initialMarketplaceItems={marketRes.data || []}
       initialCommunityTips={tipsRes.data || []}
+      initialMeetups={meetupsRes.data || []}
     />
   );
 }

@@ -4,6 +4,17 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLocale } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
+import CatchCardExport from './CatchCardExport';
+import MeetupsPanel from './MeetupsPanel';
+import CatchFishPicker, { getSoftLegalMinCm, type FishOption } from '@/components/CatchFishPicker';
+import ReportContentButton from '@/components/ReportContentButton';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { compressImageToWebP } from '@/lib/image_compression';
+import PullToRefresh from '@/components/PullToRefresh';
+import { pickPhotoNative, isNativeApp, triggerHapticLight } from '@/lib/capacitorUtils';
+import GuestAuthPrompt, { GuestAuthAction } from '@/components/GuestAuthPrompt';
+import { createClient } from '@/lib/supabase/client';
 import {
   MapPin,
   Scale,
@@ -29,18 +40,9 @@ import {
   PhoneCall,
   Edit,
   Camera,
-  CheckCircle2
+  CheckCircle2,
+  CalendarDays
 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
-import CatchCardExport from './CatchCardExport';
-import CatchFishPicker, { getSoftLegalMinCm, type FishOption } from '@/components/CatchFishPicker';
-import ReportContentButton from '@/components/ReportContentButton';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { compressImageToWebP } from '@/lib/image_compression';
-import PullToRefresh from '@/components/PullToRefresh';
-import { pickPhotoNative, isNativeApp, triggerHapticLight } from '@/lib/capacitorUtils';
-import GuestAuthPrompt, { GuestAuthAction } from '@/components/GuestAuthPrompt';
 
 const STORIES_LIMIT = 50;
 const PAGE_SIZE = 20;
@@ -71,6 +73,7 @@ interface CommunityClientProps {
   initialForumPosts?: Record<string, any>[];
   initialMarketplaceItems?: Record<string, any>[];
   initialCommunityTips?: Record<string, any>[];
+  initialMeetups?: Record<string, any>[];
 }
 
 export default function CommunityClient({
@@ -78,14 +81,15 @@ export default function CommunityClient({
   initialStories = [],
   initialForumPosts = [],
   initialMarketplaceItems = [],
-  initialCommunityTips = []
+  initialCommunityTips = [],
+  initialMeetups = []
 }: CommunityClientProps) {
   const locale = useLocale();
   const isTr = locale === 'tr';
   const supabase = createClient();
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<'feed' | 'forum' | 'market' | 'tips'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'forum' | 'market' | 'tips' | 'meetups'>('feed');
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [currentUserProfile, setCurrentUserProfile] = useState<any | null>(null);
   const isAdmin = Boolean(currentUserProfile?.is_admin);
@@ -1004,8 +1008,8 @@ export default function CommunityClient({
       }}
     >
       <div className="max-w-5xl mx-auto space-y-4 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] md:pb-14 pt-3 px-3 sm:px-6">
-      {/* Tab navigation at top (no separate Topluluk title) */}
-      <div className="bg-white p-1 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-4 gap-1 w-full relative">
+      {/* Tab navigation at top — horizontal scroll for 5 tabs on mobile */}
+      <div className="bg-white p-1 rounded-2xl border border-slate-200 shadow-sm flex gap-1 w-full overflow-x-auto no-scrollbar relative">
         {isAdmin && (
           <span className="absolute -top-2 -right-1 z-10 bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md flex items-center space-x-0.5 shadow-sm">
             <ShieldCheck className="w-2.5 h-2.5" />
@@ -1014,7 +1018,7 @@ export default function CommunityClient({
         )}
         <button
           onClick={() => { triggerHapticLight(); setActiveTab('feed'); }}
-          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 ${
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-2.5 min-w-[4.5rem] sm:min-w-0 sm:flex-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 shrink-0 ${
             activeTab === 'feed' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
@@ -1024,32 +1028,42 @@ export default function CommunityClient({
 
         <button
           onClick={() => { triggerHapticLight(); setActiveTab('forum'); }}
-          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 ${
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-2.5 min-w-[4.5rem] sm:min-w-0 sm:flex-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 shrink-0 ${
             activeTab === 'forum' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
           <MessageSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-          <span className="truncate">{isTr ? 'Soru & Forum' : 'Forum'}</span>
+          <span className="truncate">{isTr ? 'Forum' : 'Forum'}</span>
+        </button>
+
+        <button
+          onClick={() => { triggerHapticLight(); setActiveTab('meetups'); }}
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-2.5 min-w-[4.5rem] sm:min-w-0 sm:flex-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 shrink-0 ${
+            activeTab === 'meetups' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <CalendarDays className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+          <span className="truncate">{isTr ? 'Buluşma' : 'Meetups'}</span>
         </button>
 
         <button
           onClick={() => { triggerHapticLight(); setActiveTab('market'); }}
-          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 ${
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-2.5 min-w-[4.5rem] sm:min-w-0 sm:flex-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 shrink-0 ${
             activeTab === 'market' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
           <ShoppingBag className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-          <span className="truncate">{isTr ? '2. El Pazar' : 'Market'}</span>
+          <span className="truncate">{isTr ? 'Pazar' : 'Market'}</span>
         </button>
 
         <button
           onClick={() => { triggerHapticLight(); setActiveTab('tips'); }}
-          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 ${
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-2.5 min-w-[4.5rem] sm:min-w-0 sm:flex-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 shrink-0 ${
             activeTab === 'tips' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
           <BookOpen className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-          <span className="truncate">{isTr ? 'Püf Noktaları' : 'Tips'}</span>
+          <span className="truncate">{isTr ? 'İpuçları' : 'Tips'}</span>
         </button>
       </div>
 
@@ -1505,6 +1519,16 @@ export default function CommunityClient({
             </div>
           )}
         </div>
+      )}
+
+      {activeTab === 'meetups' && (
+        <MeetupsPanel
+          initialMeetups={initialMeetups as any}
+          currentUser={currentUser}
+          isAdmin={isAdmin}
+          isTr={isTr}
+          onRequireAuth={(action) => requireAuth(action || 'generic')}
+        />
       )}
 
       <GuestAuthPrompt
