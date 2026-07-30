@@ -29,7 +29,8 @@ export default async function CommunityPage() {
       .select(`
         *,
         profiles (username, full_name, avatar_url, bio, city),
-        tackle_sets (id, name, rod, reel, line, lure)
+        tackle_sets (id, name, rod, reel, line, lure),
+        fishes (name_tr, name_en)
       `)
       .order('created_at', { ascending: false })
       .limit(COMMUNITY_FEED_LIMIT),

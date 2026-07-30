@@ -31,7 +31,7 @@ export default async function PublicProfilePage({
   const supabase = await createClient();
   const maybeUserId = parseUserIdFromSlug(decodedSlug);
 
-  let profileQuery = supabase.from('profiles').select('id, username, full_name, avatar_url, city, bio');
+  let profileQuery = supabase.from('profiles').select('id, username, full_name, avatar_url, city, bio, created_at');
   if (maybeUserId) {
     profileQuery = profileQuery.eq('id', maybeUserId);
   } else {
@@ -43,7 +43,7 @@ export default async function PublicProfilePage({
 
   const { data: catches } = await supabase
     .from('catch_logs')
-    .select('id, image_url, weight, length, location_note, created_at')
+    .select('id, image_url, weight, length, location_note, created_at, fishes(name_tr, name_en)')
     .eq('user_id', profile.id)
     .order('created_at', { ascending: false })
     .limit(12);

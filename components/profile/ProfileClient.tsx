@@ -28,17 +28,18 @@ import {
   X,
   PhoneCall,
   Tag,
-  Globe,
-  ChevronRight
+  Globe
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import TackleBox from './TackleBox';
+import CatchAnalyticsPanel from './CatchAnalyticsPanel';
 import CatchCardExport from '../community/CatchCardExport';
+import CatchFishPicker, { getSoftLegalMinCm, type FishOption } from '../CatchFishPicker';
 import LanguageSwitcher from '../LanguageSwitcher';
-import { getLegalMinSize } from '@/lib/fish_regulations';
 import { compressImageToWebP } from '@/lib/image_compression';
+import { formatMembershipLabel, getActivityBadge } from '@/lib/anglerTrust';
 
 export default function ProfileClient({
   user,
@@ -104,6 +105,9 @@ export default function ProfileClient({
   const [lureUsed, setLureUsed] = useState('');
   const [locationNote, setLocationNote] = useState('');
   const [tackleBoxId, setTackleBoxId] = useState<string>('');
+  const [fishId, setFishId] = useState('');
+  const [selectedFish, setSelectedFish] = useState<FishOption | null>(null);
+  const [editFishId, setEditFishId] = useState('');
 
   // User Tackle Sets for the dropdown
   const [userTackleSets, setUserTackleSets] = useState<any[]>([]);
@@ -290,6 +294,21 @@ export default function ProfileClient({
       alert(isTr ? 'Lütfen bir av fotoğrafı seçin.' : 'Please select a catch photo.');
       return;
     }
+    if (!fishId) {
+      alert(isTr ? 'Lütfen balık türünü seçin.' : 'Please select a fish species.');
+      return;
+    }
+
+    const minCm = getSoftLegalMinCm(selectedFish);
+    const lengthNum = length ? Number(length) : NaN;
+    if (minCm != null && Number.isFinite(lengthNum) && lengthNum > 0 && lengthNum < minCm) {
+      const ok = confirm(
+        isTr
+          ? `Boy (${lengthNum} cm) yasal asgari boydan (~${minCm} cm) küçük görünüyor. Yine de kaydetmek istiyor musunuz?`
+          : `Length (${lengthNum} cm) looks below min size (~${minCm} cm). Save anyway?`
+      );
+      if (!ok) return;
+    }
 
     setLoading(true);
 
@@ -322,6 +341,7 @@ export default function ProfileClient({
       const { error: insertError } = await supabase.from('catch_logs').insert({
         user_id: user.id,
         image_url: imageUrl,
+        fish_id: fishId,
         weight: weight ? parseFloat(weight) : null,
         length: length ? parseFloat(length) : null,
         lure_used: lureUsed || null,
@@ -340,6 +360,8 @@ export default function ProfileClient({
         setLureUsed('');
         setLocationNote('');
         setTackleBoxId('');
+        setFishId('');
+        setSelectedFish(null);
         router.refresh();
       }
     } catch (err: any) {
@@ -454,6 +476,7 @@ export default function ProfileClient({
     setEditLength(log.length ? String(log.length) : '');
     setEditLureUsed(log.lure_used || '');
     setEditTackleBoxId(log.tackle_box_id || '');
+    setEditFishId(log.fish_id || '');
   };
 
   const handleUpdateCatch = async (e: React.FormEvent) => {
@@ -472,7 +495,8 @@ export default function ProfileClient({
           weight: editWeight ? parseFloat(editWeight) : null,
           length: editLength ? parseFloat(editLength) : null,
           lure_used: editLureUsed || null,
-          tackle_box_id: formattedTackleId
+          tackle_box_id: formattedTackleId,
+          fish_id: editFishId || null,
         })
         .eq('id', editingCatch.id);
 
@@ -508,14 +532,6 @@ export default function ProfileClient({
   };
 
   const totalCatches = initialCatches.length;
-  const biggestCatch = initialCatches.reduce((max, log) => (log.weight > (max.weight || 0) ? log : max), initialCatches[0] || null);
-  const totalWeight = initialCatches.reduce((sum, log) => sum + (log.weight || 0), 0);
-
-  const goToCatch = (catchId?: string | null) => {
-    if (!catchId) return;
-    setHighlightCatchId(catchId);
-    setActiveTab('log');
-  };
 
   useEffect(() => {
     if (activeTab !== 'log' || !highlightCatchId) return;
@@ -575,9 +591,15 @@ export default function ProfileClient({
             <span className="bg-slate-50 text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200">
               {followingCount} {isTr ? 'Takip' : 'Following'}
             </span>
-            <span className="flex items-center space-x-1 bg-slate-50 text-slate-600 px-2.5 py-0.5 rounded-lg border border-slate-200">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>
-              OltaApp Pro
+            <span className="bg-slate-50 text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200">
+              {totalCatches} {isTr ? 'Av kaydı' : 'Catches'}
+            </span>
+            <span className="bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-lg border border-emerald-100">
+              {formatMembershipLabel(profile?.created_at || user?.created_at, isTr)}
+            </span>
+            <span className="flex items-center space-x-1 bg-slate-50 text-slate-700 px-2.5 py-0.5 rounded-lg border border-slate-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>{getActivityBadge(totalCatches, isTr)}</span>
             </span>
           </div>
         </div>
@@ -684,10 +706,17 @@ export default function ProfileClient({
                     </div>
                     <div className="p-5 space-y-3">
                       <div className="flex justify-between items-start">
-                        <div className="font-bold text-[#0F172A] text-lg">
-                          {log.location_note || (isTr ? 'Bilinmeyen Mera' : 'Unknown Spot')}
+                        <div className="min-w-0">
+                          <div className="font-bold text-[#0F172A] text-lg truncate">
+                            {log.location_note || (isTr ? 'Bilinmeyen Mera' : 'Unknown Spot')}
+                          </div>
+                          {(log.fishes?.name_tr || log.fishes?.name_en) && (
+                            <div className="text-[11px] font-bold text-emerald-600 mt-0.5">
+                              {isTr ? (log.fishes.name_tr || log.fishes.name_en) : (log.fishes.name_en || log.fishes.name_tr)}
+                            </div>
+                          )}
                         </div>
-                        <div className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">
+                        <div className="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-1 rounded-md shrink-0">
                           {new Date(log.created_at).toLocaleDateString(isTr ? 'tr-TR' : 'en-US')}
                         </div>
                       </div>
@@ -877,49 +906,8 @@ export default function ProfileClient({
         )}
 
         {activeTab === 'stats' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-            <h2 className="text-xl font-bold text-[#0F172A]">{isTr ? 'Kişisel İstatistikler' : 'Personal Stats'}</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center space-y-2">
-                <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mb-2">
-                  <BookOpen className="w-6 h-6" />
-                </div>
-                <div className="text-sm font-bold text-slate-400 uppercase tracking-wide">{isTr ? 'Toplam Av Sayısı' : 'Total Catches'}</div>
-                <div className="text-4xl font-black text-[#0F172A]">{totalCatches}</div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => goToCatch(biggestCatch?.id)}
-                disabled={!biggestCatch?.id}
-                className={`bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center space-y-2 transition-all ${
-                  biggestCatch?.id
-                    ? 'hover:border-amber-300 hover:shadow-md cursor-pointer active:scale-[0.99]'
-                    : 'opacity-80 cursor-default'
-                }`}
-              >
-                <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mb-2">
-                  <Scale className="w-6 h-6" />
-                </div>
-                <div className="text-sm font-bold text-slate-400 uppercase tracking-wide">{isTr ? 'En Büyük Trofe' : 'Biggest Trophy'}</div>
-                <div className="text-4xl font-black text-[#0F172A]">{biggestCatch?.weight ? `${biggestCatch.weight} kg` : '-'}</div>
-                <div className="text-xs font-semibold text-slate-500">{biggestCatch?.location_note}</div>
-                {biggestCatch?.id && (
-                  <div className="flex items-center gap-1 text-[11px] font-bold text-amber-600 pt-1">
-                    <span>{isTr ? 'Ava git' : 'View catch'}</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </div>
-                )}
-              </button>
-
-              <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center space-y-2">
-                <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center mb-2">
-                  <Ruler className="w-6 h-6" />
-                </div>
-                <div className="text-sm font-bold text-slate-400 uppercase tracking-wide">{isTr ? 'Toplam Ağırlık' : 'Total Weight'}</div>
-                <div className="text-4xl font-black text-[#0F172A]">{totalWeight.toFixed(1)} kg</div>
-              </div>
-            </div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <CatchAnalyticsPanel catches={initialCatches} isTr={isTr} />
           </motion.div>
         )}
 
@@ -1109,6 +1097,17 @@ export default function ProfileClient({
                   <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Av Fotoğrafı *' : 'Catch Photo *'}</label>
                   <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700" required />
                 </div>
+
+                <CatchFishPicker
+                  value={fishId}
+                  lengthCm={length}
+                  isTr={isTr}
+                  required
+                  onChange={(id, fish) => {
+                    setFishId(id);
+                    setSelectedFish(fish);
+                  }}
+                />
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>

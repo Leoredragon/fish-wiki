@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { MapPin, BookOpen, Scale, Ruler, UserPlus, UserCheck, Loader2, ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { formatMembershipLabel, getActivityBadge } from '@/lib/anglerTrust';
 
 interface PublicProfileClientProps {
   profile: {
@@ -15,6 +16,7 @@ interface PublicProfileClientProps {
     avatar_url: string | null;
     city: string | null;
     bio: string | null;
+    created_at?: string | null;
   };
   catches: Array<{
     id: string;
@@ -23,6 +25,7 @@ interface PublicProfileClientProps {
     length: number | null;
     location_note: string | null;
     created_at: string;
+    fishes?: { name_tr?: string | null; name_en?: string | null } | null;
   }>;
   currentUserId: string | null;
   initialIsFollowing: boolean;
@@ -172,6 +175,12 @@ export default function PublicProfileClient({
               <span className="bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg">
                 {totalCatches} {isTr ? 'Av' : 'Catches'}
               </span>
+              <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 px-2.5 py-1 rounded-lg">
+                {formatMembershipLabel(profile?.created_at, isTr)}
+              </span>
+              <span className="bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg">
+                {getActivityBadge(totalCatches, isTr)}
+              </span>
             </div>
           </div>
 
@@ -223,6 +232,11 @@ export default function PublicProfileClient({
                   <div className="text-sm font-bold text-[#0F172A] line-clamp-1">
                     {log.location_note || (isTr ? 'Mera belirtilmedi' : 'No spot info')}
                   </div>
+                  {(log.fishes?.name_tr || log.fishes?.name_en) && (
+                    <div className="text-[11px] font-bold text-emerald-600">
+                      {isTr ? (log.fishes.name_tr || log.fishes.name_en) : (log.fishes.name_en || log.fishes.name_tr)}
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-2 text-[11px] font-bold text-slate-600">
                     {log.weight && (
                       <span className="inline-flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">

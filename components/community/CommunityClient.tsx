@@ -33,6 +33,8 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import CatchCardExport from './CatchCardExport';
+import CatchFishPicker, { getSoftLegalMinCm, type FishOption } from '@/components/CatchFishPicker';
+import ReportContentButton from '@/components/ReportContentButton';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { compressImageToWebP } from '@/lib/image_compression';
@@ -169,6 +171,8 @@ export default function CommunityClient({
   const [catchLength, setCatchLength] = useState('');
   const [catchLureUsed, setCatchLureUsed] = useState('');
   const [catchLocationNote, setCatchLocationNote] = useState('');
+  const [catchFishId, setCatchFishId] = useState('');
+  const [catchSelectedFish, setCatchSelectedFish] = useState<FishOption | null>(null);
   const [catchSubmitting, setCatchSubmitting] = useState(false);
   const [guestAuthOpen, setGuestAuthOpen] = useState(false);
   const [guestAuthAction, setGuestAuthAction] = useState<GuestAuthAction>('generic');
@@ -183,6 +187,18 @@ export default function CommunityClient({
     if (!currentUser) return requireAuth('share_catch');
     if (!catchImageFile) return alert(isTr ? 'Lütfen bir av fotoğrafı seçin.' : 'Please select a catch photo.');
     if (!catchLocationNote.trim()) return alert(isTr ? 'Lütfen mera / konum notu girin.' : 'Please enter location note.');
+    if (!catchFishId) return alert(isTr ? 'Lütfen balık türünü seçin.' : 'Please select a fish species.');
+
+    const minCm = getSoftLegalMinCm(catchSelectedFish);
+    const lengthNum = catchLength ? Number(catchLength) : NaN;
+    if (minCm != null && Number.isFinite(lengthNum) && lengthNum > 0 && lengthNum < minCm) {
+      const ok = confirm(
+        isTr
+          ? `Boy (${lengthNum} cm) yasal asgari boydan (~${minCm} cm) küçük görünüyor. Yine de paylaşmak istiyor musunuz?`
+          : `Length (${lengthNum} cm) looks below min size (~${minCm} cm). Share anyway?`
+      );
+      if (!ok) return;
+    }
 
     setCatchSubmitting(true);
     try {
@@ -204,6 +220,10 @@ export default function CommunityClient({
       const newCatch = {
         id: catchId,
         user_id: currentUser.id,
+        fish_id: catchFishId,
+        fishes: catchSelectedFish
+          ? { name_tr: catchSelectedFish.name_tr, name_en: catchSelectedFish.name_en }
+          : null,
         image_url: imageUrl || 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80',
         weight: parseFloat(catchWeight) || undefined,
         length: parseFloat(catchLength) || undefined,
@@ -220,6 +240,7 @@ export default function CommunityClient({
       try {
         await supabase.from('catch_logs').insert({
           user_id: currentUser.id,
+          fish_id: catchFishId,
           image_url: newCatch.image_url,
           weight: newCatch.weight,
           length: newCatch.length,
@@ -237,6 +258,8 @@ export default function CommunityClient({
       setCatchLength('');
       setCatchLureUsed('');
       setCatchLocationNote('');
+      setCatchFishId('');
+      setCatchSelectedFish(null);
       alert(isTr ? '🎉 Avınız topluluk akışında başarıyla paylaşıldı!' : 'Catch shared successfully!');
     } catch (err: any) {
       alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
@@ -574,7 +597,8 @@ export default function CommunityClient({
         .select(`
           *,
           profiles (username, full_name, avatar_url, bio, city),
-          tackle_sets (id, name, rod, reel, line, lure)
+          tackle_sets (id, name, rod, reel, line, lure),
+          fishes (name_tr, name_en)
         `)
         .order('created_at', { ascending: false })
         .range(from, to);
@@ -2058,6 +2082,17 @@ export default function CommunityClient({
                   )}
                 </div>
 
+                <CatchFishPicker
+                  value={catchFishId}
+                  lengthCm={catchLength}
+                  isTr={isTr}
+                  required
+                  onChange={(id, fish) => {
+                    setCatchFishId(id);
+                    setCatchSelectedFish(fish);
+                  }}
+                />
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-slate-700 font-bold mb-1">{isTr ? 'Ağırlık (kg)' : 'Weight (kg)'}</label>
@@ -2299,12 +2334,27 @@ function CatchPostItem({
           </div>
         </button>
 
-        <CatchCardExport log={log} profileName={log.profiles?.full_name || (log.profiles?.username ? `@${log.profiles.username}` : 'Oltapp User')} />
+        <div className="flex items-center gap-2">
+          <ReportContentButton
+            targetType="catch"
+            targetId={log.id}
+            currentUserId={currentUser?.id}
+            isTr={isTr}
+            onRequireAuth={() => onRequireAuth('generic')}
+            compact
+          />
+          <CatchCardExport log={log} profileName={log.profiles?.full_name || (log.profiles?.username ? `@${log.profiles.username}` : 'Oltapp User')} />
+        </div>
       </div>
 
       {/* Image */}
       <div className="aspect-[4/5] sm:aspect-video bg-slate-100 w-full relative">
         <Image src={log.image_url} alt="Catch" fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 50vw" className="object-cover" />
+        {(log.fishes?.name_tr || log.fishes?.name_en) && (
+          <div className="absolute bottom-3 left-3 bg-black/55 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-1 rounded-lg border border-white/10">
+            {isTr ? (log.fishes.name_tr || log.fishes.name_en) : (log.fishes.name_en || log.fishes.name_tr)}
+          </div>
+        )}
       </div>
 
       {/* Action Bar */}
@@ -2538,6 +2588,14 @@ function ForumPostItem({
           <span className="bg-slate-100 text-slate-700 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-slate-200">
             {post.category}
           </span>
+          <ReportContentButton
+            targetType="forum"
+            targetId={post.id}
+            currentUserId={currentUser?.id}
+            isTr={isTr}
+            onRequireAuth={() => onRequireAuth('generic')}
+            compact
+          />
           {(isAdmin || isPostOwner) && (
             <button onClick={onDelete} className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors" title="Sil (Admin/Sahip)">
               <Trash2 className="w-4 h-4" />
@@ -2788,6 +2846,14 @@ function MarketplaceItemCard({
             <span>{item.condition}</span>
             <div className="flex items-center space-x-2">
               {item.city && <span>📍 {item.city}</span>}
+              <ReportContentButton
+                targetType="market"
+                targetId={item.id}
+                currentUserId={currentUser?.id}
+                isTr={isTr}
+                onRequireAuth={() => onRequireAuth('generic')}
+                compact
+              />
               {(isAdmin || isOwner) && (
                 <div className="flex items-center space-x-1">
                   <button onClick={onEdit} className="text-slate-400 hover:text-emerald-600 p-1" title="İlanı Düzenle">
@@ -3007,6 +3073,14 @@ function TipCardItem({
         </span>
         <div className="flex items-center space-x-2">
           <span className="text-[11px] text-slate-400 font-medium">{tip.profiles?.full_name || (tip.profiles?.username ? `@${tip.profiles.username}` : 'Balıkçı')}</span>
+          <ReportContentButton
+            targetType="tip"
+            targetId={tip.id}
+            currentUserId={currentUser?.id}
+            isTr={isTr}
+            onRequireAuth={() => onRequireAuth('generic')}
+            compact
+          />
           {(isAdmin || isOwner) && (
             <button onClick={onDelete} className="p-1 text-slate-400 hover:text-rose-600 transition-colors" title="Püf Noktasını Sil (Admin/Sahip)">
               <Trash2 className="w-3.5 h-3.5" />
