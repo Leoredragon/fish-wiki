@@ -192,7 +192,7 @@ export default function WeatherSolunarClient() {
   const [fishingCondition, setFishingCondition] = useState<FishingConditionResult | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [locating, setLocating] = useState<boolean>(false);
-  const [sortMode, setSortMode] = useState<'plate' | 'alpha'>('plate');
+  const [sortMode, setSortMode] = useState<'plate' | 'alpha'>('alpha');
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {

@@ -149,7 +149,7 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
   const isFreshwater = fish.water_type?.toLowerCase().includes('tatlı');
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-16">
+    <div className="max-w-5xl mx-auto space-y-8 mobile-scroll-pad">
       {/* Top Back Navigation Bar */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}

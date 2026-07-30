@@ -592,7 +592,7 @@ export default function ProfileClient({
           }`}
         >
           <BookOpen className="w-4 h-4" />
-          <span>{isTr ? 'Av Güncesi' : 'Catch Log'}</span>
+          <span>{isTr ? 'Avlarım' : 'My Catches'}</span>
         </button>
 
         <button

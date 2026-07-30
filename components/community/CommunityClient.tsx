@@ -980,26 +980,14 @@ export default function CommunityClient({
       }}
     >
       <div className="max-w-5xl mx-auto space-y-4 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] md:pb-14 pt-3 px-3 sm:px-6">
-      {/* Compact community header */}
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-[#0F172A] tracking-tight">
-            {isTr ? 'Topluluk' : 'Community'}
-          </h1>
-          <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
-            {isTr ? 'Av akışı · Forum · Pazar · İpuçları' : 'Feed · Forum · Market · Tips'}
-          </p>
-        </div>
+      {/* Tab navigation at top (no separate Topluluk title) */}
+      <div className="bg-white p-1 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-4 gap-1 w-full relative">
         {isAdmin && (
-          <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md flex items-center space-x-1 shadow-sm">
-            <ShieldCheck className="w-3 h-3" />
+          <span className="absolute -top-2 -right-1 z-10 bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md flex items-center space-x-0.5 shadow-sm">
+            <ShieldCheck className="w-2.5 h-2.5" />
             <span>ADMIN</span>
           </span>
         )}
-      </div>
-
-      {/* Modern Clean 4-Tab Navigation Bar (Grid fit for zero mobile scroll) */}
-      <div className="bg-white p-1 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-4 gap-1 w-full">
         <button
           onClick={() => { triggerHapticLight(); setActiveTab('feed'); }}
           className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 ${
@@ -2196,6 +2184,21 @@ function CatchPostItem({
       setIsLiked(true);
       setLikes((prev) => prev + 1);
       await supabase.from('catch_likes').insert({ catch_id: log.id, user_id: currentUser.id });
+
+      // Notify catch owner (not self)
+      if (log.user_id && log.user_id !== currentUser.id) {
+        const actorName = currentUserProfile?.full_name
+          || (currentUserProfile?.username ? `@${currentUserProfile.username}` : null)
+          || currentUser.email?.split('@')[0]
+          || 'Bir balıkçı';
+        await supabase.from('notifications').insert({
+          user_id: log.user_id,
+          actor_id: currentUser.id,
+          actor_name: actorName,
+          type: 'like',
+          catch_id: log.id,
+        });
+      }
     }
     setLikeLoading(false);
   };
@@ -2244,6 +2247,17 @@ function CatchPostItem({
         console.warn('Comment insert notice:', error.message);
       } else if (data) {
         setComments((prev) => prev.map((c) => (c.id === tempId ? { ...data, profiles: currentUserProfile } : c)));
+
+        // Notify catch owner (not self)
+        if (log.user_id && log.user_id !== currentUser.id) {
+          await supabase.from('notifications').insert({
+            user_id: log.user_id,
+            actor_id: currentUser.id,
+            actor_name: username,
+            type: 'comment',
+            catch_id: log.id,
+          });
+        }
       }
     } catch (err: any) {
       console.error('Comment exception:', err);
