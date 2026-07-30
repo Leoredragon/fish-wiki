@@ -20,7 +20,6 @@ import {
   Filter
 } from 'lucide-react';
 import Image from 'next/image';
-import { getOptimizedSupabaseImageUrl } from '@/lib/supabaseImage';
 
 function matchesWikiSubCategory(item: any, selectedSubCategory: string) {
   if (selectedSubCategory === 'all') return true;
@@ -300,7 +299,7 @@ export default function WikiClient({
               <div className="relative aspect-[16/10] w-full bg-[#0F172A] overflow-hidden">
                 {article.image_url ? (
                   <Image
-                    src={getOptimizedSupabaseImageUrl(article.image_url, { width: 700, quality: 76 })}
+                    src={article.image_url}
                     alt={article.title_tr || ''}
                     fill
                     sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
@@ -374,13 +373,7 @@ export default function WikiClient({
               {/* Modal Cover Image */}
               <div className="relative h-56 sm:h-72 bg-slate-900 overflow-hidden">
                 {activeArticle.image_url && (
-                  <Image
-                    src={getOptimizedSupabaseImageUrl(activeArticle.image_url, { width: 1280, quality: 82 })}
-                    alt=""
-                    fill
-                    sizes="100vw"
-                    className="object-cover"
-                  />
+                  <Image src={activeArticle.image_url} alt="" fill sizes="100vw" className="object-cover" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
 

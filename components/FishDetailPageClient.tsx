@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { supabase, Fish } from '@/lib/supabase';
-import { getOptimizedSupabaseImageUrl } from '@/lib/supabaseImage';
 import RigGuide from './fish/RigGuide';
 import { RICH_MOCK_FISHES } from './FishGrid';
 import { Link } from '@/i18n/routing';
@@ -133,9 +132,7 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
     : (fish.cooking_tips_en || fish.cooking_tips_tr);
 
   const defaultImage = "https://images.unsplash.com/photo-1524704654690-b56c05c78a00?auto=format&fit=crop&w=800&q=80";
-  const displayImage = (!fish.image_url || imageError)
-    ? defaultImage
-    : getOptimizedSupabaseImageUrl(fish.image_url, { width: 1400, quality: 82 });
+  const displayImage = (!fish.image_url || imageError) ? defaultImage : fish.image_url;
 
   const gearTags = fish.recommended_gear
     ? fish.recommended_gear.split(',').map((tag) => tag.trim())
