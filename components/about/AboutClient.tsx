@@ -3,6 +3,7 @@
 import { useLocale } from 'next-intl';
 import { motion } from 'framer-motion';
 import { Compass, Flame, ShieldCheck, HeartHandshake, MapPin, Sparkles } from 'lucide-react';
+import { Link } from '@/i18n/routing';
 
 export default function AboutClient() {
   const locale = useLocale();
@@ -33,6 +34,10 @@ export default function AboutClient() {
             {isTr 
               ? 'Düzce merkezli operasyonumuzla Türkiye’nin dört bir yanındaki amatör balıkçılara rehberlik ediyoruz.' 
               : 'Guided by our Düzce-based operations, we empower amateur anglers across Turkey.'}
+          </p>
+
+          <p className="text-[11px] text-slate-400 font-semibold tracking-wide">
+            App sürümü / Version: 1.6.0
           </p>
         </div>
       </motion.div>
@@ -113,6 +118,30 @@ export default function AboutClient() {
           </p>
         </motion.div>
 
+      </div>
+
+      <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="space-y-1">
+          <h3 className="text-sm font-extrabold text-[#0F172A]">
+            {isTr ? 'Yasal & Destek' : 'Legal & Support'}
+          </h3>
+          <p className="text-xs text-slate-500">
+            {isTr
+              ? 'Gizlilik politikası, kullanım şartları ve destek için buradan ulaşabilirsiniz.'
+              : 'Reach privacy policy, terms of use, and support from here.'}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/privacy" className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100">
+            {isTr ? 'Gizlilik' : 'Privacy'}
+          </Link>
+          <Link href="/terms" className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100">
+            {isTr ? 'Şartlar' : 'Terms'}
+          </Link>
+          <a href="mailto:destek@oltaapp.com" className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-700 hover:bg-emerald-100">
+            destek@oltaapp.com
+          </a>
+        </div>
       </div>
 
     </div>

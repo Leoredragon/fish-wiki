@@ -4,4 +4,6 @@
     <string name="title_activity_main">OltaApp</string>
     <string name="package_name">com.oltaapp.app</string>
     <string name="custom_url_scheme">com.oltaapp.app</string>
+    <string name="permission_location_rationale">Yakınındaki av meralarını göstermek ve haritada konumunu kullanmak için konum izni gerekir.</string>
+    <string name="permission_camera_rationale">Av fotoğrafı ve hikaye paylaşımı için kamera izni gerekir.</string>
 </resources>

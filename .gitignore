@@ -33,6 +33,12 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# Android release signing (never commit secrets)
+android/keystore.properties
+android/keystore/
+*.jks
+*.keystore
+
 # vercel
 .vercel
 

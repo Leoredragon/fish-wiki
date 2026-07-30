@@ -74,7 +74,23 @@ export default function PrivacyClient() {
         <div className="space-y-3">
           <h2 className="text-lg font-extrabold text-[#0F172A] flex items-center space-x-2 border-b border-slate-100 pb-2">
             <Server className="w-5 h-5 text-emerald-600 shrink-0" />
-            <span>3. Çerezler (Cookies) ve Analiz Araçları</span>
+            <span>3. Mobil Uygulama İzinleri</span>
+          </h2>
+          <p>
+            Android uygulamasında bazı özellikler cihaz izinleri ister. Bu izinler yalnızca ilgili özellik için kullanılır.
+          </p>
+          <ul className="list-disc pl-5 space-y-1.5 font-medium text-slate-600">
+            <li><strong>Konum:</strong> Yakınındaki av meralarını göstermek ve harita özelliklerini kullanmak için.</li>
+            <li><strong>Kamera:</strong> Av fotoğrafı, hikaye veya profil görseli paylaşımı için.</li>
+            <li><strong>Bildirim:</strong> Uygulama içi hatırlatma ve önemli güncellemeler için (isteğe bağlı).</li>
+          </ul>
+        </div>
+
+        {/* Section 4 */}
+        <div className="space-y-3">
+          <h2 className="text-lg font-extrabold text-[#0F172A] flex items-center space-x-2 border-b border-slate-100 pb-2">
+            <Server className="w-5 h-5 text-emerald-600 shrink-0" />
+            <span>4. Çerezler (Cookies) ve Analiz Araçları</span>
           </h2>
           <p>
             Platformumuz sadece oturumunuzu açık tutmak (Session Cookie) ve dil tercihinizi (Türkçe/İngilizce) hatırlamak için zorunlu teknik çerezler kullanmaktadır. Reklam takibi yapan 3. taraf zararlı çerezler platformumuzda yer almaz.
