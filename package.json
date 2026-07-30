@@ -10,6 +10,7 @@
     "seed": "node scripts/import_fishes.mjs",
     "update-images": "node scripts/update_fish_images.mjs",
     "reset-images": "node scripts/reset_fish_images.mjs",
+    "cleanup:orphan-storage": "node scripts/cleanup_orphan_storage.mjs",
     "build:mobile": "next build && npx cap sync",
     "cap:sync": "npx cap sync",
     "cap:open": "npx cap open android"
