@@ -37,7 +37,7 @@ export default function AboutClient() {
           </p>
 
           <p className="text-[11px] text-slate-400 font-semibold tracking-wide">
-            App sürümü / Version: 1.6.1
+            App sürümü / Version: 1.6.2
           </p>
         </div>
       </motion.div>
