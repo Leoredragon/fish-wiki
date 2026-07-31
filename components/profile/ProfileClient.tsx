@@ -40,6 +40,7 @@ import CatchFishPicker, { getSoftLegalMinCm, type FishOption } from '../CatchFis
 import LanguageSwitcher from '../LanguageSwitcher';
 import { compressImageToWebP } from '@/lib/image_compression';
 import { formatMembershipLabel, getActivityBadge } from '@/lib/anglerTrust';
+import { isNativeApp, pickPhotoNative } from '@/lib/capacitorUtils';
 
 export default function ProfileClient({
   user,
@@ -371,10 +372,7 @@ export default function ProfileClient({
     }
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const uploadAvatarFile = async (file: File) => {
     setAvatarUploading(true);
     try {
       const supabase = createClient();
@@ -406,6 +404,21 @@ export default function ProfileClient({
     } finally {
       setAvatarUploading(false);
     }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    await uploadAvatarFile(file);
+  };
+
+  // Native picker (Capacitor Camera) converts HEIC/HEIF to JPEG, unlike raw <input type="file">
+  const handleAvatarPickNative = async () => {
+    if (avatarUploading) return;
+    const file = await pickPhotoNative('prompt');
+    if (!file) return;
+    await uploadAvatarFile(file);
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -558,10 +571,20 @@ export default function ProfileClient({
               (fullName || username || user?.email)?.charAt(0).toUpperCase() || 'U'
             )}
           </div>
-          <label className="absolute bottom-0 right-0 bg-[#0F172A] hover:bg-slate-800 text-emerald-400 p-2 rounded-full cursor-pointer shadow-md transition-all border border-slate-700">
-            {avatarUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
-            <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-          </label>
+          {isNativeApp() ? (
+            <button
+              type="button"
+              onClick={handleAvatarPickNative}
+              className="absolute bottom-0 right-0 bg-[#0F172A] hover:bg-slate-800 text-emerald-400 p-2 rounded-full cursor-pointer shadow-md transition-all border border-slate-700"
+            >
+              {avatarUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+            </button>
+          ) : (
+            <label className="absolute bottom-0 right-0 bg-[#0F172A] hover:bg-slate-800 text-emerald-400 p-2 rounded-full cursor-pointer shadow-md transition-all border border-slate-700">
+              {avatarUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+              <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+            </label>
+          )}
         </div>
 
         <div className="space-y-1.5 flex-1">

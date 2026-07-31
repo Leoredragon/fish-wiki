@@ -9,12 +9,25 @@ export async function compressImageToWebP(
   maxDimension: number = 1200,
   quality: number = 0.8
 ): Promise<File> {
+  const isHeic =
+    /heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name);
+
   // If not an image or already tiny (< 50KB), return as is
-  if (!file.type.startsWith('image/') || file.size < 50 * 1024) {
+  // (HEIC must still go through conversion — browsers can't display it)
+  if ((!file.type.startsWith('image/') || file.size < 50 * 1024) && !isHeic) {
     return file;
   }
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    // Browsers/WebViews can't decode HEIC. If decoding fails for a HEIC file,
+    // fail loudly instead of silently uploading an image nobody can see.
+    const failUndecodable = () => {
+      if (isHeic) {
+        reject(new Error('HEIC formatı desteklenmiyor. Lütfen JPG veya PNG bir fotoğraf seçin. / HEIC format is not supported, please choose a JPG or PNG photo.'));
+      } else {
+        resolve(file);
+      }
+    };
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new window.Image();
@@ -62,10 +75,10 @@ export async function compressImageToWebP(
           quality
         );
       };
-      img.onerror = () => resolve(file);
+      img.onerror = failUndecodable;
       img.src = e.target?.result as string;
     };
-    reader.onerror = () => resolve(file);
+    reader.onerror = failUndecodable;
     reader.readAsDataURL(file);
   });
 }
