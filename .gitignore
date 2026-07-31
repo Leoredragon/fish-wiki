@@ -39,6 +39,9 @@ android/keystore/
 *.jks
 *.keystore
 
+# Firebase admin credentials (never commit)
+firebase-service-account.json
+
 # vercel
 .vercel
 
