@@ -10,6 +10,7 @@ import MobileBottomNavGate from '@/components/MobileBottomNavGate';
 import AppSplashScreen from '@/components/AppSplashScreen';
 import CapacitorInit from '@/components/CapacitorInit';
 import NativeChrome from '@/components/NativeChrome';
+import RateAppPrompt from '@/components/RateAppPrompt';
 import { Metadata, Viewport } from 'next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
@@ -70,6 +71,7 @@ export default async function LocaleLayout({
             {children}
           </main>
           <MobileBottomNavGate />
+          <RateAppPrompt />
           <div className="native-hide">
             <Footer />
           </div>

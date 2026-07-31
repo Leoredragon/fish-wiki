@@ -19,10 +19,10 @@ export default function MobileBottomNav() {
 
   const navItems = [
     { href: '/', label: isTr ? 'Keşfet' : 'Explore', icon: Compass },
-    { href: '/wiki', label: isTr ? 'Wiki' : 'Wiki', icon: BookOpen },
+    { href: '/community', label: isTr ? 'Topluluk' : 'Social', icon: Users },
     { href: '/map', label: isTr ? 'Harita' : 'Map', icon: MapPin },
     { href: '/weather', label: isTr ? 'Hava Durumu' : 'Weather', icon: CloudSun },
-    { href: '/community', label: isTr ? 'Topluluk' : 'Social', icon: Users }
+    { href: '/wiki', label: isTr ? 'Wiki' : 'Wiki', icon: BookOpen }
   ];
 
   return (
