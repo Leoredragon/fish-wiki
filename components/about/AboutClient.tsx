@@ -138,8 +138,8 @@ export default function AboutClient() {
           <Link href="/terms" className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100">
             {isTr ? 'Şartlar' : 'Terms'}
           </Link>
-          <a href="mailto:destek@oltaapp.com" className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-700 hover:bg-emerald-100">
-            destek@oltaapp.com
+          <a href="mailto:1317838@gmail.com" className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-700 hover:bg-emerald-100">
+            1317838@gmail.com
           </a>
         </div>
       </div>

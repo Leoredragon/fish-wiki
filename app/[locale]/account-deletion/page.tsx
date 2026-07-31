@@ -46,11 +46,11 @@ export default async function AccountDeletionPage({ params }: { params: Promise<
               : 'To delete your account, simply send an email with the subject "Account Deletion Request" from your registered email address to:'}
           </p>
           <a
-            href="mailto:destek@oltaapp.com?subject=Hesap%20Silme%20Talebi"
+            href="mailto:1317838@gmail.com?subject=Hesap%20Silme%20Talebi"
             className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-sm font-bold text-emerald-700 hover:bg-emerald-100 transition-colors"
           >
             <Mail className="w-4 h-4" />
-            <span>destek@oltaapp.com</span>
+            <span>1317838@gmail.com</span>
           </a>
           <p className="text-xs text-slate-500">
             {isTr
