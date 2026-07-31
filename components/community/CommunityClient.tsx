@@ -1008,8 +1008,8 @@ export default function CommunityClient({
       }}
     >
       <div className="max-w-5xl mx-auto space-y-4 pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))] md:pb-14 pt-3 px-3 sm:px-6">
-      {/* Tab navigation at top — horizontal scroll for 5 tabs on mobile */}
-      <div className="bg-white p-1 rounded-2xl border border-slate-200 shadow-sm flex gap-1 w-full overflow-x-auto no-scrollbar relative">
+      {/* Tab navigation at top — fixed 5-column grid, all tabs always visible */}
+      <div className="bg-white p-1 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-5 gap-1 w-full relative">
         {isAdmin && (
           <span className="absolute -top-2 -right-1 z-10 bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md flex items-center space-x-0.5 shadow-sm">
             <ShieldCheck className="w-2.5 h-2.5" />
@@ -1018,7 +1018,7 @@ export default function CommunityClient({
         )}
         <button
           onClick={() => { triggerHapticLight(); setActiveTab('feed'); }}
-          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-2.5 min-w-[4.5rem] sm:min-w-0 sm:flex-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 shrink-0 ${
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[10px] sm:text-xs transition-all text-center active:scale-95 min-w-0 ${
             activeTab === 'feed' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
@@ -1028,7 +1028,7 @@ export default function CommunityClient({
 
         <button
           onClick={() => { triggerHapticLight(); setActiveTab('forum'); }}
-          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-2.5 min-w-[4.5rem] sm:min-w-0 sm:flex-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 shrink-0 ${
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[10px] sm:text-xs transition-all text-center active:scale-95 min-w-0 ${
             activeTab === 'forum' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
@@ -1038,7 +1038,7 @@ export default function CommunityClient({
 
         <button
           onClick={() => { triggerHapticLight(); setActiveTab('meetups'); }}
-          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-2.5 min-w-[4.5rem] sm:min-w-0 sm:flex-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 shrink-0 ${
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[10px] sm:text-xs transition-all text-center active:scale-95 min-w-0 ${
             activeTab === 'meetups' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
@@ -1048,7 +1048,7 @@ export default function CommunityClient({
 
         <button
           onClick={() => { triggerHapticLight(); setActiveTab('market'); }}
-          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-2.5 min-w-[4.5rem] sm:min-w-0 sm:flex-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 shrink-0 ${
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[10px] sm:text-xs transition-all text-center active:scale-95 min-w-0 ${
             activeTab === 'market' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
@@ -1058,7 +1058,7 @@ export default function CommunityClient({
 
         <button
           onClick={() => { triggerHapticLight(); setActiveTab('tips'); }}
-          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-2.5 min-w-[4.5rem] sm:min-w-0 sm:flex-1 rounded-xl font-bold text-[11px] sm:text-xs transition-all text-center active:scale-95 shrink-0 ${
+          className={`flex flex-col sm:flex-row items-center justify-center space-y-0.5 sm:space-y-0 sm:space-x-1.5 py-2 px-1 rounded-xl font-bold text-[10px] sm:text-xs transition-all text-center active:scale-95 min-w-0 ${
             activeTab === 'tips' ? 'bg-[#0F172A] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
@@ -2334,8 +2334,8 @@ function CatchPostItem({
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-sm flex flex-col">
       {/* Header */}
-      <div className="p-4 sm:p-5 flex items-center justify-between border-b border-slate-100 bg-white">
-        <button onClick={onOpenAuthor} className="flex items-center space-x-3 text-left group transition-all cursor-pointer">
+      <div className="p-4 sm:p-5 flex items-center justify-between gap-2 border-b border-slate-100 bg-white">
+        <button onClick={onOpenAuthor} className="flex items-center space-x-3 text-left group transition-all cursor-pointer flex-1 min-w-0">
           <div className="w-10 h-10 bg-[#0F172A] rounded-full overflow-hidden flex items-center justify-center text-emerald-400 font-bold border border-slate-700 group-hover:scale-105 transition-transform shrink-0 relative">
             {log.profiles?.avatar_url ? (
               <Image src={log.profiles.avatar_url} alt="Avatar" fill sizes="40px" className="object-cover" />
@@ -2343,11 +2343,11 @@ function CatchPostItem({
               (log.profiles?.full_name || log.profiles?.username)?.charAt(0).toUpperCase() || 'U'
             )}
           </div>
-          <div>
-            <div className="font-extrabold text-[#0F172A] text-sm group-hover:text-emerald-600 transition-colors flex items-center space-x-1.5">
-              <span>{log.profiles?.full_name || (log.profiles?.username ? `@${log.profiles.username}` : 'Oltapp Balıkçısı')}</span>
+          <div className="min-w-0">
+            <div className="font-extrabold text-[#0F172A] text-sm group-hover:text-emerald-600 transition-colors flex items-center space-x-1.5 min-w-0">
+              <span className="truncate">{log.profiles?.full_name || (log.profiles?.username ? `@${log.profiles.username}` : 'Oltapp Balıkçısı')}</span>
               {log.tackle_sets && (
-                <span className="bg-emerald-50 text-emerald-700 text-[10px] px-1.5 py-0.5 rounded-md border border-emerald-200 font-bold">
+                <span className="bg-emerald-50 text-emerald-700 text-[10px] px-1.5 py-0.5 rounded-md border border-emerald-200 font-bold shrink-0">
                   {log.tackle_sets.name}
                 </span>
               )}
@@ -2358,7 +2358,7 @@ function CatchPostItem({
           </div>
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <ReportContentButton
             targetType="catch"
             targetId={log.id}
