@@ -48,6 +48,12 @@ export default async function PublicProfilePage({
     .order('created_at', { ascending: false })
     .limit(12);
 
+  // Supabase types the joined relation as an array; normalize to a single object
+  const normalizedCatches = (catches || []).map((log: Record<string, any>) => ({
+    ...log,
+    fishes: Array.isArray(log.fishes) ? (log.fishes[0] || null) : (log.fishes || null),
+  })) as React.ComponentProps<typeof PublicProfileClient>['catches'];
+
   const [{ count: followersCount }, { count: followingCount }] = await Promise.all([
     supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', profile.id),
     supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', profile.id)
@@ -56,7 +62,7 @@ export default async function PublicProfilePage({
   return (
     <PublicProfileClient
       profile={profile}
-      catches={catches || []}
+      catches={normalizedCatches}
       currentUserId={null}
       initialIsFollowing={false}
       initialFollowersCount={followersCount || 0}
