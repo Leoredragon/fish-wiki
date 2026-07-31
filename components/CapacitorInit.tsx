@@ -15,6 +15,14 @@ import OltaAppLogo from './OltaAppLogo';
 
 const NOTIFICATION_PROMPT_SHOWN_KEY = 'oltaapp_notification_prompt_shown_v1';
 
+// FCM is only bundled in APK 1.6.3+ (google-services.json); register() crashes older builds
+const MIN_PUSH_VERSION = 10603;
+
+function versionToNumber(version: string): number {
+  const [maj = 0, min = 0, pat = 0] = version.split('.').map((n) => parseInt(n, 10) || 0);
+  return maj * 10000 + min * 100 + pat;
+}
+
 export default function CapacitorInit() {
   const router = useRouter();
   const pathname = usePathname();
@@ -26,6 +34,7 @@ export default function CapacitorInit() {
   const offlineRef = useRef(false);
   const loginRedirectDoneRef = useRef(false);
   const nativeBootedRef = useRef(false);
+  const pushInitRef = useRef(false);
 
   // One-time native boot: status bar, network, notifications, back button
   useEffect(() => {
@@ -151,6 +160,67 @@ export default function CapacitorInit() {
       nativeBootedRef.current = false;
     };
   }, [router]);
+
+  // FCM push registration: only on native 1.6.3+ builds and only for logged-in users
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform() || pushInitRef.current) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const info = await App.getInfo();
+        if (versionToNumber(info.version) < MIN_PUSH_VERSION) return;
+
+        const {
+          data: { user }
+        } = await supabase.auth.getUser();
+        if (!user || cancelled) return;
+        pushInitRef.current = true;
+
+        const { PushNotifications } = await import('@capacitor/push-notifications');
+
+        let perm = await PushNotifications.checkPermissions();
+        if (perm.receive === 'prompt') {
+          perm = await PushNotifications.requestPermissions();
+        }
+        if (perm.receive !== 'granted') return;
+
+        try {
+          await PushNotifications.createChannel({
+            id: 'social',
+            name: 'Sosyal Bildirimler',
+            description: 'Tebrik, yorum ve takip bildirimleri',
+            importance: 4,
+            visibility: 1
+          });
+        } catch {}
+
+        await PushNotifications.addListener('registration', async (token) => {
+          try {
+            await supabase.rpc('register_push_token', { p_token: token.value, p_platform: 'android' });
+          } catch (e) {
+            console.warn('Push token save failed:', e);
+          }
+        });
+
+        await PushNotifications.addListener('pushNotificationActionPerformed', () => {
+          try {
+            const localeSegment = window.location.pathname.split('/')[1];
+            const locale = localeSegment === 'en' ? 'en' : 'tr';
+            router.push(`/${locale}/community`);
+          } catch {}
+        });
+
+        await PushNotifications.register();
+      } catch (e) {
+        console.warn('Push init skipped:', e);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, router, supabase]);
 
   // Soft login gate (once): guests may browse; only force login when no guest mode
   useEffect(() => {

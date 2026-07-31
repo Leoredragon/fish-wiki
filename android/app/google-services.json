@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "707215370485",
+    "project_id": "olta-app",
+    "storage_bucket": "olta-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:707215370485:android:312c66cdb11d51fb117dbc",
+        "android_client_info": {
+          "package_name": "com.oltaapp.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHlQby78TLAr6CaSypNzmzQDxJV8LYOKs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
