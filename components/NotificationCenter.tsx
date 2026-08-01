@@ -22,7 +22,7 @@ export default function NotificationCenter({ userId }: { userId: string }) {
     if (!userId) return;
     fetchNotifications();
 
-    const interval = setInterval(fetchNotifications, 15000);
+    const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
   }, [userId]);
 
@@ -30,7 +30,7 @@ export default function NotificationCenter({ userId }: { userId: string }) {
     try {
       const { data, error } = await supabase
         .from('notifications')
-        .select('*')
+        .select('id, type, read, actor_name, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(20);

@@ -195,9 +195,9 @@ export default function FishDetailPageClient({ id }: FishDetailPageClientProps) 
           alt={name}
           fill
           priority
+          sizes="100vw"
           className="object-cover opacity-90"
           onError={() => setImageError(true)}
-          unoptimized
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
 

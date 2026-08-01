@@ -317,25 +317,25 @@ export default function ProfileClient({
       const supabase = createClient();
 
       const compressedFile = await compressImageToWebP(imageFile, 1200, 0.8);
-      const fileName = `${user.id}_${Date.now()}.webp`;
-      let imageUrl = '';
+      // Same bucket/path as the community share flow; catch_photos uploads were
+      // silently failing and the old base64 fallback bloated the catch_logs table.
+      const filePath = `catches/${user.id}_${Date.now()}.webp`;
       const { error: uploadError } = await supabase.storage
-        .from('catch_photos')
-        .upload(fileName, compressedFile, { contentType: 'image/webp', cacheControl: '31536000' });
+        .from('user_uploads')
+        .upload(filePath, compressedFile, { contentType: 'image/webp', cacheControl: '31536000' });
 
-      if (!uploadError) {
-        const { data: publicUrlData } = supabase.storage
-          .from('catch_photos')
-          .getPublicUrl(fileName);
-        imageUrl = publicUrlData.publicUrl;
-      } else {
-        console.warn('Storage upload error, using base64 fallback:', uploadError);
-        imageUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(compressedFile);
-        });
+      if (uploadError) {
+        throw new Error(
+          isTr
+            ? `Fotoğraf yüklenemedi: ${uploadError.message}`
+            : `Photo upload failed: ${uploadError.message}`
+        );
       }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('user_uploads')
+        .getPublicUrl(filePath);
+      const imageUrl = publicUrlData.publicUrl;
 
       const formattedTackleId = (tackleBoxId && tackleBoxId.trim() !== '') ? tackleBoxId : null;
 
