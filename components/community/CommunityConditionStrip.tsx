@@ -6,8 +6,11 @@ import { Link } from '@/i18n/routing';
 import { CloudSun, Sunrise, Sunset, ChevronRight } from 'lucide-react';
 import { TURKEY_PROVINCES } from '@/lib/turkeyProvinces';
 import { computeFishingConditionScore } from '@/lib/fishingConditionScore';
+import { getCurrentPositionNative } from '@/lib/capacitorUtils';
 
 const CACHE_KEY = 'oltaapp_condition_strip_v1';
+// Ask for location at most once from the strip; if denied, stay on the fallback city quietly
+const LOC_ASKED_KEY = 'oltaapp_condition_strip_loc_asked_v1';
 
 interface StripData {
   day: string;
@@ -77,7 +80,17 @@ export default function CommunityConditionStrip() {
       } catch {}
 
       try {
-        const coords = await getQuietPosition();
+        // 1) permission already granted → use it silently
+        let coords = await getQuietPosition();
+
+        // 2) not granted yet and never asked from here → ask once (native + web)
+        if (!coords && !localStorage.getItem(LOC_ASKED_KEY)) {
+          localStorage.setItem(LOC_ASKED_KEY, '1');
+          const pos = await getCurrentPositionNative();
+          if (pos) coords = { lat: pos.lat, lon: pos.lng };
+        }
+
+        if (cancelled) return;
         const province = coords
           ? findClosestProvince(coords.lat, coords.lon)
           : TURKEY_PROVINCES.find((p) => p.id === '34') || TURKEY_PROVINCES[0];
