@@ -43,6 +43,16 @@ export default function CapacitorInit() {
 
     document.documentElement.classList.add('is-native-app');
 
+    // Native app opens on Community — usage shows it's the main destination.
+    // Web homepage stays the encyclopedia (SEO / first discovery).
+    try {
+      const bootPath = window.location.pathname.replace(/\/$/, '');
+      if (bootPath === '' || bootPath === '/tr' || bootPath === '/en') {
+        const locale = bootPath === '/en' ? 'en' : 'tr';
+        router.replace(`/${locale}/community`);
+      }
+    } catch {}
+
     StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
     StatusBar.setBackgroundColor({ color: '#0F172A' }).catch(() => {});
     StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
@@ -140,7 +150,10 @@ export default function CapacitorInit() {
 
     const backButtonListener = App.addListener('backButton', async () => {
       const path = window.location.pathname;
-      if (path === '/' || path === '/tr' || path === '/en') {
+      // Community is the boot screen now; with no history to go back to, back = exit prompt
+      const isCommunityHome =
+        (path === '/tr/community' || path === '/en/community') && window.history.length <= 2;
+      if (path === '/' || path === '/tr' || path === '/en' || isCommunityHome) {
         const { value } = await Dialog.confirm({
           title: 'Çıkış',
           message: 'Uygulamadan çıkmak istiyor musunuz?',

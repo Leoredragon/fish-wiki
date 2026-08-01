@@ -6,6 +6,8 @@ import { useLocale } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
 import CatchCardExport from './CatchCardExport';
 import MeetupsPanel from './MeetupsPanel';
+import CommunityConditionStrip from './CommunityConditionStrip';
+import { Link } from '@/i18n/routing';
 import CatchFishPicker, { getSoftLegalMinCm, type FishOption } from '@/components/CatchFishPicker';
 import ReportContentButton from '@/components/ReportContentButton';
 import { useRouter } from 'next/navigation';
@@ -1072,6 +1074,9 @@ export default function CommunityClient({
       {/* ========================================================================= */}
       {activeTab === 'feed' && (
         <div className="space-y-4">
+          {/* 🌤️ Daily fishing-condition strip (tap → weather page) */}
+          <CommunityConditionStrip />
+
           {/* 📸 INSTAGRAM / SNAPCHAT STYLE 24H FISHING STORIES BAR */}
           <div className="bg-white/80 p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 space-y-2">
             <div className="flex items-center justify-between px-0.5">
@@ -2375,9 +2380,19 @@ function CatchPostItem({
       <div className="aspect-[4/5] sm:aspect-video bg-slate-100 w-full relative">
         <Image src={log.image_url} alt="Catch" fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 50vw" className="object-cover" />
         {(log.fishes?.name_tr || log.fishes?.name_en) && (
-          <div className="absolute bottom-3 left-3 bg-black/55 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-1 rounded-lg border border-white/10">
-            {isTr ? (log.fishes.name_tr || log.fishes.name_en) : (log.fishes.name_en || log.fishes.name_tr)}
-          </div>
+          log.fish_id ? (
+            <Link
+              href={`/fish/${log.fish_id}`}
+              className="absolute bottom-3 left-3 bg-black/55 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-1 rounded-lg border border-white/10 hover:bg-emerald-600/80 hover:border-emerald-300/40 transition-colors flex items-center gap-1"
+            >
+              <span>{isTr ? (log.fishes.name_tr || log.fishes.name_en) : (log.fishes.name_en || log.fishes.name_tr)}</span>
+              <span aria-hidden className="text-emerald-300">→</span>
+            </Link>
+          ) : (
+            <div className="absolute bottom-3 left-3 bg-black/55 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-1 rounded-lg border border-white/10">
+              {isTr ? (log.fishes.name_tr || log.fishes.name_en) : (log.fishes.name_en || log.fishes.name_tr)}
+            </div>
+          )
         )}
       </div>
 
