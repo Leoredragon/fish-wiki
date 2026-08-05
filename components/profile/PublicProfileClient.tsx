@@ -7,6 +7,7 @@ import { useLocale } from 'next-intl';
 import { MapPin, BookOpen, Scale, Ruler, UserPlus, UserCheck, Loader2, ArrowLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatMembershipLabel, getActivityBadge } from '@/lib/anglerTrust';
+import { markFirstWeekProgress } from '@/components/community/FirstWeekChecklist';
 
 interface PublicProfileClientProps {
   profile: {
@@ -116,6 +117,7 @@ export default function PublicProfileClient({
           follower_id: viewerId,
           following_id: profile.id
         });
+        markFirstWeekProgress('followed');
       }
     } finally {
       setFollowLoading(false);

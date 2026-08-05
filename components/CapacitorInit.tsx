@@ -11,9 +11,11 @@ import { useRouter, usePathname } from 'next/navigation';
 import { WifiOff, RefreshCw } from 'lucide-react';
 import { triggerHapticLight } from '@/lib/capacitorUtils';
 import { createClient } from '@/lib/supabase/client';
+import { loadNotificationPrefs } from '@/lib/notificationPrefs';
 import OltaAppLogo from './OltaAppLogo';
 
 const NOTIFICATION_PROMPT_SHOWN_KEY = 'oltaapp_notification_prompt_shown_v1';
+const CONDITION_STRIP_CACHE_KEY = 'oltaapp_condition_strip_v1';
 
 // FCM is only bundled in APK 1.6.3+ (google-services.json); register() crashes older builds
 const MIN_PUSH_VERSION = 10603;
@@ -85,12 +87,37 @@ export default function CapacitorInit() {
           await LocalNotifications.cancel(pending);
         }
 
+        const prefs = loadNotificationPrefs();
+        if (!prefs.dailyScore) return;
+
+        let morningBody =
+          'Bugünkü hava koşullarına göre av planını yap. Topluluktaki av skoru şeridine göz at.';
+        let eveningBody = 'Akşam penceresi yaklaşıyor. Av skoru ve hava durumuna bak.';
+        try {
+          const cachedRaw = localStorage.getItem(CONDITION_STRIP_CACHE_KEY);
+          if (cachedRaw) {
+            const cached = JSON.parse(cachedRaw) as {
+              provinceNameTr?: string;
+              score?: number;
+              labelTr?: string;
+              sunset?: string;
+            };
+            if (typeof cached.score === 'number') {
+              const city = cached.provinceNameTr || 'bölgen';
+              morningBody = `${city}: av skoru ${cached.score}/100 (${cached.labelTr || '—'}). Bugün çıkılır mı? oltaApp'te bak.`;
+              eveningBody = cached.sunset
+                ? `${city}: gün batımı ~${cached.sunset}. Skor ${cached.score}/100 — akşam penceresini kaçırma.`
+                : `${city}: av skoru ${cached.score}/100. Akşam penceresine hazırlan.`;
+            }
+          }
+        } catch {}
+
         await LocalNotifications.schedule({
           notifications: [
             {
               id: 101,
               title: 'Günaydın Balıkçı! (oltaApp)',
-              body: 'Bugünkü hava koşullarına göre av planını yap. Hava Durumu modülünden av koşulu skorunu kontrol et.',
+              body: morningBody,
               schedule: {
                 on: { hour: 9, minute: 0 },
                 repeats: true
@@ -104,7 +131,7 @@ export default function CapacitorInit() {
             {
               id: 102,
               title: 'Günün En Verimli Av Saati!',
-              body: 'Akşam saatleri yaklaşıyor. Hava durumu ve av koşulu skoruna göz at.',
+              body: eveningBody,
               schedule: {
                 on: { hour: 17, minute: 0 },
                 repeats: true
@@ -148,6 +175,16 @@ export default function CapacitorInit() {
       }
     }, 5000);
 
+    const onPrefsChanged = () => {
+      if (!Capacitor.isNativePlatform()) return;
+      LocalNotifications.requestPermissions()
+        .then((p) => {
+          if (p.display === 'granted') return scheduleDefaultLocalNotifications();
+        })
+        .catch(() => {});
+    };
+    window.addEventListener('oltaapp:notification-prefs', onPrefsChanged);
+
     const backButtonListener = App.addListener('backButton', async () => {
       const path = window.location.pathname;
       // Community is the boot screen now; with no history to go back to, back = exit prompt
@@ -168,6 +205,7 @@ export default function CapacitorInit() {
 
     return () => {
       clearTimeout(timer);
+      window.removeEventListener('oltaapp:notification-prefs', onPrefsChanged);
       netListener.then((l) => l.remove()).catch(() => {});
       backButtonListener.then((l) => l.remove()).catch(() => {});
       nativeBootedRef.current = false;

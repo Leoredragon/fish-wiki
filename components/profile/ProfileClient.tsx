@@ -28,7 +28,8 @@ import {
   X,
   PhoneCall,
   Tag,
-  Globe
+  Globe,
+  Bell
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -41,6 +42,13 @@ import LanguageSwitcher from '../LanguageSwitcher';
 import { compressImageToWebP } from '@/lib/image_compression';
 import { formatMembershipLabel, getActivityBadge } from '@/lib/anglerTrust';
 import { isNativeApp, pickPhotoNative } from '@/lib/capacitorUtils';
+import {
+  loadNotificationPrefs,
+  saveNotificationPrefs,
+  prefsFromDb,
+  prefsToDb,
+  type NotificationPrefs
+} from '@/lib/notificationPrefs';
 
 export default function ProfileClient({
   user,
@@ -84,6 +92,8 @@ export default function ProfileClient({
   const [savingProfile, setSavingProfile] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(() => loadNotificationPrefs());
+  const [savingNotifPrefs, setSavingNotifPrefs] = useState(false);
 
   // Password Change State
   const [newPassword, setNewPassword] = useState('');
@@ -419,6 +429,30 @@ export default function ProfileClient({
     const file = await pickPhotoNative('prompt');
     if (!file) return;
     await uploadAvatarFile(file);
+  };
+
+  useEffect(() => {
+    const fromDb = prefsFromDb(profile?.notification_prefs);
+    const fromLocal = loadNotificationPrefs();
+    // Prefer DB when present (logged-in sync), else local
+    const merged = profile?.notification_prefs ? fromDb : fromLocal;
+    setNotifPrefs(merged);
+    saveNotificationPrefs(merged);
+  }, [profile?.notification_prefs]);
+
+  const handleToggleNotifPref = async (key: keyof NotificationPrefs) => {
+    const next = { ...notifPrefs, [key]: !notifPrefs[key] };
+    setNotifPrefs(next);
+    saveNotificationPrefs(next);
+    setSavingNotifPrefs(true);
+    try {
+      const supabase = createClient();
+      await supabase.from('profiles').update({ notification_prefs: prefsToDb(next) }).eq('id', user.id);
+    } catch {
+      // Column may not exist yet — local prefs still work for daily score
+    } finally {
+      setSavingNotifPrefs(false);
+    }
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -1030,6 +1064,52 @@ export default function ProfileClient({
                   </button>
                 </div>
               </form>
+            </div>
+
+            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5">
+              <div className="border-b border-slate-100 pb-4 flex items-center space-x-3">
+                <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
+                  <Bell className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-black text-[#0F172A]">{isTr ? 'Bildirim Tercihleri' : 'Notification Preferences'}</h3>
+                  <p className="text-xs text-slate-500">
+                    {isTr
+                      ? 'Hangi bildirimleri almak istediğini seç. Günlük av skoru yerel hatırlatmadır.'
+                      : 'Choose which alerts you want. Daily score uses a local reminder.'}
+                  </p>
+                </div>
+                {savingNotifPrefs && <Loader2 className="w-4 h-4 animate-spin text-emerald-500 shrink-0" />}
+              </div>
+
+              {(
+                [
+                  { key: 'likes' as const, labelTr: 'Tebrik bildirimleri', labelEn: 'Like / congratulate alerts' },
+                  { key: 'comments' as const, labelTr: 'Yorum bildirimleri', labelEn: 'Comment alerts' },
+                  { key: 'follows' as const, labelTr: 'Takip bildirimleri', labelEn: 'Follow alerts' },
+                  { key: 'dailyScore' as const, labelTr: 'Günlük av skoru hatırlatması (09:00 & 17:00)', labelEn: 'Daily fishing score reminder (09:00 & 17:00)' }
+                ] as const
+              ).map((row) => (
+                <button
+                  key={row.key}
+                  type="button"
+                  onClick={() => handleToggleNotifPref(row.key)}
+                  className="w-full flex items-center justify-between gap-3 py-2.5 border-b border-slate-50 last:border-0 text-left"
+                >
+                  <span className="text-sm font-semibold text-slate-700">{isTr ? row.labelTr : row.labelEn}</span>
+                  <span
+                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                      notifPrefs[row.key] ? 'bg-emerald-500' : 'bg-slate-300'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                        notifPrefs[row.key] ? 'translate-x-5' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </span>
+                </button>
+              ))}
             </div>
 
             <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5">

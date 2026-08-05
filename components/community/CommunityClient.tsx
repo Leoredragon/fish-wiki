@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import CatchCardExport from './CatchCardExport';
 import MeetupsPanel from './MeetupsPanel';
 import CommunityConditionStrip from './CommunityConditionStrip';
+import FirstWeekChecklist, { markFirstWeekProgress } from './FirstWeekChecklist';
 import { Link } from '@/i18n/routing';
 import CatchFishPicker, { getSoftLegalMinCm, type FishOption } from '@/components/CatchFishPicker';
 import ReportContentButton from '@/components/ReportContentButton';
@@ -266,6 +267,7 @@ export default function CommunityClient({
       setCatchLocationNote('');
       setCatchFishId('');
       setCatchSelectedFish(null);
+      markFirstWeekProgress('sharedCatch');
       alert(isTr ? '🎉 Avınız topluluk akışında başarıyla paylaşıldı!' : 'Catch shared successfully!');
     } catch (err: any) {
       alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
@@ -415,6 +417,7 @@ export default function CommunityClient({
       setIsAddStoryModalOpen(false);
       setStoryImageFile(null);
       setStoryCaption('');
+      markFirstWeekProgress('addedStory');
       setStorySuccessToast(isTr ? 'Hikayeniz paylaşıldı' : 'Story shared');
     } catch (err: any) {
       alert(isTr ? `Hata: ${err?.message || err}` : `Error: ${err?.message || err}`);
@@ -604,7 +607,7 @@ export default function CommunityClient({
           *,
           profiles (username, full_name, avatar_url, bio, city),
           tackle_sets (id, name, rod, reel, line, lure),
-          fishes (name_tr, name_en)
+          fishes (name_tr, name_en, limit_size)
         `)
         .order('created_at', { ascending: false })
         .range(from, to);
@@ -1076,6 +1079,17 @@ export default function CommunityClient({
         <div className="space-y-4">
           {/* 🌤️ Daily fishing-condition strip (tap → weather page) */}
           <CommunityConditionStrip />
+
+          <FirstWeekChecklist
+            onShareCatch={() => {
+              if (!currentUser) return requireAuth('share_catch');
+              setIsAddCatchModalOpen(true);
+            }}
+            onAddStory={() => {
+              if (!currentUser) return requireAuth('story');
+              setIsAddStoryModalOpen(true);
+            }}
+          />
 
           {/* 📸 INSTAGRAM / SNAPCHAT STYLE 24H FISHING STORIES BAR */}
           <div className="bg-white/80 p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 space-y-2">
@@ -2439,6 +2453,24 @@ function CatchPostItem({
               <span className="text-slate-800">{log.length} cm</span>
             </div>
           )}
+          {(() => {
+            const minCm = getSoftLegalMinCm(log.fishes || null);
+            const lengthNum = log.length != null ? Number(log.length) : NaN;
+            if (minCm == null || !Number.isFinite(lengthNum) || lengthNum <= 0) return null;
+            const ok = lengthNum >= minCm;
+            return (
+              <div
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border font-bold ${
+                  ok
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-amber-50 text-amber-800 border-amber-200'
+                }`}
+                title={isTr ? `Asgari yasal boy ~${minCm} cm` : `Min legal size ~${minCm} cm`}
+              >
+                <span>{ok ? (isTr ? 'Yasal ✓' : 'Legal ✓') : (isTr ? `Asgari ~${minCm} cm altı` : `Below ~${minCm} cm`)}</span>
+              </div>
+            );
+          })()}
         </div>
 
         {log.lure_used && (

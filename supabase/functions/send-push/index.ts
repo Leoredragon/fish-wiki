@@ -82,6 +82,28 @@ Deno.serve(async (req: Request) => {
     const { record } = await req.json();
     if (!record?.user_id) return new Response('missing record', { status: 400 });
 
+    // Respect per-user notification preferences when present
+    try {
+      const { data: profile } = await admin
+        .from('profiles')
+        .select('notification_prefs')
+        .eq('id', record.user_id)
+        .maybeSingle();
+      const prefs = (profile?.notification_prefs || {}) as Record<string, unknown>;
+      const type = String(record.type || '');
+      if (type === 'like' && prefs.likes === false) {
+        return new Response(JSON.stringify({ sent: 0, reason: 'likes disabled' }), { status: 200 });
+      }
+      if (type === 'comment' && prefs.comments === false) {
+        return new Response(JSON.stringify({ sent: 0, reason: 'comments disabled' }), { status: 200 });
+      }
+      if (type === 'follow' && prefs.follows === false) {
+        return new Response(JSON.stringify({ sent: 0, reason: 'follows disabled' }), { status: 200 });
+      }
+    } catch {
+      // Column missing or query failed — send as before
+    }
+
     const { data: tokens } = await admin.from('push_tokens').select('token').eq('user_id', record.user_id);
     if (!tokens || tokens.length === 0) {
       return new Response(JSON.stringify({ sent: 0, reason: 'no tokens' }), { status: 200 });
